@@ -1,0 +1,320 @@
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { 
+    getAuth, 
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    onAuthStateChanged,
+    setPersistence,
+    browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { 
+    getFirestore, 
+    doc, 
+    getDoc,
+    setDoc,
+    collection,
+    query,
+    where,
+    getDocs,
+    serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDo8B0OLtAj-Upfz7yNFeGz4cx3KWLZLuQ",
+    authDomain: "hawkerhub-64e2d.firebaseapp.com",
+    databaseURL: "https://hawkerhub-64e2d-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "hawkerhub-64e2d",
+    storageBucket: "hawkerhub-64e2d.firebasestorage.app",
+    messagingSenderId: "722888051277",
+    appId: "1:722888051277:web:59926d0a54ae0e4fe36a04"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const ROLE = "officer";
+const OPPOSITE_ROLE = "operator";
+
+setPersistence(auth, browserLocalPersistence);
+
+const submitBtn = document.getElementById("submitBtn");
+let officerNameEl, emailEl, passwordEl, badgeIdEl;
+
+document.addEventListener("DOMContentLoaded", () => {
+    officerNameEl = document.getElementById("officerName");
+    emailEl = document.getElementById("email");
+    passwordEl = document.getElementById("password");
+    badgeIdEl = document.getElementById("badgeId");
+
+    submitBtn?.addEventListener("click", handleSubmit);
+    badgeIdEl?.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") handleSubmit(e);
+    });
+});
+
+async function handleSubmit(e) {
+    e.preventDefault();
+    
+    const officerName = (officerNameEl?.value || "").trim();
+    const email = (emailEl?.value || "").trim().toLowerCase();
+    const password = passwordEl?.value || "";
+    const badgeId = (badgeIdEl?.value || "").trim();
+
+    if (!officerName) {
+        alert("Please enter your officer name.");
+        return;
+    }
+
+    if (!email || !password) {
+        alert("Please enter both email and password.");
+        return;
+    }
+
+    if (password.length < 6) {
+        alert("Password must be at least 6 characters.");
+        return;
+    }
+
+    if (!badgeId) {
+        alert("Please enter your badge ID.");
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        let userCredential;
+        let isNewAccount = false;
+        
+        try {
+            // STEP 1: Try to sign in with existing credentials
+            console.log("Attempting sign in for:", email);
+            userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            console.log("Sign in successful for UID:", user.uid);
+            
+            // STEP 2: Check if user has opposite role (operator trying to sign in as officer)
+            const oppositeRoleDoc = await getDoc(doc(db, "operators", user.uid));
+            if (oppositeRoleDoc.exists()) {
+                console.log("ERROR: User is an operator, not an officer");
+                await auth.signOut();
+                alert("This email is registered as an Operator. Please use the Operator Portal instead.");
+                setLoading(false);
+                return;
+            }
+            
+            // STEP 3: Check if user exists in officers collection
+            const roleDoc = await getDoc(doc(db, "officers", user.uid));
+            if (!roleDoc.exists()) {
+                // User exists in Auth but not in Firestore officers - create entry
+                console.log("User authenticated but no Firestore doc - creating officer document");
+                await createRoleDocument(user.uid, email, officerName, badgeId);
+                isNewAccount = true;
+            } else {
+                // EXISTING OFFICER - This is the normal login path for repeat logins
+                console.log("Existing officer logging in - updating last login");
+                await setDoc(doc(db, "officers", user.uid), {
+                    officerName: officerName,
+                    badgeId: badgeId,
+                    lastLogin: serverTimestamp()
+                }, { merge: true });
+            }
+            
+        } catch (signInError) {
+            console.log("Sign in error:", signInError.code);
+            
+
+            if (signInError.code === "auth/user-not-found" || 
+                signInError.code === "auth/invalid-credential") {
+                
+
+                console.log("User may not exist - attempting account creation");
+                
+                // Before creating, check if email exists with opposite role
+                const emailExistsInOppositeRole = await checkEmailInOppositeRole(email);
+                if (emailExistsInOppositeRole) {
+                    alert(`This email is already registered as an ${OPPOSITE_ROLE}. Each email can only be used for one role.`);
+                    setLoading(false);
+                    return;
+                }
+                
+                // Try to create new account
+                try {
+                    console.log("Creating new officer account...");
+                    userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+                    await createRoleDocument(user.uid, email, officerName, badgeId);
+                    isNewAccount = true;
+                    console.log("New officer account created successfully");
+                } catch (createError) {
+                    console.log("Account creation error:", createError.code);
+                    
+                    if (createError.code === "auth/email-already-in-use") {
+
+                        alert("Incorrect password. Please try again or use the 'Forgot Password' link.");
+                        setLoading(false);
+                        return;
+                    } else {
+                        throw createError;
+                    }
+                }
+            } else if (signInError.code === "auth/wrong-password") {
+
+                console.log("Wrong password - account exists");
+                alert("Incorrect password. Please try again or use the 'Forgot Password' link.");
+                setLoading(false);
+                return;
+            } else {
+
+                throw signInError;
+            }
+        }
+
+        // SUCCESS - User is authenticated
+        const user = userCredential.user;
+        console.log("Authentication successful for:", user.email);
+
+        // Store session data
+        localStorage.setItem("hawkerhub_user", JSON.stringify({
+            uid: user.uid,
+            email: user.email,
+            role: ROLE,
+            officerName: officerName,
+            badgeId: badgeId,
+            isNewAccount: isNewAccount
+        }));
+
+        console.log("Redirecting to officer dashboard...");
+        // Redirect to officer dashboard
+        window.location.href = "NEAofficer.html";
+
+    } catch (err) {
+        console.error("Authentication error:", err);
+        alert(prettyFirebaseError(err));
+        setLoading(false);
+    }
+}
+
+async function checkEmailInOppositeRole(email) {
+    try {
+        console.log("Checking if email exists in opposite role:", email);
+        
+        // Query the operators collection for this email
+        const operatorsRef = collection(db, "operators");
+        const q = query(operatorsRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+            console.log("Email found in operators collection");
+            return true;
+        }
+        
+        // Also check users collection for safety
+        const usersRef = collection(db, "users");
+        const userQuery = query(usersRef, where("email", "==", email), where("role", "==", OPPOSITE_ROLE));
+        const userSnapshot = await getDocs(userQuery);
+        
+        const exists = !userSnapshot.empty;
+        console.log("Email exists in opposite role:", exists);
+        return exists;
+    } catch (error) {
+        console.error("Error checking opposite role:", error);
+        // If query fails, return false to allow continuation (fail open)
+        return false;
+    }
+}
+
+async function createRoleDocument(uid, email, officerName, badgeId) {
+    console.log("Creating officer Firestore documents for UID:", uid);
+    
+    const accountData = {
+        uid: uid,
+        email: email,
+        officerName: officerName,
+        badgeId: badgeId,
+        role: ROLE,
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
+        isActive: true
+    };
+    
+    // Create document in officers collection
+    await setDoc(doc(db, "officers", uid), accountData);
+    
+    // Also create in users collection for unified queries
+    await setDoc(doc(db, "users", uid), accountData);
+    
+    console.log(`Created ${ROLE} account documents in Firestore`);
+}
+
+function setLoading(isLoading) {
+    if (!submitBtn) return;
+    if (isLoading) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = "0.7";
+        submitBtn.textContent = "Signing In...";
+    } else {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = "1";
+        submitBtn.textContent = "Sign In";
+    }
+}
+
+function prettyFirebaseError(err) {
+    const code = err?.code || "";
+    const message = err?.message || "";
+    
+    if (message.includes("Operator Portal") || message.includes("Officer Portal")) {
+        return message;
+    }
+    
+    switch (true) {
+        case code.includes("invalid-credential"):
+        case code.includes("wrong-password"):
+            return "Incorrect email or password. Please try again.";
+        case code.includes("invalid-email"):
+            return "Please enter a valid email address.";
+        case code.includes("weak-password"):
+            return "Password is too weak. Must be at least 6 characters.";
+        case code.includes("email-already-in-use"):
+            return "This email is already registered. Please sign in with your password.";
+        case code.includes("too-many-requests"):
+            return "Too many attempts. Please try again later.";
+        case code.includes("network-request-failed"):
+            return "Network error. Please check your connection.";
+        default:
+            return err?.message || "An error occurred. Please try again.";
+    }
+}
+
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        try {
+            console.log("Auth state changed - user detected:", user.uid);
+            
+            // Verify they are an officer, not an operator
+            const operatorDoc = await getDoc(doc(db, "operators", user.uid));
+            if (operatorDoc.exists()) {
+                // Wrong role, sign out
+                console.log("User is an operator, signing out from officer portal");
+                await auth.signOut();
+                return;
+            }
+            
+            const officerDoc = await getDoc(doc(db, "officers", user.uid));
+            if (officerDoc.exists()) {
+                // Only redirect if not already on the officer page
+                if (!window.location.href.includes("NEAofficer.html") && 
+                    !window.location.href.includes("SignInOfficer.html")) {
+                    console.log("Officer authenticated, redirecting to dashboard");
+                    window.location.href = "NEAofficer.html";
+                }
+            }
+        } catch (error) {
+            console.error("Error in auth state change:", error);
+        }
+    }
+});
+
+export { auth, db };                                                

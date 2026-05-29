@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HawkerHub – My Stall Analytics</title>
+
+  <link rel="stylesheet" href="VendorAccount.css" />
+  <link rel="stylesheet" href="topnav.css" />
+  <link rel="stylesheet" href="analytics.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+  <!-- SAME banner system as Vendor Stall page -->
+  <section class="banner">
+    <div class="container">
+      <div class="banner-tabs">
+        <a href="Profile(Patron & Vendor).html">Profile</a>
+        <span>|</span>
+        <a href="VendorComplaints.html">Complaints</a>
+        <span>|</span>
+        <a href="VenderAccount.html" class="active">Stall</a>
+      </div>
+
+      <div class="banner-text">
+        <h1 id="stallNameDisplay">My Stall</h1>
+        <p id="stallSubtitle">Analytics loaded from Firestore (fallback doc if needed).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAME container pattern -->
+  <main class="container">
+    <div class="toolbar">
+      <div class="dropdown-container">
+        <div class="dropdown-trigger">
+          Analytics <span>⌵</span>
+        </div>
+        <ul class="dropdown-menu">
+          <li><a href="VenderAccount.html">Menu</a></li>
+          <li><a href="VenderAccountRentalStatus.html">Rental Status</a></li>
+          <li><a href="analytics.html">Analytics</a></li>
+          <li><a href="VendorLikes.html" class="active">Customer Likes</a></li>
+        </ul>
+      </div>
+
+      <span class="status-pill paid" id="statsDocLabel" style="margin-left:auto; display:none;">doc: —</span>
+    </div>
+
+    <section class="rental-dashboard">
+      <div class="rental-head">
+        <div>
+          <h2 class="rental-title">Performance Overview</h2>
+          <p class="rental-sub">Live sales and order insights</p>
+        </div>
+
+        <span class="status-pill paid">Active</span>
+      </div>
+
+      <!--KPI TILES (ONLY icons changed to images) -->
+      <div class="rental-grid">
+        <div class="rental-tile">
+          <div class="tile-icon">
+            <img src="img/totalrevenue.png" class="kpi-icon" />
+          </div>
+          <div>
+            <div class="tile-label">Total Revenue</div>
+            <div class="tile-value" id="kpiTotalRevenue">—</div>
+            <div class="muted" id="kpiTotalRevenueSub">—</div>
+          </div>
+        </div>
+
+        <div class="rental-tile">
+          <div class="tile-icon">
+            <img src="img/total orders.png" class="kpi-icon" />
+          </div>
+          <div>
+            <div class="tile-label">Total Orders</div>
+            <div class="tile-value" id="kpiTotalOrders">—</div>
+            <div class="muted" id="kpiTotalOrdersSub">—</div>
+          </div>
+        </div>
+
+        <div class="rental-tile">
+          <div class="tile-icon">
+            <img src="img/avgorder.png" class="kpi-icon" />
+          </div>
+          <div>
+            <div class="tile-label">Avg Order Value</div>
+            <div class="tile-value" id="kpiAvgOrderValue">—</div>
+            <div class="muted" id="kpiAvgOrderValueSub">—</div>
+          </div>
+        </div>
+
+        <div class="rental-tile">
+          <div class="tile-icon">
+            <img src="img/totalcustomers.png" class="kpi-icon" />
+          </div>
+          <div>
+            <div class="tile-label">Total Customers</div>
+            <div class="tile-value" id="kpiTotalCustomers">—</div>
+            <div class="muted" id="kpiTotalCustomersSub">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rental-sep"></div>
+
+      <div class="two-col">
+        <div class="panel">
+          <h3 class="panel-title">Monthly Sales Trend</h3>
+          <div class="chart-box">
+            <canvas id="salesLineChart"></canvas>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel-title">Sales by Category</h3>
+          <div class="chart-box-pie">
+            <canvas id="categoryPieChart"></canvas>
+          </div>
+          <div id="categoryLegend" class="legend"></div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="footer-spacer"></footer>
+
+  <script type="module" src="analytics.js"></script>
+  <script type="module" src="navbar-init.js"></script>
+</body>
+</html>

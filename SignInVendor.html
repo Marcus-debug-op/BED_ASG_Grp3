@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HawkerHub – Log In</title>
+  <link rel="stylesheet" href="SignInStyle.css">
+  <script type="module" src="SignInVendor.js"></script>
+<base target="_blank">
+</head>
+
+<body data-auth-role="vendor">
+  <div class="app">
+    <button class="back-btn" type="button" onclick="window.location.href='signup.html'">← Go Back</button>
+
+    <div class="logo">
+      <img src="img/logo.png" alt="HawkerHub Logo" />
+    </div>
+
+    <div class="panel-wrap">
+      <div class="panel">
+        <div class="panel-top">
+          <div class="mini-back">← Back to Selection</div>
+        </div>
+
+        <div class="panel-body">
+          <div class="icon"><img src="img/avatars/vendor.png"></div>
+          <div class="title">Sign In</div>
+          <div class="subtitle">Vendor Sign In</div>
+
+          <div class="segmented" data-role="vendor">
+            <button class="inactive" id="tabSignUp" type="button">Sign Up</button>
+            <button class="active" id="tabSignIn" type="button">Sign In</button>
+          </div>
+
+          <label for="email">Email Address</label>
+          <input id="email" type="email" />
+
+          <label for="password">Password</label>
+          <input id="password" type="password" />
+
+          <button class="submit" type="button">Sign In</button>
+
+         
+
+            
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="AuthenticationTabs.js" defer></script>
+</body>
+</html>

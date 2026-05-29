@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>History - HawkerHub</title>
+
+
+    
+    <link rel="stylesheet" href="StylesHistory.css" />
+    <link rel="stylesheet" href="topnav.css" />
+  </head>
+
+  <body>
+
+
+    <section class="page-banner-wrap">
+      <div class="page-banner">
+        <h1 class="page-title">Order History</h1>
+      </div>
+    </section>
+
+    <main class="checkout-layout history-main">
+      <section class="card history-card">
+        <div id="listView">
+          <div class="history-toolbar">
+            <h2 class="history-title">Your Orders</h2>
+            <button id="refreshBtn" class="history-refresh-btn" type="button">
+              Refresh
+            </button>
+          </div>
+
+          <div id="loadingMsg" class="history-loading">Loading orders.</div>
+
+          <div id="historyList" class="history-list"></div>
+
+          <div id="historyEmpty" class="history-empty">
+            No orders found.
+          </div>
+        </div>
+
+        <div id="detailView" class="hidden">
+          <button class="back-btn" id="backToListBtn" type="button">
+            ← Back to History
+          </button>
+          <div id="detailsBody"></div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="navbar-init.js"></script>
+    <script type="module" src="history.js"></script>
+  </body>
+</html>

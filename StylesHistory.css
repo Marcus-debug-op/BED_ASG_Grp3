@@ -1,0 +1,307 @@
+/* Toggle helper class to hide sections */
+.hidden {
+  display: none !important;
+}
+
+/* ===== PAGE BANNER (Orange header) ===== */
+.page-banner-wrap {
+  background: #F97316;
+  margin-top: 0;
+}
+
+.page-banner {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+.page-title {
+  margin: 0;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+/* ===== MAIN LAYOUT ===== */
+.checkout-layout {
+  width: 100%;
+  max-width: 1100px;
+  margin: 26px auto 60px;
+  padding: 0 16px;
+}
+
+.history-main {
+  display: flex;
+  justify-content: center;
+}
+
+/* ===== CARD ===== */
+.card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+  padding: 18px 18px 16px;
+}
+
+.history-card {
+  width: 100%;
+  max-width: 900px;
+}
+
+/* Toolbar */
+.history-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.history-title {
+  margin: 0;
+  font-weight: 900;
+  font-size: 20px;
+}
+
+/* Refresh button */
+.history-refresh-btn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  background: #fff;
+  font-weight: 700;
+}
+
+.history-refresh-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Loading + Empty */
+.history-loading {
+  text-align: center;
+  padding: 20px;
+  font-weight: 600;
+}
+
+.history-empty {
+  display: none;
+  padding: 18px;
+  text-align: center;
+  font-weight: 600;
+  color: #6b6b6b;
+}
+
+/* List container */
+.history-list {
+  display: grid;
+  gap: 14px;
+}
+
+/* History item card */
+.history-item {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+/* Left column meta */
+.history-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.history-status-pill {
+  background: #d9fbe1;
+  color: #0b6b2b;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.history-order-no {
+  color: #ff5a5a;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.history-stall {
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.history-date {
+  opacity: 0.75;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.history-total {
+  margin-top: 8px;
+  font-weight: 800;
+}
+
+/* View Details button */
+.history-view-btn {
+  background: #ff6a00;
+  color: #fff;
+  border: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.history-view-btn:hover {
+  background: #e55d00;
+}
+
+/* Delete button styling */
+.history-del-btn {
+  background: #fff;
+  color: #f43c13;
+  border: 1px solid #f43c13;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.history-del-btn:hover {
+  background: #f43c13;
+  color: #fff;
+}
+
+/* Detail view back button */
+.back-btn {
+  background: none;
+  border: none;
+  color: #ff6a00;
+  font-weight: 800;
+  cursor: pointer;
+  font-size: 16px;
+  margin-bottom: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.back-btn:hover {
+  text-decoration: underline;
+}
+
+/* Detail header */
+.detail-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #eee;
+}
+
+.detail-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 22px;
+}
+
+.detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.detail-meta .pill {
+  background: #d9fbe1;
+  color: #0b6b2b;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+/* Detail items */
+.detail-items {
+  margin: 20px 0;
+}
+
+.detail-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+}
+
+.detail-item-name {
+  font-weight: 800;
+}
+
+.detail-item-qty {
+  opacity: 0.7;
+  font-size: 14px;
+}
+
+.detail-item-price {
+  font-weight: 800;
+  text-align: right;
+}
+
+/* Summary section */
+.detail-summary {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 2px solid #ddd;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+  font-size: 15px;
+}
+
+.detail-row strong {
+  font-weight: 900;
+}
+
+.detail-total-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 2px solid #333;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+/* Delete order button in detail view */
+#deleteThisOrderBtn {
+  background: #fff;
+  color: #f43c13;
+  border: 1px solid #f43c13;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#deleteThisOrderBtn:hover {
+  background: #f43c13;
+  color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 1160px) {
+  .checkout-layout {
+    width: 92vw;
+  }
+}

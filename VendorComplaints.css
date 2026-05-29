@@ -1,0 +1,326 @@
+/* Layout Wrapper */
+.complaint-layout {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+    padding-top: 30px;
+}
+
+/* --- Left Profile Card --- */
+.vendor-profile-card {
+    background: white;
+    width: 350px;
+    padding: 50px 40px;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    text-align: center;
+    flex-shrink: 0;
+    min-height: 250px;
+}
+
+.vendor-profile-card h3 {
+    margin: 0;
+    font-size: 1.6rem;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.email-text {
+    color: #666;
+    font-size: 1rem;
+    margin-bottom: 40px;
+}
+
+.logout-btn {
+    background: #FF4500;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.2s;
+}
+.logout-btn:hover { background: #e03e00; }
+
+/* --- Right Complaints Section --- */
+.complaints-section { flex-grow: 1; }
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 900;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #333;
+    display: inline-block;
+    padding-bottom: 5px;
+}
+
+.complaints-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Individual Complaint Card */
+.complaint-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border-left: 5px solid #ccc; 
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+    transition: transform 0.2s;
+}
+.complaint-card:hover { transform: translateY(-2px); }
+
+/* Dynamic Border Colors */
+.complaint-card.status-pending { border-left-color: #F97316; } 
+.complaint-card.status-inprogress { border-left-color: #3b82f6; } 
+.complaint-card.status-resolved { border-left-color: #22c55e; } 
+.complaint-card.status-rejected { border-left-color: #ef4444; } 
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-badge {
+    background: #333; 
+    color: white;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+/* Status Badges */
+.status-pill {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+.status-pill.pending { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
+.status-pill.inprogress { background: #eff6ff; color: #1d4ed8; border: 1px solid #93c5fd; }
+.status-pill.resolved { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+.status-pill.rejected { background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+.date-text { color: #888; font-size: 0.85rem; }
+.reason-text { font-size: 1.1rem; color: #333; margin: 5px 0; }
+
+.view-details-btn {
+    align-self: flex-end;
+    background: #F97316;
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+.view-details-btn:hover { background: #d85d08; }
+
+/* --- Modal Styles (FIXED FOR SCROLLING) --- */
+.complaint-modal {
+    max-width: 650px;
+    width: 90%;
+    max-height: 90vh; /* Limits height to fit screen */
+    border-radius: 16px;
+    background: white;
+    display: flex;        /* Enables flexible layout */
+    flex-direction: column;
+    overflow: hidden;     /* Keeps corners rounded */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    padding: 20px 30px;
+    background: white;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0; /* Prevents header from shrinking */
+}
+
+.modal-header h2 { margin: 0; font-size: 1.5rem; }
+
+.modal-body { 
+    padding: 30px; 
+    overflow-y: auto; /* Enables scrolling for content */
+    flex-grow: 1;     /* Takes up remaining space */
+}
+
+.modal-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+/* Status Control & Delete Icon */
+.status-control {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.status-control label {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: #555;
+}
+
+.status-action-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-dropdown {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 2px solid #ddd;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+    background-color: white;
+}
+.status-dropdown:focus { border-color: #F97316; outline: none; }
+
+.delete-icon-btn {
+    display: none; /* Hidden by default */
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.delete-icon-btn:hover { background: #dc2626; color: white; }
+.delete-icon-btn.visible { display: flex; } /* Shown via JS */
+
+.save-indicator {
+    font-size: 0.8rem;
+    color: #22c55e;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.save-indicator.visible { opacity: 1; }
+
+.modal-divider {
+    border: 0;
+    border-top: 1px solid #eee;
+    margin: 15px 0;
+}
+
+.text-content {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    margin-top: 5px;
+    margin-bottom: 15px;
+}
+
+/* Reply Section */
+.reply-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#vendorReplyInput {
+    width: 100%;
+    height: 100px;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-family: inherit;
+    resize: vertical;
+}
+#vendorReplyInput:focus { border-color: #F97316; outline: none; }
+
+.send-reply-btn {
+    align-self: flex-end;
+    background: #333;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.send-reply-btn:hover { background: #000; }
+
+.reply-status {
+    font-size: 0.9rem;
+    color: #22c55e;
+    text-align: right;
+    margin-top: 10px;
+    font-weight: bold;
+    min-height: 20px; /* Reserves space so layout doesn't jump */
+}
+
+/* Evidence Image */
+#modalImage {
+    display: none;
+    max-width: 100%;
+    border-radius: 8px;
+    margin-top: 10px;
+    border: 1px solid #eee;
+}
+#noImageText { color: #888; font-size: 0.9rem; margin-top: 5px; }
+
+/* Footer */
+.modal-footer {
+    padding: 20px 30px;
+    background: #f8f8f8;
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid #eee;
+    flex-shrink: 0; /* Prevents footer from shrinking */
+}
+
+.cancel-btn {
+    background: #ccc;
+    color: #333;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1rem;
+}
+.cancel-btn:hover { background: #bbb; }
+
+/* Helpers */
+.show { display: block !important; }
+.hide { display: none !important; }
+.flex-show { display: flex !important; }
+
+@media (max-width: 900px) {
+    .complaint-layout { flex-direction: column; }
+    .vendor-profile-card { width: 100%; padding: 20px; }
+}

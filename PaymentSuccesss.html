@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Payment Successful - HawkerHub</title>
+    <link rel="stylesheet" href="PaymentSuccessStyles.css" />
+    <link rel="stylesheet" href="topnav.css" />
+  </head>
+
+  <body>
+
+
+    <section class="banner-wrap">
+      <div class="banner">
+        <div class="banner-left">
+          <a class="continue" href="browsestalls.html">← Continue Shopping</a>
+
+          <div class="mini">
+            <div class="mini-icon" aria-hidden="true">
+              <img src="img/cart icon.png" alt="Cart" />
+            </div>
+            <div class="mini-text">
+              <div class="mini-title">Your Cart</div>
+              <div class="mini-sub">0 items</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main success content -->
+    <main class="success-wrap">
+      <section class="success">
+        <!-- Green circle check -->
+        <div class="check-circle" aria-hidden="true">
+          <img
+            src="img/check.png"
+            alt="Payment Successful"
+            class="success-icon"
+          />
+        </div>
+
+        <div class="success-text">
+          <div class="line">
+            <strong>Order Queue Number:</strong>
+            <span id="queueNumber" class="queue-number">--</span>
+          </div>
+
+          <div class="line bold">Payment Successful</div>
+
+          <div class="line">
+            <strong>Food will be ready within:</strong>
+            <span class="time">15 mins</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    
+    <script type="module" src="navbar-init.js"></script>
+
+    <script>
+      const queueEl = document.getElementById("queueNumber");
+
+      const LAST_ORDER_NO_KEY = "hawkerhub_last_order_no";
+      const HISTORY_KEY = "hawkerhub_order_history";
+
+      function formatQueueNo(n) {
+        const num = Number(n);
+        if (!Number.isFinite(num)) return "--";
+        return String(num).padStart(2, "0"); 
+      }
+
+      function setQueueNo(n) {
+        if (!queueEl) return;
+        queueEl.textContent = formatQueueNo(n);
+      }
+
+      // 1) Best source: last order no saved by checkout.js
+      const lastNo = localStorage.getItem(LAST_ORDER_NO_KEY);
+      if (lastNo != null && String(lastNo).trim() !== "") {
+        setQueueNo(lastNo);
+      } else {
+        // 2) Fallback: old local history
+        try {
+          const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+          if (Array.isArray(history) && history.length > 0) {
+            const latest = history[history.length - 1];
+            if (latest && latest.orderNo != null) setQueueNo(latest.orderNo);
+          }
+        } catch (e) {
+          setQueueNo("--");
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stall - Feedback</title>
+    <link rel="stylesheet" href="topnav.css" />
+    <link rel="stylesheet" href="Review.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>
+<body class="feedback-page">
+
+    <div class="feedback-wrapper">
+        <a href="browsestalls.html" class="btn-go-back">↩ Go Back</a>
+
+        <div class="feedback-modal-card">
+            <div class="modal-img-container">
+                <img id="stallHeroImg" src="" alt="Stall">
+                <div class="badge-popular">Popular Choice</div>
+                <button class="btn-close-modal" type="button">&times;</button>
+            </div>
+
+            <div class="modal-content">
+                <div class="content-header">
+                    <div class="header-text">
+                        <h2>Customer Reviews</h2>
+                        <p class="stall-name" id="stallNameText">Loading...</p>
+                    </div>
+                    <a id="addFeedbackLink" href="#" class="btn-add-feedback">+ Add Feedback</a>
+                </div>
+
+                <hr class="header-line">
+
+                <div class="ratings-container">
+                    <div class="overall-rating">
+                        <span class="rating-number" id="avgRating">0.0</span>
+                        <div class="stars-gold" id="avgStars"></div>
+
+                        <p class="review-total"><span id="totalReviews"></span> Reviews</p>
+                    </div>
+
+                    <div class="rating-bars-group">
+                        <div class="bar-row">
+                            <span>5</span>
+                            <div class="progress-bg"><div class="progress-fill" id="bar5"></div></div>
+                            <span class="count-label" id="count5">0</span>
+                        </div>
+
+                        <div class="bar-row">
+                            <span>4</span>
+                            <div class="progress-bg"><div class="progress-fill" id="bar4"></div></div>
+                            <span class="count-label" id="count4">0</span>
+                        </div>
+
+                        <div class="bar-row">
+                            <span>3</span>
+                            <div class="progress-bg"><div class="progress-fill" id="bar3"></div></div>
+                            <span class="count-label" id="count3">0</span>
+                        </div>
+
+                        <div class="bar-row">
+                            <span>2</span>
+                            <div class="progress-bg"><div class="progress-fill" id="bar2"></div></div>
+                            <span class="count-label" id="count2">0</span>
+                        </div>
+
+                        <div class="bar-row">
+                            <span>1</span>
+                            <div class="progress-bg"><div class="progress-fill" id="bar1"></div></div>
+                            <span class="count-label" id="count1">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="reviews-list" id="reviewsList">
+           
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="stallFeedback.js"></script>
+</body>
+</html>
