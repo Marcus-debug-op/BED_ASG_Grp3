@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HawkerHub – Create Account</title>
       <link rel="stylesheet" href="CreateAccVendorPatronStyle.css">
-  <script type="module" src="CreateAccPatron.js"></script>
 
 </head>
 
@@ -36,35 +35,35 @@
           <div class="subtitle">Patron Registration</div>
 
           <div class="segmented" data-role="patron">
-  <button class="active" id="tabSignUp" type="button">Sign Up</button>
-  <button class="inactive" id="tabSignIn" type="button">Sign In</button>
-</div>
+            <button class="active" id="tabSignUp" type="button">Sign Up</button>
+            <button class="inactive" id="tabSignIn" type="button">Sign In</button>
+        </div>
 
-
+        <form id="patronRegisterForm">
           <!-- Scrollable inputs container -->
           <div class="form-scroll">
-            <label for="fullname">Full Name</label>
-            <input id="fullname" type="text" placeholder="" />
+            <label for="name">Full Name</label>
+            <input id="name" type="text" required  />
 
             <label for="email">Email Address</label>
-            <input id="email" type="email" placeholder="" />
+            <input id="email" type="email" required />
 
-            <label for="phone">Phone Number</label>
-            <input id="phone" type="tel" placeholder="" />
+            <label for="phone_number">Phone Number</label>
+            <input id="phone_number" type="tel" required  />
 
             <label for="password">Password</label>
-            <input id="password" type="password" placeholder="" />
+            <input id="password" type="password" required />
 
             
-            <label for="confirm">Confirm Password</label>
-            <input id="confirm" type="password" placeholder="" />
+            <label for="confirm_password">Confirm Password</label>
+            <input id="confirm_password" type="password" required />
 
-            <button class="submit-btn" type="button">
+            <button class="submit-btn" type="submit">
               Create
             </button>
-
-
           </div>
+        </form>
+
         </div>
 
         <div class="panel-footer">
@@ -91,7 +90,7 @@
 
 <script type="module" src="GoogleAuth.js"></script>
 
-
+<script src="CreateAccPatron.js"></script>
 <script src="AuthenticationTabs.js" defer></script>
 </body>
 </html>

@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/Marcus-debug-op/BED_ASG_Grp3#readme",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "joi": "^18.2.1",
