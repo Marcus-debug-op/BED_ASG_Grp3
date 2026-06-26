@@ -1,13 +1,19 @@
-const form = document.querySelector("#patronRegisterForm");
+const form = document.getElementById("patronRegisterForm");
+const messageDiv = document.getElementById("message");
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  
+  const submitButton = form.querySelector(".submit-btn");
+  submitButton.disabled = true; // stops the user from spamming "Create" button while backend request is running.
 
-  const name = document.querySelector("#name").value.trim();
-  const email = document.querySelector("#email").value.trim();
-  const password = document.querySelector("#password").value;
-  const confirmPassword = document.querySelector("#confirm_password").value;
-  const phoneNumber = document.querySelector("#phone_number").value.trim();
+  const newPatron = {
+  full_name: document.getElementById("name").value.trim(),
+  email: document.getElementById("email").value.trim(),
+  password: document.getElementById("password").value,
+  confirm_password: document.getElementById("confirm_password").value,
+  phone_number: document.getElementById("phone_number").value.trim(),
+  }
 
   try {
     const response = await fetch("/api/auth/register/patron", {
@@ -15,28 +21,39 @@ form.addEventListener("submit", async (event) => {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        name: name,
-        email: email,
-        password: password,
-        confirm_password: confirmPassword,
-        phone_number: phoneNumber
-      })
+      body: JSON.stringify(newPatron)
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      alert(data.message || "Unable to create patron account.");
-      console.log(data.errors);
+      const errorMessage = data.errors
+      ? data.errors.join("\n")
+      : data.message || "Unable to create account.";
+
+      messageDiv.textContent = errorMessage;
+      messageDiv.style.color = "red";
       return;
     }
+    
+    messageDiv.textContent = "Account created successfully.";
+    messageDiv.style.color = "green";
 
-    alert("Patron account created successfully.");
-    window.location.href = "SigninPatron.html";
+    form.reset();
+
+    setTimeout(() => {
+      window.location.href = "SigninPatron.html";
+    }, 1200);
+
+
   } catch (error) {
-    console.error("Registration error:", error);
-    alert("Unable to connect to the server. Please try again.");
+    console.error("Patron registration error:", error);
+    messageDiv.textContent = "Unable to connect to the server.";
+    messageDiv.style.color = "red";
   }
+
+  finally {
+  submitButton.disabled = false; // afterwards it re-enables once backend request finishes
+}
 });
 

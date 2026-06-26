@@ -1,161 +1,90 @@
+const form = document.getElementById("vendorRegisterForm");
+const messageDiv = document.getElementById("message");
+const apiBaseUrl = "http://localhost:3000/api/auth/register";
 
-import { auth, fs } from "./firebase-init.js";
+async function loadHawkerCentres() {
+  const select = document.getElementById("hawker_centre_id");
 
-import {
-  createUserWithEmailAndPassword,
-  updateProfile,
-  signInWithEmailAndPassword,
-} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+  try {
+    const response = await fetch("/api/hawkercentres");
 
-import {
-  doc,
-  setDoc,
-  getDoc,
-  serverTimestamp,
-} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("CreateAccVendor: DOM loaded, looking for button...");
-  
-  const btn = document.querySelector(".submit-btn") || document.getElementById("createBtn");
-  if (!btn) {
-    console.error("CreateAccVendor: Button not found! Check class='submit-btn' or id='createBtn'");
-    return;
-  }
-  
-  console.log("CreateAccVendor: Button found, attaching click handler");
-  
-  // Ensure button is enabled and clickable
-  btn.disabled = false;
-  btn.style.pointerEvents = "auto";
-  btn.style.cursor = "pointer";
-
-  btn.addEventListener("click", async (e) => {
-    console.log("CreateAccVendor: Create button clicked!");
-    
-    const fullname = document.getElementById("fullname")?.value.trim();
-    const email = document.getElementById("email")?.value.trim().toLowerCase();
-    const phone = document.getElementById("phone")?.value.trim();
-    const password = document.getElementById("password")?.value || "";
-    const confirm = document.getElementById("confirm")?.value || "";
-
-    if (!fullname || !email || !phone || !password || !confirm) {
-      alert("Please fill in all fields.");
-      return;
-    }
-    if (password !== confirm) {
-      alert("Passwords do not match!");
-      return;
+    if (!response.ok) {
+      throw new Error("Unable to load hawker centres.");
     }
 
-    // Prevent double click spam
-    btn.disabled = true;
+    const centres = await response.json();
 
-    try {
-      // Try to create new auth user
-      let cred;
-      let isReactivation = false;
-      
-      try {
-        cred = await createUserWithEmailAndPassword(auth, email, password);
-        console.log("CreateAccVendor: New user created in Auth");
-      } catch (createErr) {
-        // If email already exists, try to sign in (reactivation case)
-        if (createErr.code === "auth/email-already-in-use") {
-          console.log("CreateAccVendor: Email exists, checking for reactivation...");
-          
-          try {
-            // Try to sign in with provided credentials
-            cred = await signInWithEmailAndPassword(auth, email, password);
-            console.log("CreateAccVendor: Existing user signed in, checking Firestore...");
-            
-            // Check if Firestore user doc exists
-            const userRef = doc(fs, "users", cred.user.uid);
-            const userSnap = await getDoc(userRef);
-            
-            if (userSnap.exists()) {
-              
-              console.log("CreateAccVendor: User exists in Firestore - duplicate registration");
-              await auth.signOut();
-              throw new Error("ACCOUNT_EXISTS");
-            } else {
-              
-              console.log("CreateAccVendor: Firestore doc missing - reactivating account");
-              isReactivation = true;
-            }
-          } catch (signInErr) {
-            // Sign in failed - wrong password
-            if (signInErr.code === "auth/invalid-credential" || 
-                signInErr.code === "auth/wrong-password") {
-              throw new Error("WRONG_PASSWORD");
-            }
-            throw signInErr;
-          }
-        } else {
-          throw createErr;
-        }
-      }
+    centres.forEach((centre) => {
+      const option = document.createElement("option");
 
-      // 1) Set display name for Google/Auth UI
-      await updateProfile(cred.user, { displayName: fullname });
+      option.value = centre.hawker_centre_id;
+      option.textContent = centre.centre_name;
 
-      // 2) Create/update Firestore user profile: users/{uid}
-      await setDoc(
-        doc(fs, "users", cred.user.uid),
-        {
-          fullName: fullname,
-          email,
-          phone,
-          role: "vendor",
-          hasCompletedVendorSetup: false,
-          createdAt: isReactivation ? serverTimestamp() : (await getDoc(doc(fs, "users", cred.user.uid))).data()?.createdAt || serverTimestamp(),
-          lastLoginAt: serverTimestamp(),
-          isReactivated: isReactivation,
-          reactivatedAt: isReactivation ? serverTimestamp() : null,
-        },
-        { merge: true }
-      );
-
-      if (isReactivation) {
-        alert("Account reactivated successfully! Your profile has been restored.");
-      } else {
-        alert("Vendor Account Created Successfully!");
-      }
-      
-      
-      window.location.href = "VendorStallDetails.html?mode=setup";
-      
-    } catch (err) {
-      const errorMessage = prettyFirebaseError(err);
-      alert(errorMessage);
-      console.error(err);
-      btn.disabled = false;
-    }
-  });
-});
-
-function prettyFirebaseError(err) {
-  const code = err?.code || "";
-  const message = err?.message || "";
-  
-  // Custom error codes
-  if (message === "ACCOUNT_EXISTS") {
-    return "This email is already registered. Please sign in instead.";
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Load hawker centres error:", error);
   }
-  if (message === "WRONG_PASSWORD") {
-    return "This email is already registered with a different password. Please sign in or use a different email.";
-  }
-  
-  // Firebase error codes
-  if (code.includes("email-already-in-use"))
-    return "This email is already registered.";
-  if (code.includes("invalid-email")) return "Invalid email format.";
-  if (code.includes("weak-password"))
-    return "Password too weak (6+ characters).";
-  if (code.includes("invalid-credential") || code.includes("wrong-password"))
-    return "Wrong email or password.";
-  if (code.includes("user-not-found"))
-    return "No account found for this email.";
-    
-  return err?.message || "Sign up failed.";
 }
+
+loadHawkerCentres();
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+   const submitButton = form.querySelector(".submit-btn");
+   submitButton.disabled = true; // stops the user from spamming "Create" button while backend request is running.
+
+  const newVendor = {
+    full_name: document.getElementById("name").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    phone_number: document.getElementById("phone_number").value.trim(),
+    password: document.getElementById("password").value,
+    confirm_password: document.getElementById("confirm_password").value,
+    stall_name: document.getElementById("stall_name").value.trim(),
+    cuisine_type: document.getElementById("cuisine_type").value.trim(),
+    description: document.getElementById("description").value.trim(),
+    unit_number: document.getElementById("unit_number").value.trim(),
+    hawker_centre_id: document.getElementById("hawker_centre_id").value,
+  };
+  
+  try {
+    const response = await fetch(`${apiBaseUrl}/vendor`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(newVendor)
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      const errorMessage = data.errors
+        ? data.errors.join("\n")
+        : data.message || "Unable to create vendor account.";
+
+      messageDiv.textContent = errorMessage;
+      messageDiv.style.color = "red";
+
+      console.log(data);
+      return;
+    }
+
+    messageDiv.textContent = "Vendor account and stall created successfully.";
+    messageDiv.style.color = "green";
+
+    form.reset();
+
+    setTimeout(() => {
+      window.location.href = "SignInVendor.html";
+    }, 1200);
+
+  } catch (error) {
+    console.error("Vendor registration error:", error);
+    messageDiv.textContent = "Unable to connect to the server.";
+    messageDiv.style.color = "red";
+
+  } finally {
+    submitButton.disabled = false; // afterwards it re-enables once backend request finishes
+  }
+});

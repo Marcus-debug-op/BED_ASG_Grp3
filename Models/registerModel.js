@@ -7,7 +7,7 @@ async function findUserByEmail(email) {
         connection = await sql.connect(dbConfig);
 
         const sqlQuery =  `
-        SELECT user_id, name, email, role FROM Users WHERE email = @email 
+        SELECT user_id, full_name, email, role FROM Users WHERE email = @email 
         `;
 
         const request = await connection.request();
@@ -44,12 +44,12 @@ async function createPatron(userData) {
         connection = await sql.connect(dbConfig);
 
         const sqlQuery =  `
-        INSERT INTO Users (name, email, password_hash, role, phone_number)
-        VALUES (@name, @email, @password_hash, 'patron', @phone_number);
+        INSERT INTO Users (full_name, email, password_hash, role, phone_number)
+        VALUES (@full_name, @email, @password_hash, 'patron', @phone_number);
         `;
 
         const request = await connection.request();
-        request.input("name",sql.VarChar(100), userData.name);
+        request.input("full_name",sql.VarChar(100), userData.full_name);
         request.input("email",sql.VarChar(100), userData.email);
         request.input("password_hash",sql.VarChar(255), userData.password_hash);
         request.input("phone_number",sql.VarChar(100), userData.phone_number);
@@ -82,51 +82,60 @@ async function createPatron(userData) {
 //".Transaction" is used because this function consist of 2 queries, with this it ensures that multiple SQL actions that must succeed together.
 async function createVendor(userData) {
     let connection;
-    const transaction = new sql.Transaction();
+    let transaction;
 
      try {
     connection = await sql.connect(dbConfig);
-    transaction.connection = connection;
+    transaction = new sql.Transaction(connection)
 
     await transaction.begin();
 
-    const request1 = new sql.Request(transaction);
+    const userRequest = new sql.Request(transaction);
 
     const userQuery = `
-      INSERT INTO Users (name, email, password_hash, role, phone_number)
-      VALUES (@name, @email, @password_hash, 'vendor', @phone_number);
-    `;
+      INSERT INTO Users (full_name, email, password_hash, role, phone_number)
+      VALUES (@full_name, @email, @password_hash, 'vendor', @phone_number);
 
-    const userResult = await request1
-      .input("name", sql.VarChar(100), userData.name)
+      SELECT CAST(SCOPE_IDENTITY() AS INT) AS user_id;
+    `;
+     const request = await connection.request();
+
+    const userResult = await userRequest
+      .input("full_name", sql.VarChar(100), userData.full_name)
       .input("email", sql.VarChar(100), userData.email)
       .input("password_hash", sql.VarChar(255), userData.password_hash)
       .input("phone_number", sql.VarChar(20), userData.phone_number)
       .query(userQuery);
 
-    const userId = userResult.recordset[0].user_id;
+    const userId = userResult.recordset[0].user_id;;
 
-    const request2 = new sql.Request(transaction);
+    const stallRequest = new sql.Request(transaction);
 
-    const vendorQuery = `
-      INSERT INTO VendorProfiles 
-      (user_id, stall_name, cuisine_type, stall_description, unit_number)
+    const stallQuery = `
+      INSERT INTO Stalls 
+      (vendor_id, hawker_centre_id, stall_name, cuisine_type, description, unit_number)
       VALUES
-      (@user_id, @stall_name, @cuisine_type, @stall_description, @unit_number);
+      (@vendor_id, @hawker_centre_id, @stall_name, @cuisine_type, @description, @unit_number);
+
+      SELECT CAST(SCOPE_IDENTITY() AS INT) AS stall_id;
     `;
 
-    await request2
-      .input("user_id", sql.Int, userId)
+    const stallResult = await stallRequest
+      .input("vendor_id", sql.Int, userId)
       .input("stall_name", sql.VarChar(100), userData.stall_name)
       .input("cuisine_type", sql.VarChar(50), userData.cuisine_type || null)
-      .input("stall_description", sql.VarChar(255), userData.stall_description || null)
+      .input("description", sql.VarChar(255), userData.description|| null)
       .input("unit_number", sql.VarChar(20), userData.unit_number || null)
-      .query(vendorQuery);
+      .input("hawker_centre_id", sql.Int, userData.hawker_centre_id)
+      .query(stallQuery);
 
     await transaction.commit();
 
-    return { user_id: userId };
-    }
+    return {
+      user_id: userId,
+      stall_id: stallResult.recordset[0].stall_id,
+    };
+}
 
     catch(error) {
         await transaction.rollback();

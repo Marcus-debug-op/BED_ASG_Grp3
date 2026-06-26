@@ -2,7 +2,7 @@ const Joi = require("joi");
 
 function validatePatronRegister(req, res, next) {
   const schema = Joi.object({
-    name: Joi.string().min(2).max(100).required(),
+    full_name: Joi.string().min(2).max(100).required(),
     email: Joi.string().email().max(100).required(),
     password: Joi.string().min(8).max(50).required(),
     confirm_password: Joi.string().valid(Joi.ref("password")).required()

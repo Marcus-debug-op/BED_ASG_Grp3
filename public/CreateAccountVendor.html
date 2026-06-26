@@ -3,10 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HawkerHub – Create Account</title>
    <link rel="stylesheet" href="CreateAccVendorPatronStyle.css">
-  <script type="module" src="CreateAccVendor.js"></script>
-<base target="_blank">
 </head>
 
 <body data-auth-role="vendor">
@@ -27,7 +24,12 @@
     <div class="panel-wrap">
       <div class="panel">
         <div class="panel-top">
-          <div class="mini-back">← Back to Selection</div>
+          <button
+            class="mini-back"
+            type="button"
+            onclick="window.location.href='signup.html'">
+            ← Back to Selection
+          </button>
         </div>
 
         <div class="panel-body">
@@ -36,36 +38,58 @@
           <div class="subtitle">Vendor Registration</div>
 
          <div class="segmented" data-role="vendor">
-  <button class="active" id="tabSignUp" type="button">Sign Up</button>
-  <button class="inactive" id="tabSignIn" type="button">Sign In</button>
-</div>
+          <button class="active" id="tabSignUp" type="button">Sign Up</button>
+          <button class="inactive" id="tabSignIn" type="button">Sign In</button>
+        </div>  
 
           <!-- Scrollable inputs container -->
-          <div class="form-scroll">
-            <label for="fullname">Full Name</label>
-            <input id="fullname" type="text" placeholder="" />
+          <form id="vendorRegisterForm">
+            <div class="form-scroll">
+              <label for="name">Full Name</label>
+              <input id="name" type="text" required />
 
-            <label for="email">Email Address</label>
-            <input id="email" type="email" placeholder="" />
+              <label for="email">Email Address</label>
+              <input id="email" type="email" required />
 
-            <label for="phone">Phone Number</label>
-            <input id="phone" type="tel" placeholder="" />
+              <label for="phone_number">Phone Number</label>
+              <input id="phone_number" type="tel" required />
 
-            <label for="password">Password</label>
-            <input id="password" type="password" placeholder="" />
+              <label for="password">Password</label>
+              <input id="password" type="password" required />
 
-            
-            <label for="confirm">Confirm Password</label>
-            <input id="confirm" type="password" placeholder="" />
+              <label for="confirm_password">Confirm Password</label>
+              <input id="confirm_password" type="password" required />
 
-            <button class="submit-btn" id="createBtn" type="button">Create</button>
+              <label for="hawker_centre_id">Hawker Centre</label>
+              <select id="hawker_centre_id" required>
+                <option value="">Select a hawker centre</option>
+              </select>
 
-          </div>
+              <label for="stall_name">Stall Name</label>
+              <input id="stall_name" type="text" required />
+
+              <label for="cuisine_type">Cuisine Type</label>
+              <input id="cuisine_type" type="text" required />
+
+              <label for="description">Stall Description</label>
+              <textarea id="description"></textarea>
+
+              <label for="unit_number">Unit Number</label>
+              <input id="unit_number" type="text" placeholder="#01-12" required />
+
+              <button class="submit-btn" type="submit">Create</button>
+            </div>
+          </form>
+
+          <div id="message"></div>
+
+
         </div>
       </div>
     </div>
   </div>
 
+<script src="CreateAccVendor.js"></script>
 <script src="AuthenticationTabs.js" defer></script>
 </body>
 </html>

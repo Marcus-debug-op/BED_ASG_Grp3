@@ -2,7 +2,7 @@ const Joi = require("joi");
 
 function validateVendorRegister(req, res, next) {
   const schema = Joi.object({
-    name: Joi.string().min(2).max(100).required(),
+    full_name: Joi.string().min(2).max(100).required(),
     email: Joi.string().email().max(100).required(),
     password: Joi.string().min(8).max(50).required(),
     confirm_password: Joi.string().valid(Joi.ref("password")).required()
@@ -13,8 +13,9 @@ function validateVendorRegister(req, res, next) {
 
     stall_name: Joi.string().min(2).max(100).required(),
     cuisine_type: Joi.string().max(50).allow("", null),
-    stall_description: Joi.string().max(255).allow("", null),
-    unit_number: Joi.string().max(20).allow("", null)
+    description: Joi.string().max(255).allow("", null),
+    unit_number: Joi.string().max(20).allow("", null),
+    hawker_centre_id: Joi.number().integer().positive().required(),
   });
 
   const validation = schema.validate(req.body, {

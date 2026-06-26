@@ -14,7 +14,7 @@ async function registerPatron(req, res) {
     const passwordHash = await bcrypt.hash(req.body.password, 10);
 
     const rowsAffected = await registerModel.createPatron( {
-      name: req.body.name,
+      full_name: req.body.full_name,
       email: req.body.email,
       password_hash: passwordHash,
       phone_number: req.body.phone_number
@@ -52,19 +52,27 @@ async function registerVendor(req, res) {
     const passwordHash = await bcrypt.hash(req.body.password, 10);
 
     const newVendor = await registerModel.createVendor({
-      name: req.body.name,
+      full_name: req.body.full_name,
       email: req.body.email,
       password_hash: passwordHash,
       phone_number: req.body.phone_number,
       stall_name: req.body.stall_name,
       cuisine_type: req.body.cuisine_type,
-      stall_description: req.body.stall_description,
-      unit_number: req.body.unit_number
+      description: req.body.description,
+      unit_number: req.body.unit_number,
+      hawker_centre_id: req.body.hawker_centre_id,
     });
 
+     if (!newVendor) {
+      return res.status(400).json({
+        message: "Vendor account was not created."
+      });
+    }
+
     res.status(201).json({
-      message: "Vendor account and stall profile created successfully.",
-      user_id: newVendor.user_id
+      message: "Vendor account and stall created successfully",
+      user_id: newVendor.user_id,
+      stall_id: newVendor.stall_id
     });
   } catch (err) {
     console.error(err);
