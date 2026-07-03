@@ -388,12 +388,11 @@ padding: 24px 24px 24px 32px;
 }
 
 .btn-text {
-    letter-spacing: 0.3px;
+    display: inline-block;
 }
 
 .btn-arrow {
-    font-size: 16px;
-    transition: transform 0.3s ease;
+    display: inline-block;
 }
 
 .more-options-btn:hover .btn-arrow {
@@ -528,22 +527,23 @@ padding: 24px 24px 24px 32px;
    CONTINUE AS GUEST BUTTON (same orange style)
    ---------------------------------------- */
 .guest-btn {
+    width: 300px;          /* same width as More Options */
+    padding: 18px 24px;
+    border: none;
+    border-radius: 40px;
+    background: #ff5a00;
+    color: white;
+    font-size: 20px;
+    font-weight: 600;
+    cursor: pointer;
+
+    /* Fix alignment */
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    padding: 14px 32px;
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-red) 100%);
-    border: none;
-    border-radius: 999px;
-    color: white;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 8px 24px rgba(249, 115, 22, 0.35);
-    transition: all 0.3s ease;
-    min-width: 200px;
-    text-decoration: none;
+
+    margin: 0 auto;
 }
 
 .guest-btn:hover {
