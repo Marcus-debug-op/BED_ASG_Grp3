@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 
 const registerRoute = require("./Routes/registerRoute");
+const authRoute = require("./Routes/authRoute");
 const hawkerCentreRoute = require("./Routes/hawkerCentreRoute");
 
 const app = express();
@@ -12,6 +13,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/api/auth", registerRoute);
+app.use("/api/auth", authRoute);
 app.use("/api/hawkercentres", hawkerCentreRoute);
 
 // Test API route
