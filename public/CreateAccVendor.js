@@ -6,7 +6,7 @@ async function loadHawkerCentres() {
   const select = document.getElementById("hawker_centre_id");
 
   try {
-    const response = await fetch("/api/hawkercentres");
+    const response = await fetch("http://localhost:3000/api/hawkercentres");
 
     if (!response.ok) {
       throw new Error("Unable to load hawker centres.");
