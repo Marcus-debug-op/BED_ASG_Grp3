@@ -7,8 +7,11 @@ async function loginWithRole(req, res, requiredRole) {
   try {
     const { email, password } = req.body;
 
+    console.log("Email received:", email);
+
     const user = await registerModel.findUserAuthByEmail(email);
 
+    console.log("User:", user);
     if (!user) {
       return res.status(401).json({
         message: "Incorrect email or password."
@@ -16,6 +19,7 @@ async function loginWithRole(req, res, requiredRole) {
     }
 
     const passwordMatches = await bcrypt.compare(password, user.password_hash);
+    console.log("Password match:", passwordMatches);
 
     if (!passwordMatches) {
       return res.status(401).json({

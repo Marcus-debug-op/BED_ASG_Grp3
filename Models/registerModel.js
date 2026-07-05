@@ -6,15 +6,18 @@ async function findUserByEmail(email) {
     try {
         connection = await sql.connect(dbConfig);
 
-        const sqlQuery =  `
-        SELECT user_id, full_name, email, role FROM Users WHERE email = @email 
-        `;
+        const sqlQuery = `
+    SELECT user_id, full_name, email, password_hash, role
+    FROM Users
+    WHERE email = @email
+    `;
 
         const request = await connection.request();
         request.input("email",sql.VarChar(100), email);
-        
+
         const result = await request.query(sqlQuery);
 
+        console.log("Rows returned:", result.recordset);
 
         return result.recordset[0];
     }
@@ -22,7 +25,7 @@ async function findUserByEmail(email) {
     catch(error) {
         console.error("Database error:", error);
         throw error;
-    }
+        }
 
     finally{
         if (connection) {
@@ -159,6 +162,7 @@ async function createVendor(userData) {
 
 module.exports = {
   findUserByEmail,
+  findUserAuthByEmail: findUserByEmail,
   createPatron,
   createVendor,
 };
