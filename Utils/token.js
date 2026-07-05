@@ -8,7 +8,7 @@ const GUEST_JWT_EXPIRES_IN = process.env.GUEST_JWT_EXPIRES_IN || "6h";
 // Generates a token for a logged-in, registered user (patron / vendor / officer / operator)
 function generateUserToken(user) {
   const payload = {
-    sub: user.user_id,
+    sub: user.user_id, // "sub" is the JWT subject claim and stores the logged in user's ID.
     email: user.email,
     full_name: user.full_name,
     role: user.role,

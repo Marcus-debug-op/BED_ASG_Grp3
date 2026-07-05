@@ -33,6 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("Login successful");
         localStorage.setItem("token", data.token);
         localStorage.setItem("role", data.user.role);
+        localStorage.setItem("user_id", data.user.user_id);
+        localStorage.setItem("full_name", data.user.full_name);
 
         console.log("Redirecting...");
 
