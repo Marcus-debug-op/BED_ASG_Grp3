@@ -77,7 +77,7 @@ async function getMenuByStallId(stallId) {
     menuRequest.input("stall_id", sql.Int, stallId);
 
     const menuResult = await menuRequest.query(`
-      SELECT menu_item_id, item_name, description, price, category, image_url, is_available
+      SELECT menu_item_id, item_name, description, price, category, image_url, is_available, likes 
       FROM MenuItems
       WHERE stall_id = @stall_id AND is_available = 1
       ORDER BY category, item_name;
