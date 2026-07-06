@@ -22,6 +22,37 @@ async function getStalls(req, res) {
   }
 }
 
+// BED-62: Menu Display API
+// GET /api/stalls/:stallId/menu
+async function getStallMenu(req, res) {
+  try {
+    const stallId = parseInt(req.params.stallId, 10);
+
+    if (Number.isNaN(stallId)) {
+      return res.status(400).json({
+        message: "Invalid stall ID."
+      });
+    }
+
+    const data = await stallModel.getMenuByStallId(stallId);
+
+    if (!data) {
+      return res.status(404).json({
+        message: "Stall not found."
+      });
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Error getting stall menu:", error);
+
+    res.status(500).json({
+      message: "Unable to load menu."
+    });
+  }
+}
+
 module.exports = {
-  getStalls
+  getStalls,
+  getStallMenu
 };

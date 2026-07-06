@@ -18,7 +18,7 @@ app.use("/api/auth", registerRoute); // Register
 app.use("/api/auth", authRoute);// Login & Authenticate
 app.use("/api/hawkercentres", hawkerCentreRoute); // Retrieve Hawker centres
 app.use("/api/vendor", vendorStallRoute); // Available stalls you own as a vendor
-app.use("/api/stalls", stallRoute); // Public stall listing + menu display (BED-61)
+app.use("/api/stalls", stallRoute); // // Public stall listing + menu display (BED-61, BED-62)
 
 // Test API route
 app.get("/api/test", (req, res) => {

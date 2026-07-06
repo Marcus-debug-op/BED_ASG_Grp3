@@ -50,6 +50,57 @@ async function getAllStalls(filters = {}) {
   }
 }
 
+// BED-62: Menu Display API
+// Returns null if the stall doesn't exist / isn't active, so the controller can 404.
+async function getMenuByStallId(stallId) {
+  let connection;
+
+  try {
+    connection = await sql.connect(dbConfig);
+
+    const stallRequest = connection.request();
+    stallRequest.input("stall_id", sql.Int, stallId);
+
+    const stallResult = await stallRequest.query(`
+      SELECT s.stall_id, s.stall_name, s.cuisine_type, s.description, s.unit_number, h.centre_name
+      FROM Stalls s
+      INNER JOIN HawkerCentres h ON s.hawker_centre_id = h.hawker_centre_id
+      WHERE s.stall_id = @stall_id AND s.is_active = 1;
+    `);
+
+    if (stallResult.recordset.length === 0) {
+      return null;
+    }
+
+    const menuRequest = connection.request();
+    menuRequest.input("stall_id", sql.Int, stallId);
+
+    const menuResult = await menuRequest.query(`
+      SELECT menu_item_id, item_name, description, price, category, image_url, is_available
+      FROM MenuItems
+      WHERE stall_id = @stall_id AND is_available = 1
+      ORDER BY category, item_name;
+    `);
+
+    return {
+      stall: stallResult.recordset[0],
+      menu_items: menuResult.recordset
+    };
+  }
+
+  catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  }
+
+  finally {
+    if (connection) {
+      await connection.close();
+    }
+  }
+}
+
 module.exports = {
-  getAllStalls
+  getAllStalls,
+  getMenuByStallId
 };
