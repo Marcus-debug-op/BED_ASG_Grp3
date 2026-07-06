@@ -11,6 +11,7 @@ async function getAllStalls(filters = {}) {
 
     let sqlQuery = `
       SELECT s.stall_id, s.stall_name, s.cuisine_type, s.description, s.unit_number,
+             s.operating_hours, s.price_range, s.phone_number, s.image_url,
              h.hawker_centre_id, h.centre_name, h.area
       FROM Stalls s
       INNER JOIN HawkerCentres h ON s.hawker_centre_id = h.hawker_centre_id

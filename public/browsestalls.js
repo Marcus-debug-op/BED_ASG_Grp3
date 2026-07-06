@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const halal = false;
         const vegetarian = false;
 
-        const imageUrl = "img/placeholder.jpg";
+        const imageUrl = s.image_url || "img/placeholder.jpg";
         const shortDesc = s.description || "";
 
         return `
