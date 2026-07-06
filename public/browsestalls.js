@@ -1,44 +1,21 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  query,
-  orderBy,
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDo8B0OLtAj-Upfz7yNFeGz4cx3KWLZLuQ",
-  authDomain: "hawkerhub-64e2d.firebaseapp.com",
-  databaseURL: "https://hawkerhub-64e2d-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "hawkerhub-64e2d",
-  storageBucket: "hawkerhub-64e2d.firebasestorage.app",
-  messagingSenderId: "722888051277",
-  appId: "1:722888051277:web:59926d0a54ae0e4fe36a04"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
 document.addEventListener("DOMContentLoaded", async () => {
   const stallGrid = document.getElementById("stallGrid");
   const filterBtn = document.getElementById("filterBtn");
-const filterMenu = document.getElementById("filterMenu");
+  const filterMenu = document.getElementById("filterMenu");
 
-filterBtn?.addEventListener("click", (e) => {
-  e.stopPropagation();
-  filterMenu.classList.toggle("active");
-});
+  filterBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    filterMenu.classList.toggle("active");
+  });
 
-// Close menu when clicking outside
-document.addEventListener("click", () => {
-  filterMenu.classList.remove("active");
-});
+  // Close menu when clicking outside
+  document.addEventListener("click", () => {
+    filterMenu.classList.remove("active");
+  });
 
-filterMenu?.addEventListener("click", (e) => {
-  e.stopPropagation();
-});
-
-
+  filterMenu?.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
 
   const searchInput = document.querySelector(".search-input");
   const filterSelect = document.querySelector(".filter-select");
@@ -60,9 +37,31 @@ filterMenu?.addEventListener("click", (e) => {
   vegCheck?.addEventListener("change", filterStalls);
 
   async function loadStalls() {
-    const q = query(collection(db, "stalls"), orderBy("name"));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    try {
+      // 1. Fetch from your Express backend
+      const response = await fetch('/api/stalls'); 
+      const sqlData = await response.json();
+      
+      // 2. Map the SQL column names to match your existing frontend logic
+      return sqlData.map((s) => ({ 
+        id: s.stall_id, 
+        name: s.stall_name,          // SQL uses stall_name
+        cuisine: s.cuisine_type,     // SQL uses cuisine_type
+        shortDesc: s.description,    // SQL uses description
+        
+        // These fields might not exist in your SQL database yet, 
+        // so we provide safe fallback values so your frontend doesn't break
+        rating: 0, 
+        reviews: 0,
+        halal: false,
+        vegetarian: false,
+        imageURL: "img/placeholder.jpg"
+      }));
+
+    } catch (error) {
+      console.error("Error fetching stalls from backend:", error);
+      return []; // Return empty array if it fails
+    }
   }
 
   function renderStalls(list) {
