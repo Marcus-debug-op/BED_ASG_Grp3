@@ -1,44 +1,28 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  query,
-  orderBy,
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// BED-49: Integrate Browse Stalls Page with Stall Search and Filter API
+//
+// This page now calls the backend Stall Listing API (BED-61)
+// Search + cuisine filtering are sent to the server as query params.
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDo8B0OLtAj-Upfz7yNFeGz4cx3KWLZLuQ",
-  authDomain: "hawkerhub-64e2d.firebaseapp.com",
-  databaseURL: "https://hawkerhub-64e2d-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "hawkerhub-64e2d",
-  storageBucket: "hawkerhub-64e2d.firebasestorage.app",
-  messagingSenderId: "722888051277",
-  appId: "1:722888051277:web:59926d0a54ae0e4fe36a04"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const CUISINE_ALL = "All";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const stallGrid = document.getElementById("stallGrid");
   const filterBtn = document.getElementById("filterBtn");
-const filterMenu = document.getElementById("filterMenu");
+  const filterMenu = document.getElementById("filterMenu");
 
-filterBtn?.addEventListener("click", (e) => {
-  e.stopPropagation();
-  filterMenu.classList.toggle("active");
-});
+  filterBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    filterMenu.classList.toggle("active");
+  });
 
-// Close menu when clicking outside
-document.addEventListener("click", () => {
-  filterMenu.classList.remove("active");
-});
+  // Close menu when clicking outside
+  document.addEventListener("click", () => {
+    filterMenu?.classList.remove("active");
+  });
 
-filterMenu?.addEventListener("click", (e) => {
-  e.stopPropagation();
-});
-
-
+  filterMenu?.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
 
   const searchInput = document.querySelector(".search-input");
   const filterSelect = document.querySelector(".filter-select");
@@ -46,59 +30,72 @@ filterMenu?.addEventListener("click", (e) => {
   const vegCheck = document.getElementById("vegCheck");
   const countText = document.querySelector(".count-text");
 
-  // 1) Load stalls
-  const stalls = await loadStalls();
-  renderStalls(stalls);
+  // 1) Load stalls from the backend (initial load = no filters)
+  await refreshStalls();
 
-  // 2) Filter after render
-  filterStalls();
+  // 2) Hook filters - search/cuisine re-query the server, halal/veg filter client-side
+  searchInput?.addEventListener("input", debounce(refreshStalls, 300));
+  filterSelect?.addEventListener("change", refreshStalls);
+  halalCheck?.addEventListener("change", applyClientOnlyFilters);
+  vegCheck?.addEventListener("change", applyClientOnlyFilters);
 
-  // Hook filters
-  searchInput?.addEventListener("input", filterStalls);
-  filterSelect?.addEventListener("change", filterStalls);
-  halalCheck?.addEventListener("change", filterStalls);
-  vegCheck?.addEventListener("change", filterStalls);
+  async function refreshStalls() {
+    const params = {};
 
-  async function loadStalls() {
-    const q = query(collection(db, "stalls"), orderBy("name"));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const search = (searchInput?.value || "").trim();
+    if (search) params.search = search;
+
+    const cuisine = filterSelect?.value || CUISINE_ALL;
+    if (cuisine !== CUISINE_ALL) params.cuisine = cuisine;
+
+    try {
+      const stalls = await loadStalls(params);
+      renderStalls(stalls);
+      applyClientOnlyFilters();
+    } catch (err) {
+      console.error("Failed to load stalls:", err);
+      stallGrid.innerHTML = `<p style="padding:12px;">Unable to load stalls right now.</p>`;
+      if (countText) countText.textContent = "0 stalls found";
+    }
+  }
+
+  async function loadStalls(params) {
+    const qs = new URLSearchParams(params).toString();
+    const res = await fetch(`/api/stalls${qs ? `?${qs}` : ""}`);
+
+    if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+    return res.json();
   }
 
   function renderStalls(list) {
     stallGrid.innerHTML = list
       .map((s) => {
-        const cuisine = (s.cuisine || "all").toLowerCase();
-        const rating = Number(s.rating);
-        const reviews = Number(s.reviews);
+        const cuisine = (s.cuisine_type || "all").toLowerCase();
 
-        const halal = !!s.halal;
-        const vegetarian = !!s.vegetarian;
+        // NOTE: halal / vegetarian aren't in the DB yet, defaulting to false
+        // until BED-61's schema is extended (see the guide's optional migration).
+        const halal = false;
+        const vegetarian = false;
 
-        // fallback values so page never breaks
-        const imageUrl = s.imageURL || "img/placeholder.jpg";
-        const shortDesc = s.shortDesc || "";
+        const imageUrl = "img/placeholder.jpg";
+        const shortDesc = s.description || "";
 
         return `
           <article class="stall-card"
-            data-name="${escapeAttr((s.name || "").toLowerCase())}"
+            data-name="${escapeAttr((s.stall_name || "").toLowerCase())}"
             data-category="${escapeAttr(cuisine)}"
             data-halal="${halal}"
             data-vegetarian="${vegetarian}"
           >
-            <img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(s.name || "Stall")}" class="stall-img" />
+            <img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(s.stall_name || "Stall")}" class="stall-img" />
             <div class="stall-body">
-              <h3>${escapeHtml(s.name || "Unnamed Stall")}</h3>
+              <h3>${escapeHtml(s.stall_name || "Unnamed Stall")}</h3>
               <div class="stall-meta">
-                ${escapeHtml(cap(cuisine))}  
-            <img src="img/star.png" class="rating-star" alt="rating" >
-            ${isFinite(rating) ? rating.toFixed(1) : "—"}
-
-               
+                ${escapeHtml(cap(cuisine))} • ${escapeHtml(s.centre_name || "")}
               </div>
               <p class="stall-desc">${escapeHtml(shortDesc)}</p>
 
-              <a class="view-btn" href="stalldetails.html?stall=${encodeURIComponent(s.id)}">View</a>
+              <a class="view-btn" href="stalldetails.html?stall=${encodeURIComponent(s.stall_id)}">View</a>
             </div>
           </article>
         `;
@@ -106,9 +103,9 @@ filterMenu?.addEventListener("click", (e) => {
       .join("");
   }
 
-  function filterStalls() {
-    const searchTerm = (searchInput?.value || "").toLowerCase().trim();
-    const selectedCuisine = (filterSelect?.value || "all").toLowerCase();
+  // Halal/veg checkboxes can only filter what's already on the page
+  // (client-side) since the server doesn't have that data to filter on yet.
+  function applyClientOnlyFilters() {
     const wantHalal = !!halalCheck?.checked;
     const wantVeg = !!vegCheck?.checked;
 
@@ -116,17 +113,13 @@ filterMenu?.addEventListener("click", (e) => {
     let visible = 0;
 
     cards.forEach((card) => {
-      const name = card.dataset.name || "";
-      const category = card.dataset.category || "";
       const isHalal = card.dataset.halal === "true";
       const isVeg = card.dataset.vegetarian === "true";
 
-      const okSearch = name.includes(searchTerm);
-      const okCuisine = selectedCuisine === "all" || category === selectedCuisine;
       const okHalal = !wantHalal || isHalal;
       const okVeg = !wantVeg || isVeg;
 
-      const show = okSearch && okCuisine && okHalal && okVeg;
+      const show = okHalal && okVeg;
       card.style.display = show ? "" : "none";
       if (show) visible++;
     });
@@ -148,5 +141,13 @@ filterMenu?.addEventListener("click", (e) => {
   }
   function escapeAttr(str = "") {
     return escapeHtml(str);
+  }
+
+  function debounce(fn, delay) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delay);
+    };
   }
 });
