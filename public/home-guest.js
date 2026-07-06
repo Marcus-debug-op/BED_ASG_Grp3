@@ -1,87 +1,29 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  query,
-  orderBy,
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDo8B0OLtAj-Upfz7yNFeGz4cx3KWLZLuQ",
-  authDomain: "hawkerhub-64e2d.firebaseapp.com",
-  databaseURL:
-    "https://hawkerhub-64e2d-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "hawkerhub-64e2d",
-  storageBucket: "hawkerhub-64e2d.firebasestorage.app",
-  messagingSenderId: "722888051277",
-  appId: "1:722888051277:web:59926d0a54ae0e4fe36a04",
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// BED-50: Integrate Home Page with Stall Listing API
+//
+// This page now calls the backend Stall Listing API (BED-61) instead of Firestore.
+// NOTE: there's no popularity/likes/order-count data on Stalls yet, so "trending"
+// is currently just the first 3 stalls returned (alphabetical, per BED-61's ORDER BY).
+// Swap the slice(0, 3) below for a real ranking once that data exists (see guide).
 
 document.addEventListener("DOMContentLoaded", async () => {
   const trendingGrid = document.getElementById("trendingGrid");
   if (!trendingGrid) return;
 
   try {
-    const stalls = await loadStallsSameAsBrowse();
-    const trending = getTopTrendingByPopularity(stalls, 3);
+    const stalls = await loadStalls();
+    const trending = stalls.slice(0, 3);
     renderTrending(trendingGrid, trending);
     wireTrendingClicks(trendingGrid);
-
-  
   } catch (err) {
     console.error("Home trending failed to load:", err);
     trendingGrid.innerHTML = `<p style="padding:12px;">Unable to load trending stalls right now.</p>`;
   }
 });
 
-async function loadStallsSameAsBrowse() {
-  const q = query(collection(db, "stalls"), orderBy("name"));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-}
-
-function getPopularityScore(stall) {
-  const likesCount = toNumber(stall.likesCount);
-  if (Number.isFinite(likesCount)) return likesCount;
-
-  const totalLikes = toNumber(stall.totalLikes);
-  if (Number.isFinite(totalLikes)) return totalLikes;
-
-  const ordersCount = toNumber(stall.ordersCount);
-  if (Number.isFinite(ordersCount)) return ordersCount;
-
-  const popularity = toNumber(stall.popularity);
-  if (Number.isFinite(popularity)) return popularity;
-
-  const reviews = toNumber(stall.reviews);
-  if (Number.isFinite(reviews)) return reviews;
-
-  return 0;
-}
-
-function getTopTrendingByPopularity(stalls, n) {
-  return [...stalls]
-    .sort((a, b) => {
-      const ap = getPopularityScore(a);
-      const bp = getPopularityScore(b);
-      if (bp !== ap) return bp - ap;
-
-      const ar = toNumber(a.rating);
-      const br = toNumber(b.rating);
-      if (Number.isFinite(br) && Number.isFinite(ar) && br !== ar) return br - ar;
-
-      const av = toNumber(a.reviews);
-      const bv = toNumber(b.reviews);
-      if (Number.isFinite(bv) && Number.isFinite(av) && bv !== av) return bv - av;
-
-      return 0;
-    })
-    .slice(0, n);
+async function loadStalls() {
+  const res = await fetch("/api/stalls");
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  return res.json();
 }
 
 function renderTrending(container, list) {
@@ -92,22 +34,10 @@ function renderTrending(container, list) {
 
   container.innerHTML = list
     .map((s) => {
-      const name = s.name || "Unnamed Stall";
-      const cuisine = (s.cuisine || "Food").toString();
-      const rating = toNumber(s.rating);
-      const reviews = toNumber(s.reviews);
-      const pop = getPopularityScore(s);
-
-      const imageUrl = s.imageURL || "img/placeholder.jpg";
-      const desc = s.shortDesc || "";
-
-      const ratingText = Number.isFinite(rating) ? rating.toFixed(1) : "—";
-      const reviewsText =
-        Number.isFinite(reviews) && reviews > 0 ? `${reviews} reviews` : "reviews";
-      const popText = `${pop} popular`;
-
-      // Use the same star image as BrowseStalls if you want:
-      const starsHTML = `<img src="img/star.png" class="rating-star" alt="rating"> ${ratingText}`;
+      const name = s.stall_name || "Unnamed Stall";
+      const cuisine = s.cuisine_type || "Food";
+      const imageUrl = "img/placeholder.jpg";
+      const desc = s.description || "";
 
       return `
         <article class="food-card">
@@ -115,14 +45,14 @@ function renderTrending(container, list) {
           <div class="food-body">
             <div class="food-title">${escapeHtml(name)}</div>
             <div class="food-meta">
-              ${escapeHtml(cuisine)} ${starsHTML} (${escapeHtml(reviewsText)}) • ${escapeHtml(popText)}
+              ${escapeHtml(cuisine)} • ${escapeHtml(s.centre_name || "")}
             </div>
             <p class="food-desc">${escapeHtml(desc)}</p>
             <button
               class="food-btn"
               type="button"
               data-i18n="btn_view"
-              data-href="stalldetails.html?stall=${encodeURIComponent(s.id)}">
+              data-href="stalldetails.html?stall=${encodeURIComponent(s.stall_id)}">
               View
             </button>
           </div>
@@ -139,11 +69,6 @@ function wireTrendingClicks(container) {
     const href = btn.getAttribute("data-href");
     if (href) window.location.href = href;
   });
-}
-
-function toNumber(v) {
-  const num = Number(v);
-  return Number.isFinite(num) ? num : NaN;
 }
 
 function escapeHtml(str = "") {
