@@ -1,9 +1,4 @@
 
-import { auth, fs } from "./firebase-init.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-
 function setNavTarget(el, url) {
   if (!el) return;
 
@@ -62,71 +57,68 @@ function initMenuUI() {
 }
 
 export function initNavbarAuth() {
-
   initMenuUI();
 
-  const signinBtn = document.getElementById("signinBtn"); // top right
-  const dashboardAuthBtn = document.getElementById("dashboardAuthBtn"); // inside menu
+  const signinBtn = document.getElementById("signinBtn");
+  const dashboardAuthBtn = document.getElementById("dashboardAuthBtn");
 
+  const token = localStorage.getItem("token");
+  const savedUser = localStorage.getItem("user");
 
+  let user = null;
 
-  onAuthStateChanged(auth, async (user) => {
-    // ---------------------------
-    // Not logged in
-    // ---------------------------
-    if (!user) {
-      if (signinBtn) {
-        signinBtn.textContent = "Sign in";
-        setNavTarget(signinBtn, "signup.html");
-      }
+  try {
+    user = savedUser ? JSON.parse(savedUser) : null;
+  } catch (error) {
+    console.error("Unable to read saved user:", error);
+  }
 
-      if (dashboardAuthBtn) {
-        dashboardAuthBtn.textContent = "Sign in";
-        dashboardAuthBtn.onclick = () => (window.location.href = "signup.html");
-      }
-
-      applyRoleBasedNav(null);
-      return;
-    }
-
-    // ---------------------------
-    // Logged in
-    // ---------------------------
-    let profile = null;
-    try {
-      profile = await fetchUserProfile(user.uid);
-    } catch (e) {
-      console.warn("Navbar: failed to load Firestore profile:", e);
-    }
-
-    const role = (profile?.role || "").toString().toLowerCase() || "patron"; // Default to patron
-    
-    // 1. DETERMINE TARGET URL BASED ON ROLE
-    let targetUrl = "PatronProfile.html"; // Default for customers
-    if (role === "vendor") {
-        targetUrl = "VenderAccount.html"; // Redirect vendors here
-    }
-
-    const fullName =
-      profile?.fullName ||
-      profile?.fullname ||
-      user.displayName ||
-      "My Profile";
-
+  // No SQL/JWT login stored
+  if (!token || !user) {
     if (signinBtn) {
-      signinBtn.textContent = fullName;
-      setNavTarget(signinBtn, targetUrl); // Use the dynamic URL
+      signinBtn.textContent = "Sign in";
+      setNavTarget(signinBtn, "signup.html");
     }
 
     if (dashboardAuthBtn) {
-      dashboardAuthBtn.textContent = "Sign out";
-      dashboardAuthBtn.onclick = async () => {
-        if (!confirm("Sign out?")) return;
-        await signOut(auth);
-        window.location.href = "index.html"; // Redirect to home on logout
+      dashboardAuthBtn.textContent = "Sign in";
+      dashboardAuthBtn.onclick = () => {
+        window.location.href = "signup.html";
       };
     }
 
-    applyRoleBasedNav(role);
-  });
+    applyRoleBasedNav(null);
+    return;
+  }
+
+  const role = String(user.role || "patron").toLowerCase();
+  const fullName = user.full_name || "My Profile";
+
+  let targetUrl = "PatronProfile.html";
+
+  if (role === "vendor") {
+    targetUrl = "VendorDashboard.html";
+  }
+
+  if (signinBtn) {
+    signinBtn.textContent = fullName;
+    setNavTarget(signinBtn, targetUrl);
+  }
+
+  if (dashboardAuthBtn) {
+    dashboardAuthBtn.textContent = "Sign out";
+
+    dashboardAuthBtn.onclick = () => {
+      if (!confirm("Sign out?")) return;
+
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("user");
+
+      window.location.href = "index.html";
+    };
+  }
+
+  applyRoleBasedNav(role);
 }
+

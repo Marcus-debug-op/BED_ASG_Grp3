@@ -1,4 +1,3 @@
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 const overlay = document.getElementById("guestPromptOverlay");
 const closeBtn = document.getElementById("guestPromptClose");
 const guestBtn = document.getElementById("guestPromptGuestBtn");
@@ -32,17 +31,14 @@ if (overlay){
   });
 }
 
-// Firebase auth check
-const auth = getAuth();
-onAuthStateChanged(auth, (user) => {
-  // Logged in => never show
-  if (user) {
-    if (overlay) overlay.classList.add("hidden");
-    return;
-  }
+// Check SQL/JWT login stored after patron signs in
+const token = localStorage.getItem("token");
+const savedUser = localStorage.getItem("user");
 
-  // Not logged in => show unless hidden in this tab session
-  if (!hiddenThisSession()) {
-    showPrompt();
-  }
-});
+if (token && savedUser) {
+  // Logged in through SQL backend, so do not show guest prompt
+  if (overlay) overlay.classList.add("hidden");
+} else if (!hiddenThisSession()) {
+  // No SQL login found, so show guest prompt
+  showPrompt();
+}
