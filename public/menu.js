@@ -31,7 +31,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         menuContainer.innerHTML = data.menu_items.map(item => {
-            // FIX: Wrap the <img> in the 'image-container' div defined in Menu.css
             // This applies the 220px height and object-fit: cover styles correctly
             const imageHtml = item.image_url 
                 ? `<div class="image-container"><img src="${escapeAttr(item.image_url)}" alt="${escapeHtml(item.item_name)}" /></div>` 
@@ -45,10 +44,51 @@ document.addEventListener("DOMContentLoaded", async () => {
                         <p class="desc">${escapeHtml(item.description || "")}</p>
                         <p class="price">$${parseFloat(item.price).toFixed(2)}</p>
                         <p class="likes">❤️ ${item.likes !== undefined ? item.likes : 0} likes</p>
+                        <!-- Add-to-cart button. The dish's details ride in data-* attributes
+                             so the click handler can read them without another API call. -->
+                        <button class="add-to-cart"
+                                data-id="${item.menu_item_id}"
+                                data-name="${escapeAttr(item.item_name)}"
+                                data-price="${item.price}"
+                                data-image="${escapeAttr(item.image_url || "")}">
+                          Add to Cart
+                        </button>
                     </div>
                 </div>
             `;
         }).join("");
+
+         // One listener on the container handles every card's button (event delegation),
+        // so we don't attach a separate listener to each card.
+        menuContainer.addEventListener("click", (e) => {
+            // Only react if an add-to-cart button (or something inside it) was clicked.
+            const btn = e.target.closest(".add-to-cart");
+            if (!btn) return;
+
+            // Build the item using the exact keys ScriptCart.js's normalizeItem expects:
+            // id, name, price, qty (+ stallId so the cart key is unique per stall).
+            const item = {
+                id: btn.dataset.id,               // menu_item_id
+                name: btn.dataset.name,           // dish name
+                price: Number(btn.dataset.price), // string attribute -> number
+                qty: 1,                           // adding one at a time
+                stallId: stallId,                  // current stall from the URL
+                img: btn.dataset.image        
+            };
+
+            // Read the shared cart, add or increment this item, then save it back.
+            const cart = readCart();                          // from ScriptCart.js
+            const existing = cart.find(c => c.id === item.id); // already in cart?
+            if (existing) {
+                existing.qty += 1;                            // bump quantity
+            } else {
+                cart.push(item);                              // add new line
+            }
+            saveCart(cart);                                    // from ScriptCart.js
+
+            // Refresh the little cart count badge in the nav.
+            if (typeof updateCartDot === "function") updateCartDot();
+        });
 
     } catch (err) {
         console.error("Error loading menu:", err);
