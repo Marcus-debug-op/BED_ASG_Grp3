@@ -1,0 +1,3 @@
+ALTER TABLE MenuItems
+ADD likes INT DEFAULT 0;
+GO
