@@ -30,15 +30,13 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Response:", data);
 
       if (response.ok) {
-        console.log("Login successful");
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("role", data.user.role);
-        localStorage.setItem("user_id", data.user.user_id);
-        localStorage.setItem("full_name", data.user.full_name);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("role", data.user.role);
+      localStorage.setItem("user", JSON.stringify(data.user));
 
         console.log("Redirecting...");
 
-        window.location.href = "VendorStallDetails.html";
+        window.location.href = "VendorDashboard.html";
       } else {
         alert(data.message);
       }
