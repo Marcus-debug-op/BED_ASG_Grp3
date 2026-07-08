@@ -12,6 +12,10 @@ if (!token || !savedUser) {
   document.getElementById("profileEmail").textContent =
     user.email || "-";
 
+  
+  document.getElementById("profilePhone").textContent =
+  user.phone_number || "-"; // Marcus added this to for the profile details in profile page - 7/7 
+  
   const logoutBtn = document.querySelector(".logout-btn");
 
   if (logoutBtn) {
