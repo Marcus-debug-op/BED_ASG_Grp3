@@ -1,23 +1,11 @@
 const orderModel = require("../Models/orderModel");
 
-// POST /api/orders -> validate the request, then create the order.
+// POST /api/orders -> create the order (validation handled by validateOrder middleware).
 async function createOrder(req, res) {
   try {
-    // Identify the patron from their token and read the order from the body.
+    // Identify the patron from their token and read the validated order body.
     const patronId = req.user.sub;
     const { stall_id, items } = req.body;
-
-    // Reject requests with no stall or an empty items array.
-    if (!stall_id || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: "stall_id and a non-empty items array are required." });
-    }
-
-    // Reject any line missing an id or with a non-positive quantity.
-    for (const item of items) {
-      if (!item.menu_item_id || !item.quantity || item.quantity <= 0) {
-        return res.status(400).json({ message: "Each item needs a valid menu_item_id and quantity > 0." });
-      }
-    }
 
     // Create the order; the model flags an invalid/unavailable item.
     const result = await orderModel.createOrder(patronId, stall_id, items);
