@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 
+// Routes
 const registerRoute = require("./Routes/registerRoute");
 const authRoute = require("./Routes/authRoute");
 const hawkerCentreRoute = require("./Routes/hawkerCentreRoute");
@@ -8,6 +9,7 @@ const vendorStallRoute = require("./Routes/vendorStallRoute");
 const menuItemRoute = require("./Routes/menuItemRoute");
 const stallRoute = require("./Routes/stallRoute");
 const orderRoute = require("./Routes/orderRoute"); 
+const profileRoute = require("./Routes/profileRoute");
 
 const app = express();
 
@@ -23,6 +25,7 @@ app.use("/api/vendor", vendorStallRoute); // Available stalls you own as a vendo
 app.use("/api/vendor/menu", menuItemRoute); // Vendor menu item management (CRUD + availability)
 app.use("/api/stalls", stallRoute); // // Public stall listing + menu display (BED-61, BED-62)
 app.use("/api/orders", orderRoute); // Order creation + status
+app.use("/api/profile", profileRoute); // Profile page(Patron only for now)
 
 // Test API route
 app.get("/api/test", (req, res) => {

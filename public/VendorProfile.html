@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vendor Profile</title>
+
+  <link rel="stylesheet" href="Profile.css">
+  <link rel="stylesheet" href="topnav.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+  <header class="profile-header">
+    <div class="header-content">
+      <h1>Vendor Profile</h1>
+      <p>Manage your vendor account and business details</p>
+    </div>
+
+    <div class="banner-tabs">
+      <a href="VendorProfile.html" class="active">Profile</a>
+      <a href="VendorStallDetails.html">My Stalls</a>
+      <a href="VendorDashboard.html">Dashboard</a>
+    </div>
+  </header>
+
+  <main class="main-body">
+    <div class="content-wrapper">
+
+      <aside class="left-sidebar">
+        <div class="profile-card">
+          <div class="avatar-container">
+            <label for="profileImageFileInput" class="profile-image-wrapper">
+              <img id="profileImage" src="img/avatars/default-profile.png" alt="Profile Picture">
+              <span class="profile-image-overlay">Change</span>
+            </label>
+
+            <input id="profileImageFileInput" type="file" accept="image/*" hidden>
+
+            <button id="updateProfileImageBtn" type="button" class="save-profile-picture-btn" style="display:none;">
+              Save Profile Picture
+            </button>
+          </div>
+
+          <div class="info-item">
+            <label>Name</label>
+            <p><i class="fa-regular fa-user"></i> <span id="profileName">-</span></p>
+          </div>
+
+          <div class="info-item">
+            <label>Email</label>
+            <p><i class="fa-regular fa-envelope"></i> <span id="profileEmail">-</span></p>
+          </div>
+
+          <div class="info-item">
+            <label>Phone Number</label>
+            <p><i class="fa-solid fa-phone"></i> <span id="profilePhone">-</span></p>
+          </div>
+
+          <button class="edit-profile-btn" type="button" onclick="window.location.href='EditVendorProfile.html'">
+            Edit Profile
+        </button>
+
+          <button class="logout-btn" type="button">Logout</button>
+        </div>
+      </aside>
+
+      <section class="discount-section">
+        <h2 class="section-title">
+          Vendor Tools
+        </h2>
+
+        <div class="voucher-card">
+          <div class="vc-details">
+            <h3>My Stalls</h3>
+            <p class="offer">View and manage stalls linked to your account</p>
+          </div>
+          <div class="vc-actions">
+            <a class="redeem-btn tool-link" href="VendorStallDetails.html">Open</a>
+          </div>
+        </div>
+
+        <div class="voucher-card">
+          <div class="vc-details">
+            <h3>Dashboard</h3>
+            <p class="offer">View sales, menu items, and analytics</p>
+          </div>
+          <div class="vc-actions">
+            <a class="redeem-btn tool-link" href="VendorDashboard.html">Open</a>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script type="module" src="navbar-init.js"></script>
+  <script src="VendorProfile.js"></script>
+</body>
+</html>

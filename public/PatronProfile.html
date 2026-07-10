@@ -29,8 +29,20 @@
             <aside class="left-sidebar">
                 <div class="profile-card">
                     <div class="avatar-container">
-                        <img src="/img/profile.jpg" alt="Profile Picture" class="avatar-img">
+                        
+                        <label for="profileImageFileInput" class="profile-image-wrapper">
+                            <img id="profileImage" src="img/avatars/default-profile.png" alt="Profile Picture"><!-- everyone starts with the same default picture unless their database row has another image URL-->
+                            <span class="profile-image-overlay">Change</span>
+
+                        </label>
+
+                        <input id="profileImageFileInput" type="file" accept="image/*" hidden>
+                        <button id="updateProfileImageBtn" type="button" class="save-profile-picture-btn" style="display: none;">
+                            Save Profile Picture
+                        </button>
                     </div>
+
+                    
 
                     <div class="info-item">
                         <label>Name</label>

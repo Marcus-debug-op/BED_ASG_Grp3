@@ -97,7 +97,7 @@ export function initNavbarAuth() {
   let targetUrl = "PatronProfile.html";
 
   if (role === "vendor") {
-    targetUrl = "VendorDashboard.html";
+    targetUrl = "VendorProfile.html";
   }
 
   if (signinBtn) {
