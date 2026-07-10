@@ -29,8 +29,20 @@
             <aside class="left-sidebar">
                 <div class="profile-card">
                     <div class="avatar-container">
-                        <img src="/img/profile.jpg" alt="Profile Picture" class="avatar-img">
+                        
+                        <label for="profileImageFileInput" class="profile-image-wrapper">
+                            <img id="profileImage" src="img/avatars/default-profile.png" alt="Profile Picture"><!-- everyone starts with the same default picture unless their database row has another image URL-->
+                            <span class="profile-image-overlay">Change</span>
+
+                        </label>
+
+                        <input id="profileImageFileInput" type="file" accept="image/*" hidden>
+                        <button id="updateProfileImageBtn" type="button" class="save-profile-picture-btn" style="display: none;">
+                            Save Profile Picture
+                        </button>
                     </div>
+
+                    
 
                     <div class="info-item">
                         <label>Name</label>
@@ -42,6 +54,21 @@
                         <p><i class="fa-regular fa-envelope"></i> <span id="profileEmail">-</span></p>
                     </div>
 
+                    <div class="info-item">
+                        <label>Phone Number</label>
+                        <p>
+                            <i class="fa-solid fa-phone"></i>
+                            <span id="profilePhone">-</span>
+                        </p>
+                        </div>
+
+                    <button
+                        class="edit-profile-btn"
+                        type="button"
+                        onclick="window.location.href='EditProfile.html'">
+                        Edit Profile
+                    </button>
+                    
                     <button class="logout-btn">Logout</button>
                 </div>
             </aside>

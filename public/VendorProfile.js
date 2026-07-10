@@ -1,9 +1,16 @@
 const token = localStorage.getItem("token");
+const savedUser = localStorage.getItem("user");
 
-if (!token) {
-  window.location.href = "signup.html";
+if (!token || !savedUser) {
+  window.location.href = "SignInVendor.html";
 } else {
-  loadProfile();
+  const user = JSON.parse(savedUser);
+
+  if (user.role !== "vendor") {
+    window.location.href = "index.html";
+  } else {
+    loadProfile();
+  }
 }
 
 async function loadProfile() {
@@ -33,9 +40,7 @@ async function loadProfile() {
       profile.profile_image_url || "img/avatars/default-profile.png";
 
   } catch (error) {
-    console.error("Profile loading failed:", error);
-    // Keep this commented while debugging so the page does not suddenly redirect
-    // window.location.href = "signup.html";
+    console.error("Vendor profile loading failed:", error);
   }
 }
 
@@ -50,9 +55,7 @@ if (fileInput) {
   fileInput.addEventListener("change", () => {
     const file = fileInput.files[0];
 
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     if (!file.type.startsWith("image/")) {
       alert("Please choose an image file.");
@@ -97,12 +100,11 @@ if (updateProfileImageBtn) {
       });
 
       const data = await response.json();
-      
-      //if token = expired --> sign up page
+
       if (response.status === 401 || response.status === 403) {
         alert("Your session has expired. Please log in again.");
         localStorage.clear();
-        window.location.href = "signup.html";
+        window.location.href = "SignInVendor.html";
         return;
       }
 
@@ -150,11 +152,4 @@ if (logoutBtn) {
 
     window.location.href = "index.html";
   });
-}
-
-const discountContainer = document.getElementById("discount-container");
-
-if (discountContainer) {
-  discountContainer.innerHTML =
-    "<p>Discount codes will be loaded from the backend soon.</p>";
 }

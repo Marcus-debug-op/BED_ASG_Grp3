@@ -42,7 +42,8 @@ async function loginWithRole(req, res, requiredRole) {
         user_id: user.user_id,
         full_name: user.full_name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        phone_number: user.phone_number // Marcus added this to for the profile details in profile page - 7/7 
       }
     });
   } catch (err) {
