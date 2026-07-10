@@ -30,7 +30,8 @@ const upload = multer({
 });
 
 router.get("/my-profile", requireAuth, blockGuests, profileController.getMyProfile);
+router.put("/my-profile", requireAuth, blockGuests, profileController.updateMyProfile);
 router.put("/profile-picture", requireAuth, blockGuests, profileController.updateMyProfileImage);
 router.put("/profile-picture-upload", requireAuth, blockGuests, upload.single("profileImage"), profileController.uploadMyProfileImage);
-router.put("/my-profile", requireAuth, blockGuests, profileController.updateMyProfile);
+
 module.exports = router;
