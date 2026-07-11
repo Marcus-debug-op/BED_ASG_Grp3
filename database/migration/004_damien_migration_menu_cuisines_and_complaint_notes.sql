@@ -58,3 +58,10 @@ GO
 ALTER TABLE Complaints
 ADD CONSTRAINT CK_Complaints_Status CHECK (complaint_status IN ('Open', 'Acknowledged', 'In Progress', 'Resolved', 'Closed'));
 GO
+
+USE HawkerDB;
+GO
+ 
+ALTER TABLE Complaints
+ADD CONSTRAINT CK_Complaints_Type CHECK (complaint_type IN ('Hygiene', 'Service', 'Food Quality', 'Overcharging', 'Other'));
+GO

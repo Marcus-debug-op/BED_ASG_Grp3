@@ -1,9 +1,14 @@
 const express = require("express");
 const complaintController = require("../Controllers/complaintController");
-const { requireRole } = require("../Middlewares/authMiddleware");
-const { validateStatusUpdate } = require("../Middlewares/complaintValidation");
+const { requireRole, blockGuests } = require("../Middlewares/authMiddleware");
+const { validateStatusUpdate, validateComplaintSubmission } = require("../Middlewares/complaintValidation");
 
 const router = express.Router();
+
+// Any registered (non-guest) user can file a new complaint. Guests are
+// blocked since Complaints.patron_id is a NOT NULL FK to Users - there's
+// no row to attach a guest's complaint to.
+router.post("/", blockGuests, validateComplaintSubmission, complaintController.submitComplaint);
 
 // Officer + Operator: reviewing and resolving complaints filed against
 // vendors. Which role can act on which complaint is enforced per-request

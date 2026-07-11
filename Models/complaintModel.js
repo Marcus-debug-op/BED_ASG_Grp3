@@ -181,8 +181,43 @@ module.exports = {
   updateComplaintStatus,
   getComplaintsForVendor,
   getComplaintByIdForVendor,
-  acknowledgeComplaint
+  acknowledgeComplaint,
+  createComplaint
 };
+
+// A patron/registered user files a new complaint against a stall. patron_id
+// and complaint_status are always set here from the server side (never taken
+// from the request body) so a user can never file a complaint as someone
+// else, or submit one that's already "Resolved". complaint_id (an IDENTITY
+// column) doubles as the "unique tracking ID" the user story asks for -
+// there's no need for a separate generated code on top of it.
+async function createComplaint(patronId, stallId, complaintType, description) {
+  let connection;
+
+  try {
+    connection = await sql.connect(dbConfig);
+
+    const request = connection.request();
+    request.input("patron_id", sql.Int, patronId);
+    request.input("stall_id", sql.Int, stallId);
+    request.input("complaint_type", sql.VarChar(100), complaintType);
+    request.input("description", sql.VarChar(500), description);
+
+    const result = await request.query(`
+      INSERT INTO Complaints (patron_id, stall_id, complaint_type, description, complaint_status)
+      OUTPUT INSERTED.complaint_id, INSERTED.patron_id, INSERTED.stall_id, INSERTED.complaint_type,
+             INSERTED.description, INSERTED.complaint_status, INSERTED.created_at
+      VALUES (@patron_id, @stall_id, @complaint_type, @description, 'Open');
+    `);
+
+    return result.recordset[0];
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) await connection.close();
+  }
+}
 
 // Vendor-only: same listing logic, but always scoped to their own stalls.
 async function getComplaintsForVendor(vendorId, status) {

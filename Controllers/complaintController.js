@@ -1,5 +1,36 @@
 const complaintModel = require("../Models/complaintModel");
 
+// POST /api/complaints - any registered (non-guest) user files a new
+// complaint. patron_id is taken from the authenticated session (req.user.sub),
+// never from the request body - a user can't file a complaint as someone else.
+async function submitComplaint(req, res) {
+  try {
+    const patronId = req.user.sub;
+    const { stall_id, complaint_type, description } = req.body;
+
+    const complaint = await complaintModel.createComplaint(patronId, stall_id, complaint_type, description);
+
+    res.status(201).json({
+      message: "Your complaint has been received and is being tracked.",
+      tracking_id: complaint.complaint_id,
+      complaint
+    });
+  } catch (error) {
+    console.error("Error submitting complaint:", error);
+
+    // FK violation - stall_id doesn't correspond to a real stall.
+    if (error.number === 547) {
+      return res.status(400).json({
+        message: "Invalid stall selected."
+      });
+    }
+
+    res.status(500).json({
+      message: "Unable to submit your complaint. Please try again."
+    });
+  }
+}
+
 // GET /api/complaints?status=Open&vendor_id=3 - always scoped to the caller's
 // own queue: an officer only ever sees Hygiene complaints, an operator only
 // ever sees everything else (Service, Food Quality, Overcharging, Other).
@@ -96,6 +127,7 @@ async function updateComplaint(req, res) {
 }
 
 module.exports = {
+  submitComplaint,
   listComplaints,
   getComplaint,
   updateComplaint

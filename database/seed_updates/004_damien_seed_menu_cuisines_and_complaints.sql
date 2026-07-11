@@ -60,3 +60,18 @@ VALUES
     'Open'
 );
 GO
+
+USE HawkerDB;
+GO
+ 
+INSERT INTO Users
+(full_name, email, password_hash, role, phone_number)
+VALUES
+(
+  'Operator Lim',
+  'limisanoperator@example.com',
+  '$2b$10$fuGmASUIQMgEEHBLYONZPup9FsNqX/3VrPu5.ZM6/lB0Cp6ZG/T1K',
+  'operator',
+  '91115555'
+);
+GO

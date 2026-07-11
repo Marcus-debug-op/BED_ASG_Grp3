@@ -11,7 +11,7 @@ const stallRoute = require("./Routes/stallRoute");
 const orderRoute = require("./Routes/orderRoute"); 
 const profileRoute = require("./Routes/profileRoute");
 const feedbackRoute = require("./Routes/feedbackRoute");
-const complaintRoute = require("./Routes/vendorComplaintRoute");
+const complaintRoute = require("./Routes/complaintRoute");
 const vendorComplaintRoute = require("./Routes/vendorComplaintRoute");
 const menuItemLikeRoute = require("./Routes/menuItemLikeRoute");
 
