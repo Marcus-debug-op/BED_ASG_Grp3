@@ -43,7 +43,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                         <h3>${escapeHtml(item.item_name)}</h3>
                         <p class="desc">${escapeHtml(item.description || "")}</p>
                         <p class="price">$${parseFloat(item.price).toFixed(2)}</p>
-                        <p class="likes">❤️ ${item.likes !== undefined ? item.likes : 0} likes</p>
+                        <div class="likes-container like-btn" data-liked="false"
+                             data-id="${item.menu_item_id}"
+                             data-count="${item.likes !== undefined ? item.likes : 0}"
+                             role="button" tabindex="0"
+                             aria-label="Like ${escapeAttr(item.item_name)}">
+                          <img class="heart-icon" src="img/heart.png" alt="" />
+                          <span class="like-count">${item.likes !== undefined ? item.likes : 0}</span>
+                        </div>
                         <!-- Add-to-cart button. The dish's details ride in data-* attributes
                              so the click handler can read them without another API call. -->
                         <button class="add-to-cart"
@@ -90,6 +97,71 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (typeof updateCartDot === "function") updateCartDot();
         });
 
+        // BED-26 has no "did I already like this" endpoint, so every heart
+        // defaults to "not liked" on load - the click toggles local + server
+        // state from there. Nothing in the acceptance criteria requires
+        // persisting toggle state across reloads, just that the count and
+        // rollback-on-failure work.
+        menuContainer.addEventListener("click", async (e) => {
+            const btn = e.target.closest(".like-btn");
+            if (!btn) return;
+            if (btn.dataset.busy === "true") return; // ignore rapid double-clicks mid-request
+
+            const menuItemId = btn.dataset.id;
+            const wasLiked = btn.dataset.liked === "true";
+            const previousCount = Number(btn.dataset.count);
+            const heartEl = btn.querySelector(".heart-icon");
+            const countEl = btn.querySelector(".like-count");
+
+            // Optimistic update - flip the UI immediately, roll back if the
+            // request fails.
+            const nextLiked = !wasLiked;
+            const nextCount = wasLiked ? previousCount - 1 : previousCount + 1;
+
+            btn.dataset.busy = "true";
+            btn.classList.remove("like-error");
+            applyLikeState(btn, heartEl, countEl, nextLiked, nextCount);
+
+            // Read the token the same way the rest of the app does
+            // (SignInPatron.js / SignInVendor.js / checkout.js) - authStorage.js's
+            // hawkerhub_auth key is never written to, so it can't be used here.
+            const token = localStorage.getItem("token");
+            if (!token) {
+                alert("You must be logged in to like an item.");
+                applyLikeState(btn, heartEl, countEl, wasLiked, previousCount);
+                btn.dataset.busy = "false";
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/menu-items/${menuItemId}/likes`, {
+                    method: nextLiked ? "POST" : "DELETE",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error("Like request failed");
+
+                const data = await response.json();
+
+                // Trust the server's count if it sent one back (e.g. "already liked").
+                if (typeof data.likes === "number") {
+                    applyLikeState(btn, heartEl, countEl, nextLiked, data.likes);
+                }
+            } catch (err) {
+                console.error("Error toggling like:", err);
+
+                // Revert the heart/count and show a subtle error state.
+                applyLikeState(btn, heartEl, countEl, wasLiked, previousCount);
+                btn.classList.add("like-error");
+                setTimeout(() => btn.classList.remove("like-error"), 2000);
+            } finally {
+                btn.dataset.busy = "false";
+            }
+        });
+
     } catch (err) {
         console.error("Error loading menu:", err);
         menuContainer.innerHTML = "<p>Failed to load menu. Please try again later.</p>";
@@ -97,6 +169,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 // Helper functions
+function applyLikeState(btn, heartEl, countEl, liked, count) {
+    btn.dataset.liked = String(liked);
+    btn.dataset.count = String(count);
+    btn.classList.toggle("liked", liked);
+    heartEl.classList.toggle("liked", liked);
+    heartEl.src = liked ? "img/heart-filled.png" : "img/heart.png";
+    countEl.textContent = count;
+}
 function escapeHtml(str) {
     return String(str)
         .replaceAll("&", "&amp;")
