@@ -133,7 +133,7 @@ async function getStallReviewsSummary(stallId) {
     recentRequest.input("stall_id", sql.Int, stallId);
 
     const recentResult = await recentRequest.query(`
-      SELECT TOP (5) f.rating, f.comment, f.created_at, u.full_name AS reviewer_name
+      SELECT TOP (5) f.feedback_id, f.patron_id, f.rating, f.comment, f.created_at, u.full_name AS reviewer_name
       FROM Feedbacks f
       INNER JOIN Users u ON f.patron_id = u.user_id
       WHERE f.stall_id = @stall_id

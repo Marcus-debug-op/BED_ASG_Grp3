@@ -22,17 +22,36 @@ async function createOrder(req, res) {
   }
 }
 
-// GET /api/orders/:id/status -> return one order's status, or 404.
+// GET /api/orders/:id/status -> return the status of the patron's own order.
 async function getOrderStatus(req, res) {
   try {
+    // Parse and validate the id from the URL.
     const orderId = Number(req.params.id);
+    if (!Number.isInteger(orderId) || orderId <= 0) {
+      return res.status(400).json({ message: "A valid numeric order id is required." });
+    }
+
+    // Look up the order.
     const order = await orderModel.getOrderStatus(orderId);
 
+    // No such order -> 404.
     if (!order) {
       return res.status(404).json({ message: "Order not found." });
     }
 
-    res.status(200).json(order);
+    // Authorization: the logged-in patron may only view their OWN order's status.
+    const patronId = req.user.sub;
+    if (order.patron_id !== patronId) {
+      return res.status(403).json({ message: "You are not allowed to view this order." });
+    }
+
+    // Return the status (omit patron_id from the response — it was only for the check).
+    res.status(200).json({
+      order_id: order.order_id,
+      order_status: order.order_status,
+      total_amount: order.total_amount,
+      order_date: order.order_date
+    });
   } catch (error) {
     console.error("Error getting order status:", error);
     res.status(500).json({ message: "Unable to get order status." });

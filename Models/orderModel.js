@@ -94,7 +94,8 @@ async function createOrder(patronId, stallId, items) {
   }
 }
 
-// Reads a single order's status (returns null if it doesn't exist).
+// Fetches one order's status. Also returns patron_id so the controller
+// can confirm the requester actually owns this order.
 async function getOrderStatus(orderId) {
   let connection;
   try {
@@ -103,12 +104,40 @@ async function getOrderStatus(orderId) {
     request.input("order_id", sql.Int, orderId);
 
     const result = await request.query(`
-      SELECT order_id, order_status, total_amount, order_date
+      SELECT order_id, patron_id, order_status, total_amount, order_date
       FROM Orders
       WHERE order_id = @order_id;
     `);
 
-    return result.recordset[0] || null;
+    return result.recordset[0] || null;   // null if no such order
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) await connection.close();
+  }
+}
+
+// Fetches all past orders for one patron, most recent first.
+async function getOrderHistory(patronId) {
+  let connection;
+  try {
+    connection = await sql.connect(dbConfig);
+    const request = connection.request();
+    request.input("patron_id", sql.Int, patronId);
+
+    // Get this patron's orders, plus the stall name via a JOIN so the UI can show it.
+    // ORDER BY newest first. If they have none, recordset is just an empty array.
+    const result = await request.query(`
+      SELECT o.order_id, o.stall_id, s.stall_name, o.order_status,
+             o.total_amount, o.order_date
+      FROM Orders o
+      JOIN Stalls s ON o.stall_id = s.stall_id
+      WHERE o.patron_id = @patron_id
+      ORDER BY o.order_date DESC;
+    `);
+
+    return result.recordset;   // array of orders (empty [] if none)
   } catch (error) {
     console.error("Database error:", error);
     throw error;
@@ -196,4 +225,4 @@ async function updateOrderStatus(orderId, vendorId, status) {
   }
 }
 
-module.exports = { createOrder, getOrderStatus, getOrdersByStall, updateOrderStatus };
+module.exports = { createOrder, getOrderStatus, getOrdersByStall, updateOrderStatus, getOrderHistory };

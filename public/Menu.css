@@ -134,6 +134,25 @@
     color: #666;
 }
 
+/* BED-78: subtle visual cue when a like/unlike request fails and the heart rolls back */
+.like-btn {
+    cursor: pointer;
+}
+
+.like-btn.like-error .like-count {
+    color: #d32f2f;
+}
+
+.like-btn.like-error .heart-icon {
+    animation: like-shake 0.3s ease;
+}
+
+@keyframes like-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+
 .card-footer{
   display:flex;
   justify-content:space-between;

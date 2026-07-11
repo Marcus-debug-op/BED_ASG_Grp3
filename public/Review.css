@@ -188,6 +188,39 @@
   color:#6b6b6b;
 }
 
+/* BED-92 frontend: delete button sits next to the date, both pushed right */
+.post-meta-right{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.post-meta-right .post-date{
+  margin-left:0;
+}
+
+.review-delete-btn{
+  border:1px solid #ffcccc;
+  background:#fff5f5;
+  color:#e4002b;
+  font-size:13px;
+  padding:4px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  transition:background 0.15s ease, transform 0.1s ease;
+}
+
+.review-delete-btn:hover{
+  background:#ffe0e0;
+  border-color:#ff9999;
+}
+
+.review-delete-btn:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
+}
+
 .post-text{
   padding-left:59px;
   line-height:1.6;

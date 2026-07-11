@@ -11,6 +11,7 @@ const stallRoute = require("./Routes/stallRoute");
 const orderRoute = require("./Routes/orderRoute"); 
 const profileRoute = require("./Routes/profileRoute");
 const feedbackRoute = require("./Routes/feedbackRoute");
+const menuItemLikeRoute = require("./Routes/menuItemLikeRoute");
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/api/stalls", stallRoute); // // Public stall listing + menu display (B
 app.use("/api/orders", orderRoute); // Order creation + status
 app.use("/api/profile", profileRoute); // Profile page(Patron only for now)
 app.use("/api", feedbackRoute); // Feedback submit + vendor read (BED-2)
+app.use("/api/menu-items", menuItemLikeRoute); // Menu item likes (BED-26)
 
 // Test API route
 app.get("/api/test", (req, res) => {
