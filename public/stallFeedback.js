@@ -36,11 +36,25 @@ function fmtDate(value) {
   }
 }
 
+// BED-92 frontend: who's logged in right now, so we know which review
+// cards are "yours" (SignInPatron.js stores this under the plain "user" key,
+// not through authStorage.js - see menu.js's BED-78 fix for why that matters).
+function getCurrentUser() {
+  try {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 function renderReviews(reviews) {
   const list = document.getElementById("reviewsList");
   if (!list) return;
 
   list.innerHTML = "";
+
+  const currentUser = getCurrentUser();
 
   for (const r of reviews) {
     const card = document.createElement("div");
@@ -54,6 +68,10 @@ function renderReviews(reviews) {
 
     const hasPhoto = r.photo && typeof r.photo === "string" && r.photo.trim().length > 0;
 
+    // Only the patron who wrote this review sees a delete button on it -
+    // the backend also enforces this (403 on mismatch), this is just UI.
+    const isOwnReview = currentUser && r.patron_id === currentUser.user_id;
+
     card.innerHTML = `
       <div class="user-meta">
         <div class="user-avatar">
@@ -65,7 +83,10 @@ function renderReviews(reviews) {
           <div class="stars-gold-small"></div>
         </div>
 
-        <span class="post-date">${fmtDate(reviewDate)}</span>
+        <div class="post-meta-right">
+          <span class="post-date">${fmtDate(reviewDate)}</span>
+          ${isOwnReview ? `<button type="button" class="review-delete-btn" data-feedback-id="${r.feedback_id}">Delete</button>` : ""}
+        </div>
       </div>
 
       <div class="review-content-row">
@@ -93,6 +114,44 @@ function renderReviews(reviews) {
         reviewPhoto.closest(".review-photo-wrap")?.remove();
       };
     }
+  }
+}
+
+// BED-92 frontend: delete own feedback. Delegated on the list container since
+// cards are re-rendered wholesale on every loadFeedback() call.
+async function handleDeleteClick(e) {
+  const btn = e.target.closest(".review-delete-btn");
+  if (!btn) return;
+
+  const feedbackId = btn.dataset.feedbackId;
+  if (!confirm("Delete this review? This can't be undone.")) return;
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("You must be logged in to delete your review.");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Deleting...";
+
+  try {
+    const response = await fetch(`/api/feedback/${feedbackId}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    if (!response.ok) throw new Error("Delete request failed");
+
+    // Re-fetch rather than just removing the card, so avg_rating/total_reviews/
+    // star breakdown all stay in sync with the server after the delete.
+    const stallId = getStallId();
+    await loadFeedback(stallId);
+  } catch (error) {
+    console.error("Error deleting feedback:", error);
+    alert("Couldn't delete your review. Please try again.");
+    btn.disabled = false;
+    btn.textContent = "Delete";
   }
 }
 
@@ -223,6 +282,9 @@ async function init() {
     alert("Error: No stall selected.");
     return;
   }
+
+  const list = document.getElementById("reviewsList");
+  if (list) list.addEventListener("click", handleDeleteClick);
 
   await loadStallInfo(stallId);
   await loadFeedback(stallId);
