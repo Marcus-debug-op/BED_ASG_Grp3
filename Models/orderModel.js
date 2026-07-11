@@ -94,7 +94,8 @@ async function createOrder(patronId, stallId, items) {
   }
 }
 
-// Reads a single order's status (returns null if it doesn't exist).
+// Fetches one order's status. Also returns patron_id so the controller
+// can confirm the requester actually owns this order.
 async function getOrderStatus(orderId) {
   let connection;
   try {
@@ -103,12 +104,12 @@ async function getOrderStatus(orderId) {
     request.input("order_id", sql.Int, orderId);
 
     const result = await request.query(`
-      SELECT order_id, order_status, total_amount, order_date
+      SELECT order_id, patron_id, order_status, total_amount, order_date
       FROM Orders
       WHERE order_id = @order_id;
     `);
 
-    return result.recordset[0] || null;
+    return result.recordset[0] || null;   // null if no such order
   } catch (error) {
     console.error("Database error:", error);
     throw error;
