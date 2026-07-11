@@ -17,53 +17,54 @@
     <!-- Top bar -->
     <div class="promo-topbar">
       <a class="promo-back" href="Profile(Patron & Vendor).html">← Back to Profile</a>
+      <select id="stallSelect" class="promo-stall-select" hidden></select>
     </div>
 
     <section class="card promo-card">
       <h2 class="promo-heading">Create Promotion</h2>
 
       <form id="promoForm" class="promo-form">
+        <input type="hidden" id="promoId">
+
         <div class="promo-row">
           <label for="code">Promo Code</label>
-          <input id="code" required placeholder="e.g. SAVE10" />
+          <input id="code" required maxlength="50" placeholder="e.g. SAVE10" />
+        </div>
+
+        <div class="promo-row">
+          <label for="description">Description</label>
+          <input id="description" maxlength="255" placeholder="e.g. 10% off your order (optional)" />
         </div>
 
         <div class="promo-grid-2">
           <div class="promo-row">
-            <label for="type">Discount Type</label>
-            <select id="type">
-              <option value="percent">Percentage (%)</option>
-              <option value="fixed">Fixed ($)</option>
-            </select>
+            <label for="value">Discount (%)</label>
+            <input id="value" type="number" min="1" max="100" step="0.01" required placeholder="e.g. 10" />
           </div>
 
-          <div class="promo-row">
-            <label for="value">Value</label>
-            <input id="value" type="number" min="1" required placeholder="e.g. 10" />
+          <div class="promo-row promo-row-inline">
+            <label class="promo-checkbox">
+              <input id="active" type="checkbox" checked />
+              Active
+            </label>
           </div>
         </div>
 
         <div class="promo-grid-2">
           <div class="promo-row">
-            <label for="minSpend">Min Spend ($)</label>
-            <input id="minSpend" type="number" min="0" placeholder="e.g. 15" />
+            <label for="startDate">Start Date</label>
+            <input id="startDate" type="date" required />
           </div>
 
           <div class="promo-row">
-            <label for="expiry">Expiry Date</label>
-            <input id="expiry" type="date" />
+            <label for="endDate">End Date</label>
+            <input id="endDate" type="date" required />
           </div>
-        </div>
-
-        <div class="promo-row promo-row-inline">
-          <label class="promo-checkbox">
-            <input id="active" type="checkbox" checked />
-            Active
-          </label>
         </div>
 
         <div class="promo-actions-row">
           <button class="btn-primary promo-save-btn" type="submit">Save Promotion</button>
+          <button type="button" id="cancelEditBtn" class="promo-cancel-btn" hidden>Cancel Edit</button>
           <p id="promoMsg" class="promo-msg" aria-live="polite"></p>
         </div>
       </form>
@@ -79,7 +80,7 @@
     </section>
   </main>
 
-  <script type="module" src="VendorPromotions.js"></script>
+  <script src="VendorPromotions.js"></script>
   <script type="module" src="navbar-init.js"></script>
 
 </body>

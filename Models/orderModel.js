@@ -117,4 +117,83 @@ async function getOrderStatus(orderId) {
   }
 }
 
-module.exports = { createOrder, getOrderStatus };
+// Confirms the given stall belongs to the given vendor before any write/read happens.
+async function stallBelongsToVendor(connection, stallId, vendorId) {
+  const request = connection.request();
+  request.input("stall_id", sql.Int, stallId);
+  request.input("vendor_id", sql.Int, vendorId);
+
+  const result = await request.query(`
+    SELECT stall_id FROM Stalls WHERE stall_id = @stall_id AND vendor_id = @vendor_id;
+  `);
+
+  return result.recordset.length > 0;
+}
+
+// Returns null if the stall doesn't belong to this vendor, so the controller can 403.
+// One row per order line; the controller groups rows into orders with an items array.
+async function getOrdersByStall(stallId, vendorId) {
+  let connection;
+
+  try {
+    connection = await sql.connect(dbConfig);
+
+    const owns = await stallBelongsToVendor(connection, stallId, vendorId);
+    if (!owns) return null;
+
+    const request = connection.request();
+    request.input("stall_id", sql.Int, stallId);
+
+    const result = await request.query(`
+      SELECT o.order_id, o.order_status, o.total_amount, o.order_date,
+             u.full_name AS customer_name,
+             oi.menu_item_id, oi.quantity, oi.unit_price, oi.subtotal,
+             mi.item_name
+      FROM Orders o
+      INNER JOIN Users u ON o.patron_id = u.user_id
+      LEFT JOIN OrderItems oi ON oi.order_id = o.order_id
+      LEFT JOIN MenuItems mi ON oi.menu_item_id = mi.menu_item_id
+      WHERE o.stall_id = @stall_id
+      ORDER BY o.order_date DESC, o.order_id;
+    `);
+
+    return result.recordset;
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) await connection.close();
+  }
+}
+
+// Returns null if the order doesn't exist or doesn't belong to this vendor's stalls.
+async function updateOrderStatus(orderId, vendorId, status) {
+  let connection;
+
+  try {
+    connection = await sql.connect(dbConfig);
+
+    const request = connection.request();
+    request.input("order_id", sql.Int, orderId);
+    request.input("vendor_id", sql.Int, vendorId);
+    request.input("order_status", sql.VarChar(30), status);
+
+    const result = await request.query(`
+      UPDATE o
+      SET order_status = @order_status
+      OUTPUT INSERTED.order_id, INSERTED.order_status
+      FROM Orders o
+      INNER JOIN Stalls s ON o.stall_id = s.stall_id
+      WHERE o.order_id = @order_id AND s.vendor_id = @vendor_id;
+    `);
+
+    return result.recordset[0] || null;
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) await connection.close();
+  }
+}
+
+module.exports = { createOrder, getOrderStatus, getOrdersByStall, updateOrderStatus };

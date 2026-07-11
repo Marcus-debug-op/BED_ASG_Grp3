@@ -23,4 +23,23 @@ function validateOrder(req, res, next) {
   next();
 }
 
-module.exports = { validateOrder };
+function validateOrderStatus(req, res, next) {
+  const schema = Joi.object({
+    order_status: Joi.string()
+      .valid("Pending", "Preparing", "Ready", "Completed", "Cancelled")
+      .required()
+  });
+
+  const validation = schema.validate(req.body, { abortEarly: false });
+
+  if (validation.error) {
+    return res.status(400).json({
+      message: "Validation failed.",
+      errors: validation.error.details.map((detail) => detail.message)
+    });
+  }
+
+  next();
+}
+
+module.exports = { validateOrder, validateOrderStatus };
