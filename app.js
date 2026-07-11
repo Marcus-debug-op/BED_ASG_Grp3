@@ -14,6 +14,7 @@ const feedbackRoute = require("./Routes/feedbackRoute");
 const complaintRoute = require("./Routes/complaintRoute");
 const vendorComplaintRoute = require("./Routes/vendorComplaintRoute");
 const menuItemLikeRoute = require("./Routes/menuItemLikeRoute");
+const promotionRoute = require("./Routes/promotionRoute");
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use("/api/profile", profileRoute); // Profile page(Patron only for now)
 app.use("/api", feedbackRoute); // Feedback submit + vendor read (BED-2)
 app.use("/api/complaints", complaintRoute); // Officer-only complaint review and resolution
 app.use("/api/vendor/complaints", vendorComplaintRoute); // Vendor: view + acknowledge complaints against their own stalls
+app.use("/api/vendor/promotions", promotionRoute); // Vendor: manage their own stall's promotion codes
 
 app.use("/api/menu-items", menuItemLikeRoute); // Menu item likes (BED-26)
 
