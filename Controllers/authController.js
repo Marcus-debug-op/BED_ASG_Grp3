@@ -42,8 +42,7 @@ async function loginWithRole(req, res, requiredRole) {
         user_id: user.user_id,
         full_name: user.full_name,
         email: user.email,
-        role: user.role,
-        phone_number: user.phone_number // Marcus added this to for the profile details in profile page - 7/7 
+        role: user.role
       }
     });
   } catch (err) {
@@ -60,6 +59,14 @@ async function loginPatron(req, res) {
 
 async function loginVendor(req, res) {
   return loginWithRole(req, res, "vendor");
+}
+
+async function loginOfficer(req, res) {
+  return loginWithRole(req, res, "officer");
+}
+
+async function loginOperator(req, res) {
+  return loginWithRole(req, res, "operator");
 }
 
 // Issues a short-lived guest token so unregistered users can browse public
@@ -96,6 +103,8 @@ async function getCurrentSession(req, res) {
 module.exports = {
   loginPatron,
   loginVendor,
+  loginOfficer,
+  loginOperator,
   createGuestSession,
   getCurrentSession
 };
