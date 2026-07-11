@@ -58,4 +58,20 @@ async function getOrderStatus(req, res) {
   }
 }
 
-module.exports = { createOrder, getOrderStatus };
+// GET order history -> returns the logged-in patron's past orders.
+async function getOrderHistory(req, res) {
+  try {
+    // Identify the patron from their token (same pattern as createOrder).
+    const patronId = req.user.sub;
+
+    const orders = await orderModel.getOrderHistory(patronId);
+
+    // Always 200 — an empty history is a valid result, not an error (per the ticket).
+    res.status(200).json({ orders });
+  } catch (error) {
+    console.error("Error getting order history:", error);
+    res.status(500).json({ message: "Unable to get order history." });
+  }
+}
+
+module.exports = { createOrder, getOrderStatus, getOrderHistory };

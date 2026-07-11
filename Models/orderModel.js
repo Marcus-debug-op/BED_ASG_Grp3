@@ -118,4 +118,32 @@ async function getOrderStatus(orderId) {
   }
 }
 
-module.exports = { createOrder, getOrderStatus };
+// Fetches all past orders for one patron, most recent first.
+async function getOrderHistory(patronId) {
+  let connection;
+  try {
+    connection = await sql.connect(dbConfig);
+    const request = connection.request();
+    request.input("patron_id", sql.Int, patronId);
+
+    // Get this patron's orders, plus the stall name via a JOIN so the UI can show it.
+    // ORDER BY newest first. If they have none, recordset is just an empty array.
+    const result = await request.query(`
+      SELECT o.order_id, o.stall_id, s.stall_name, o.order_status,
+             o.total_amount, o.order_date
+      FROM Orders o
+      JOIN Stalls s ON o.stall_id = s.stall_id
+      WHERE o.patron_id = @patron_id
+      ORDER BY o.order_date DESC;
+    `);
+
+    return result.recordset;   // array of orders (empty [] if none)
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) await connection.close();
+  }
+}
+
+module.exports = { createOrder, getOrderStatus, getOrderHistory };
