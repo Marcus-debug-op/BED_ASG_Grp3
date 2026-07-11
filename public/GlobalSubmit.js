@@ -1,21 +1,15 @@
-import { fs } from "./firebase-init.js";
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-  doc,
-  updateDoc,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+// Removed all Firebase imports
 
 function getParams() {
   const params = new URLSearchParams(window.location.search);
   return {
-    stallId: (params.get("id") || "").trim(),
+    stallId: (params.get("id") || params.get("stall") || "").trim(),
     returnUrl: (params.get("return") || "").trim()
   };
 }
 
+// Kept this just in case your UI uses it to show a preview on the screen, 
+// but we will NOT send it to the backend for BED-2.
 function fileToCompressedDataUrl(file, maxSize = 700, quality = 0.75) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -49,14 +43,13 @@ function fileToCompressedDataUrl(file, maxSize = 700, quality = 0.75) {
 document.addEventListener("DOMContentLoaded", () => {
   const submitBtn = document.querySelector(".btn-submit");
   const closeBtn = document.querySelector(".close-modal-btn");
-  const nameInput = document.getElementById("reviewer-name");
   const ratingHidden = document.getElementById("rating-value");
   const commentBox = document.querySelector(".main-complaint");
-  const fileInput = document.getElementById("real-file-input");
   const stars = document.querySelectorAll(".star");
 
   const { stallId, returnUrl } = getParams();
 
+  // Star Rating UI Logic
   if (stars.length > 0) {
     stars.forEach(star => {
       star.addEventListener("click", () => {
@@ -74,6 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Close Button Logic
   if (closeBtn) {
     closeBtn.addEventListener("click", () => {
       if (returnUrl) window.location.href = returnUrl;
@@ -83,18 +77,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!submitBtn) return;
 
+  // The BED-2 Express POST Logic
   submitBtn.addEventListener("click", async () => {
-    const typedName = (nameInput?.value || "").trim();
-    const name = typedName || "Anonymous";
     const comment = (commentBox?.value || "").trim();
     const rating = Number(ratingHidden?.value || 0);
 
+    // 1. Frontend Validation
     if (!stallId) {
       alert("Missing stall id. Please go back and try again.");
-      return;
-    }
-    if (!comment) {
-      alert("Please write your review.");
       return;
     }
     if (!rating || rating < 1 || rating > 5) {
@@ -102,59 +92,51 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    let photo = "";
-    const file = fileInput?.files?.[0];
-    if (file) {
-      if (!file.type.startsWith("image/")) {
-        alert("Photo must be an image.");
-        return;
-      }
-      photo = await fileToCompressedDataUrl(file);
+    // 2. Auth Check (BED-2 requires the user to be logged in)
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You must be logged in to leave a review.");
+      return;
     }
 
+    // 3. Build exact payload for Joi validation (ignoring Name and Photo)
+    const payload = {
+      stall_id: parseInt(stallId, 10),
+      rating: rating,
+      comment: comment
+    };
+
     try {
-      // 1. Save the new review
-      await addDoc(collection(fs, "stalls", stallId, "feedback"), {
-        name,
-        comment,
-        rating,
-        photo,
-        createdAt: serverTimestamp()
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Posting...";
+
+      // 4. Send to your Express API
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
+        body: JSON.stringify(payload)
       });
 
-      // 2. Calculate New Average
-      const feedbackCol = collection(fs, "stalls", stallId, "feedback");
-      const snapshot = await getDocs(feedbackCol);
+      const responseData = await response.json();
 
-      let totalRating = 0;
-      let reviewCount = 0;
-
-      snapshot.forEach((doc) => {
-        const r = doc.data().rating;
-        if (r) {
-          totalRating += Number(r);
-          reviewCount++;
-        }
-      });
-
-
-      const rawAverage = reviewCount > 0 ? totalRating / reviewCount : 0;
-      const averageRating = Number(rawAverage.toFixed(1)); 
-
-    
-      const stallRef = doc(fs, "stalls", stallId);
-      await updateDoc(stallRef, {
-        rating: averageRating,
-        reviews: reviewCount
-      });
-
-      alert("Review posted!");
-      if (returnUrl) window.location.href = returnUrl;
-      else window.history.back();
-
+      if (response.ok || response.status === 201) {
+        alert("Review posted successfully!");
+        if (returnUrl) window.location.href = returnUrl;
+        else window.history.back();
+      } else {
+        // Log the exact error coming from Joi or SQL (e.g., 400 Bad Request)
+        console.error("Backend Error:", responseData);
+        alert(`Failed: ${responseData.message || "Invalid data submitted"}`);
+      }
     } catch (err) {
-      console.error(err);
-      alert("Failed to post review. Check console.");
+      console.error("Network/Server Error:", err);
+      alert("Failed to connect to the server.");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Post Review";
     }
   });
 });

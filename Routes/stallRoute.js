@@ -8,5 +8,6 @@ const router = express.Router();
 // so this uses optionalAuth (same pattern as hawkerCentreRoute) rather than requireAuth.
 router.get("/", optionalAuth, stallController.getStalls);
 router.get("/:stallId/menu", optionalAuth, stallController.getStallMenu);
+router.get("/:stallId/reviews/summary", optionalAuth, stallController.getStallReviewsSummary);
 
 module.exports = router;
