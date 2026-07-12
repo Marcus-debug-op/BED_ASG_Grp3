@@ -275,7 +275,19 @@ async function updateOrderStatusForVendor(orderId, vendorId, orderStatus) {
     `);
 
     return result.recordset[0] || null;
+    }
 
+    catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } 
+  finally {
+    if (connection) await connection.close();
+  }
+}
+
+
+  
 
 // Helped update functions
 module.exports = {
@@ -286,4 +298,3 @@ module.exports = {
   getOrderDetailsForVendor,
   updateOrderStatusForVendor
 };
-
