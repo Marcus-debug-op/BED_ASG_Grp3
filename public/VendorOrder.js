@@ -1,309 +1,260 @@
-document.addEventListener("DOMContentLoaded", () => {
+const token = localStorage.getItem("token");
+const role = localStorage.getItem("role");
 
-    // ===========================
-    // Authentication
-    // ===========================
+const ordersContainer = document.getElementById("ordersContainer");
+const searchInput = document.getElementById("order-search");
+const filterButtons = document.querySelectorAll(".filter-chip");
 
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
+let allOrders = [];
+let currentStatusFilter = "All";
 
-    const ordersListElement = document.getElementById("orders-list");
-    const searchInput = document.getElementById("order-search");
-    const filterButtons = Array.from(document.querySelectorAll(".filter-chip"));
+/*
+  First check if the user is logged in.
+  Vendor order page should only be used by vendor accounts.
+*/
+if (!token) {
+  ordersContainer.innerHTML = "<p>Please login to view orders.</p>";
+} else if (role !== "vendor") {
+  ordersContainer.innerHTML = "<p>Please login as a vendor to view orders.</p>";
+} else {
+  loadVendorOrders();
+}
 
-    if (!token || role !== "vendor") {
-        ordersListElement.innerHTML = '<div class="loading-text">Please login to view orders.</div>';
-        return;
-    }
-
-    // ===========================
-    // State
-    // ===========================
-
-    let allOrders = [];
-    let currentStallId = null;
-    let activeFilter = "all"; // all | new | preparing | ready | completed
-    let searchTerm = "";
-    let pollTimer = null;
-
-    // SQL order_status values <-> the workflow keys the UI already uses.
-    const STATUS_TO_WORKFLOW = {
-        Pending: "new",
-        Preparing: "preparing",
-        Ready: "ready",
-        Completed: "completed",
-        Cancelled: "completed"
-    };
-
-    const WORKFLOW_TO_NEXT_STATUS = {
-        new: "Preparing",
-        preparing: "Ready",
-        ready: "Completed"
-    };
-
-    function authHeaders(extra = {}) {
-        return {
-            Authorization: `Bearer ${token}`,
-            ...extra
-        };
-    }
-
-    // --- workflow helpers ---
-    function getWorkflowStatus(order) {
-        return STATUS_TO_WORKFLOW[order.order_status] || "new";
-    }
-
-    function workflowLabel(s) {
-        if (s === "preparing") return "Preparing";
-        if (s === "ready") return "Ready";
-        if (s === "completed") return "Completed";
-        return "New";
-    }
-
-    function nextActionLabel(s) {
-        if (s === "new") return "Start Preparing";
-        if (s === "preparing") return "Mark Ready";
-        if (s === "ready") return "Complete";
-        return null;
-    }
-
-    function safeLower(v) {
-        return (v || "").toString().toLowerCase();
-    }
-
-    function orderMatchesSearch(order, term) {
-        if (!term) return true;
-        const t = term.trim().toLowerCase();
-        if (!t) return true;
-
-        const orderNo = String(order.order_id);
-        const customerName = safeLower(order.customer_name);
-        const itemsText = (order.items || [])
-            .map((i) => `${i.item_name || ""} ${i.quantity || ""}`)
-            .join(" ")
-            .toLowerCase();
-
-        return (
-            orderNo.includes(t) ||
-            customerName.includes(t) ||
-            itemsText.includes(t)
-        );
-    }
-
-    function applyFiltersAndRender() {
-        const filtered = allOrders
-            .filter((order) => {
-                const ws = getWorkflowStatus(order);
-                const matchesFilter = activeFilter === "all" ? true : ws === activeFilter;
-                return matchesFilter && orderMatchesSearch(order, searchTerm);
-            })
-            .sort((a, b) => {
-                const pr = { new: 0, preparing: 1, ready: 2, completed: 3 };
-                const aS = getWorkflowStatus(a);
-                const bS = getWorkflowStatus(b);
-
-                const pDiff = (pr[aS] ?? 99) - (pr[bS] ?? 99);
-                if (pDiff !== 0) return pDiff;
-
-                return new Date(a.order_date) - new Date(b.order_date);
-            });
-
-        renderOrders(filtered);
-    }
-
-    function escapeHtml(str) {
-        return String(str ?? "")
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#039;");
-    }
-
-    function renderOrders(orders) {
-        ordersListElement.innerHTML = "";
-
-        if (orders.length === 0) {
-            ordersListElement.innerHTML = '<div class="loading-text">No active orders found for this stall.</div>';
-            return;
-        }
-
-        orders.forEach((order) => {
-            const orderCard = document.createElement("div");
-            orderCard.className = "order-card";
-
-            const items = order.items || [];
-            const itemCount = items.length;
-            const formattedPrice = Number(order.total_amount || 0).toFixed(2);
-            const timeString = order.order_date
-                ? new Date(order.order_date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                : "Recently";
-
-            const workflowStatus = getWorkflowStatus(order);
-            const workflowText = workflowLabel(workflowStatus);
-            const nextStatus = WORKFLOW_TO_NEXT_STATUS[workflowStatus];
-            const nextText = nextActionLabel(workflowStatus);
-
-            const itemsHtml = items.map((item) => `
-                <div class="item-row">
-                    <span>• ${escapeHtml(item.item_name)}</span>
-                    <span>x ${item.quantity || 1}</span>
-                </div>
-            `).join("");
-
-            orderCard.innerHTML = `
-                <div class="queue-section">
-                    <span class="queue-label">Queue No.</span>
-                    <span class="queue-number">${order.order_id}</span>
-                </div>
-
-                <div class="details-section">
-                    <div class="customer-badge">${escapeHtml(order.customer_name || "Customer")}</div>
-                    <div class="items-list">${itemsHtml}</div>
-                    <div class="order-meta">
-                        <span class="item-count">${itemCount} Item${itemCount === 1 ? "" : "s"}</span>
-                        <span class="divider">|</span>
-                        <span class="total-price">$${formattedPrice}</span>
-                        <span class="time-stamp">${timeString}</span>
-                    </div>
-                </div>
-
-                <div class="payment-section">
-                    <span class="section-label">Status</span>
-                    <span class="order-status-badge ${workflowStatus}">${workflowText}</span>
-
-                    ${nextText ? `
-                    <div class="status-actions">
-                        <button class="status-btn primary"
-                        data-action="advance"
-                        data-id="${order.order_id}"
-                        data-next="${nextStatus}">
-                        ${nextText}
-                        </button>
-                    </div>
-                    ` : ""}
-                </div>
-            `;
-            ordersListElement.appendChild(orderCard);
-        });
-    }
-
-    // Event delegation (avoids re-binding listeners every render)
-    ordersListElement.addEventListener("click", async (e) => {
-        const btn = e.target.closest("button");
-        if (!btn) return;
-
-        const action = btn.getAttribute("data-action");
-        if (action !== "advance") return;
-
-        const orderId = btn.getAttribute("data-id");
-        const next = btn.getAttribute("data-next");
-        if (!orderId || !next) return;
-
-        btn.disabled = true;
-
-        try {
-            const response = await fetch(`/api/vendor/orders/${orderId}/status`, {
-                method: "PATCH",
-                headers: authHeaders({ "Content-Type": "application/json" }),
-                body: JSON.stringify({ order_status: next })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || "Unable to update order status.");
-            }
-
-            await loadOrders();
-        } catch (error) {
-            console.error("Workflow update failed:", error);
-            btn.disabled = false;
+/*
+  Get all orders that belong to the logged-in vendor.
+  Backend uses the JWT token to know which vendor is logged in.
+*/
+async function loadVendorOrders() {
+  try {
+    const response = await fetch("/api/orders/vendor/my-orders", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+            Authorization: `Bearer ${token}`
         }
     });
 
-    // ===========================
-    // Data loading
-    // ===========================
 
-    async function loadOrders() {
-        if (!currentStallId) return;
+    const data = await response.json();
 
-        try {
-            const response = await fetch(`/api/vendor/orders/stall/${currentStallId}`, {
-                headers: authHeaders()
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || "Unable to load orders.");
-            }
-
-            allOrders = data;
-            applyFiltersAndRender();
-        } catch (error) {
-            console.error("Order loading error:", error);
-            ordersListElement.innerHTML = '<div class="loading-text">Unable to load orders.</div>';
-        }
+    if (!response.ok) {
+      ordersContainer.innerHTML = `<p>${data.message || "Unable to load orders."}</p>`;
+      return;
     }
 
-    async function init() {
-        ordersListElement.innerHTML = '<div class="loading-text">Connecting to HawkerHub...</div>';
+    allOrders = data;
+    renderOrders();
 
-        try {
-            const response = await fetch("/api/vendor/my-stalls", {
-                headers: authHeaders()
-            });
+  } catch (error) {
+    console.error("Load vendor orders error:", error);
+    ordersContainer.innerHTML = "<p>Unable to connect to server.</p>";
+  }
+}
 
-            const stalls = await response.json();
+/*
+  Display the orders on the page.
+  Also applies search and status filter.
+*/
+function renderOrders() {
+  const searchText = searchInput ? searchInput.value.toLowerCase().trim() : "";
 
-            if (!response.ok) {
-                throw new Error(stalls.message || "Unable to load your stalls.");
-            }
+  let filteredOrders = allOrders;
 
-            if (stalls.length === 0) {
-                ordersListElement.innerHTML = '<div class="loading-text">Error: No stall found linked to this account.</div>';
-                return;
-            }
+  if (currentStatusFilter !== "All") {
+    filteredOrders = filteredOrders.filter(order => {
+      return order.order_status === currentStatusFilter;
+    });
+  }
 
-            currentStallId = stalls[0].stall_id;
+  if (searchText) {
+    filteredOrders = filteredOrders.filter(order => {
+      return (
+        String(order.order_id).includes(searchText) ||
+        String(order.patron_name || "").toLowerCase().includes(searchText) ||
+        String(order.stall_name || "").toLowerCase().includes(searchText)
+      );
+    });
+  }
 
-            await loadOrders();
+  if (filteredOrders.length === 0) {
+    ordersContainer.innerHTML = "<p>No orders found.</p>";
+    return;
+  }
 
-            // Poll for new orders every 15s since there's no live push channel on the SQL backend.
-            pollTimer = setInterval(loadOrders, 15000);
-        } catch (error) {
-            console.error("Vendor stall loading error:", error);
-            ordersListElement.innerHTML = '<div class="loading-text">Unable to load your stall.</div>';
-        }
-    }
+ordersContainer.innerHTML = filteredOrders.map(order => {
+  return `
+    <div class="order-card">
+      <div class="order-card-top">
+        <div>
+          <h3>Order #${order.order_id}</h3>
+          <p class="order-date">${new Date(order.order_date).toLocaleString()}</p>
+        </div>
 
-    window.addEventListener("beforeunload", () => {
-        if (pollTimer) clearInterval(pollTimer);
+        <span class="status-badge ${order.order_status.toLowerCase()}">
+          ${order.order_status}
+        </span>
+      </div>
+
+      <div class="order-info-grid">
+        <div class="order-info">
+          <span>Customer</span>
+          <strong>${order.patron_name}</strong>
+        </div>
+
+        <div class="order-info">
+          <span>Stall</span>
+          <strong>${order.stall_name}</strong>
+        </div>
+
+        <div class="order-info">
+          <span>Total</span>
+          <strong>$${Number(order.total_amount).toFixed(2)}</strong>
+        </div>
+      </div>
+
+      <div class="order-actions">
+        <select id="status-${order.order_id}">
+          <option value="Pending" ${order.order_status === "Pending" ? "selected" : ""}>Pending</option>
+          <option value="Preparing" ${order.order_status === "Preparing" ? "selected" : ""}>Preparing</option>
+          <option value="Ready" ${order.order_status === "Ready" ? "selected" : ""}>Ready</option>
+          <option value="Completed" ${order.order_status === "Completed" ? "selected" : ""}>Completed</option>
+          <option value="Cancelled" ${order.order_status === "Cancelled" ? "selected" : ""}>Cancelled</option>
+        </select>
+
+        <button type="button" class="update-btn" onclick="updateOrderStatus(${order.order_id})">
+          Update Status
+        </button>
+
+        <button type="button" class="details-btn" onclick="viewOrderDetails(${order.order_id})">
+          View Details
+        </button>
+      </div>
+
+      <div id="details-${order.order_id}" class="order-details"></div>
+    </div>
+  `;
+}).join("");
+
+}
+
+/*
+  Update order status.
+  Example:
+  Pending -> Preparing
+  Preparing -> Ready
+  Ready -> Completed
+*/
+async function updateOrderStatus(orderId) {
+  const newStatus = document.getElementById(`status-${orderId}`).value;
+
+  try {
+    const response = await fetch(`/api/orders/vendor/my-orders/${orderId}/status`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        order_status: newStatus
+      })
     });
 
-    // --- wire up UI controls ---
-    if (searchInput) {
-        searchInput.addEventListener("input", (e) => {
-            searchTerm = e.target.value || "";
-            applyFiltersAndRender();
-        });
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Unable to update order status.");
+      return;
     }
 
-    filterButtons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-            activeFilter = btn.getAttribute("data-filter") || "all";
+    alert("Order status updated successfully.");
+    loadVendorOrders();
 
-            filterButtons.forEach((b) => {
-                const isActive = (b.getAttribute("data-filter") || "all") === activeFilter;
-                b.classList.toggle("is-active", isActive);
-                b.setAttribute("aria-selected", isActive ? "true" : "false");
-            });
+  } catch (error) {
+    console.error("Update order status error:", error);
+    alert("Unable to connect to server.");
+  }
+}
 
-            applyFiltersAndRender();
-        });
+/*
+  View the items inside one order.
+  This calls the backend order details route.
+*/
+async function viewOrderDetails(orderId) {
+  const detailsBox = document.getElementById(`details-${orderId}`);
+
+  if (detailsBox.innerHTML.trim() !== "") {
+    detailsBox.innerHTML = "";
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/orders/vendor/my-orders/${orderId}`, {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+
     });
 
-    init();
+    const data = await response.json();
+
+    if (!response.ok) {
+      detailsBox.innerHTML = `<p>${data.message || "Unable to load order details."}</p>`;
+      return;
+    }
+
+    detailsBox.innerHTML = `
+      <h4>Order Items</h4>
+      ${data.map(item => `
+        <div class="order-item-row">
+          <span>${item.item_name}</span>
+          <span>Qty: ${item.quantity}</span>
+          <span>$${Number(item.subtotal).toFixed(2)}</span>
+        </div>
+      `).join("")}
+    `;
+
+  } catch (error) {
+    console.error("View order details error:", error);
+    detailsBox.innerHTML = "<p>Unable to connect to server.</p>";
+  }
+}
+
+/*
+  Search orders when user types.
+*/
+if (searchInput) {
+  searchInput.addEventListener("input", renderOrders);
+}
+
+/*
+  Filter orders by status.
+*/
+filterButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    filterButtons.forEach(btn => {
+      btn.classList.remove("is-active");
+      btn.setAttribute("aria-selected", "false");
+    });
+
+    button.classList.add("is-active");
+    button.setAttribute("aria-selected", "true");
+
+    const filterValue = button.dataset.filter;
+
+    if (filterValue === "all") {
+      currentStatusFilter = "All";
+    } else if (filterValue === "new") {
+      currentStatusFilter = "Pending";
+    } else if (filterValue === "preparing") {
+      currentStatusFilter = "Preparing";
+    } else if (filterValue === "ready") {
+      currentStatusFilter = "Ready";
+    } else if (filterValue === "completed") {
+      currentStatusFilter = "Completed";
+    }
+
+    renderOrders();
+  });
 });

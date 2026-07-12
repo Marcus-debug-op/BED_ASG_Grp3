@@ -118,6 +118,7 @@ async function getOrderStatus(orderId) {
   }
 }
 
+
 // Fetches all past orders for one patron, most recent first.
 async function getOrderHistory(patronId) {
   let connection;
@@ -146,44 +147,39 @@ async function getOrderHistory(patronId) {
   }
 }
 
-// Confirms the given stall belongs to the given vendor before any write/read happens.
-async function stallBelongsToVendor(connection, stallId, vendorId) {
-  const request = connection.request();
-  request.input("stall_id", sql.Int, stallId);
-  request.input("vendor_id", sql.Int, vendorId);
 
-  const result = await request.query(`
-    SELECT stall_id FROM Stalls WHERE stall_id = @stall_id AND vendor_id = @vendor_id;
-  `);
 
-  return result.recordset.length > 0;
-}
-
-// Returns null if the stall doesn't belong to this vendor, so the controller can 403.
-// One row per order line; the controller groups rows into orders with an items array.
-async function getOrdersByStall(stallId, vendorId) {
+async function getOrdersForVendor(vendorId) {
   let connection;
 
   try {
     connection = await sql.connect(dbConfig);
 
-    const owns = await stallBelongsToVendor(connection, stallId, vendorId);
-    if (!owns) return null;
-
     const request = connection.request();
-    request.input("stall_id", sql.Int, stallId);
+    request.input("vendor_id", sql.Int, vendorId);
 
+    /*
+      Retrieve all orders for stalls owned by this vendor.
+      
+      Orders table stores the order.
+      Stalls table tells us which vendor owns the stall.
+      Users table gives us the patron's name.
+    */
     const result = await request.query(`
-      SELECT o.order_id, o.order_status, o.total_amount, o.order_date,
-             u.full_name AS customer_name,
-             oi.menu_item_id, oi.quantity, oi.unit_price, oi.subtotal,
-             mi.item_name
+      SELECT 
+        o.order_id,
+        o.patron_id,
+        u.full_name AS patron_name,
+        o.stall_id,
+        s.stall_name,
+        o.order_status,
+        o.total_amount,
+        o.order_date
       FROM Orders o
+      INNER JOIN Stalls s ON o.stall_id = s.stall_id
       INNER JOIN Users u ON o.patron_id = u.user_id
-      LEFT JOIN OrderItems oi ON oi.order_id = o.order_id
-      LEFT JOIN MenuItems mi ON oi.menu_item_id = mi.menu_item_id
-      WHERE o.stall_id = @stall_id
-      ORDER BY o.order_date DESC, o.order_id;
+      WHERE s.vendor_id = @vendor_id
+      ORDER BY o.order_date DESC;
     `);
 
     return result.recordset;
@@ -195,8 +191,7 @@ async function getOrdersByStall(stallId, vendorId) {
   }
 }
 
-// Returns null if the order doesn't exist or doesn't belong to this vendor's stalls.
-async function updateOrderStatus(orderId, vendorId, status) {
+async function getOrderDetailsForVendor(orderId, vendorId) {
   let connection;
 
   try {
@@ -205,18 +200,39 @@ async function updateOrderStatus(orderId, vendorId, status) {
     const request = connection.request();
     request.input("order_id", sql.Int, orderId);
     request.input("vendor_id", sql.Int, vendorId);
-    request.input("order_status", sql.VarChar(30), status);
 
+    /*
+      Retrieve one order's details.
+      This joins:
+      - Orders: main order info
+      - Stalls: stall info and vendor ownership check
+      - Users: patron info
+      - OrderItems: items inside the order
+      - MenuItems: menu item names
+    */
     const result = await request.query(`
-      UPDATE o
-      SET order_status = @order_status
-      OUTPUT INSERTED.order_id, INSERTED.order_status
+      SELECT 
+        o.order_id,
+        o.order_status,
+        o.total_amount,
+        o.order_date,
+        u.full_name AS patron_name,
+        s.stall_name,
+        mi.item_name,
+        oi.quantity,
+        oi.unit_price,
+        oi.subtotal
       FROM Orders o
       INNER JOIN Stalls s ON o.stall_id = s.stall_id
-      WHERE o.order_id = @order_id AND s.vendor_id = @vendor_id;
+      INNER JOIN Users u ON o.patron_id = u.user_id
+      INNER JOIN OrderItems oi ON o.order_id = oi.order_id
+      INNER JOIN MenuItems mi ON oi.menu_item_id = mi.menu_item_id
+      WHERE o.order_id = @order_id
+        AND s.vendor_id = @vendor_id
+      ORDER BY mi.item_name;
     `);
 
-    return result.recordset[0] || null;
+    return result.recordset;
   } catch (error) {
     console.error("Database error:", error);
     throw error;
@@ -225,4 +241,60 @@ async function updateOrderStatus(orderId, vendorId, status) {
   }
 }
 
-module.exports = { createOrder, getOrderStatus, getOrdersByStall, updateOrderStatus, getOrderHistory };
+async function updateOrderStatusForVendor(orderId, vendorId, orderStatus) {
+  let connection;
+
+  try {
+    connection = await sql.connect(dbConfig);
+
+    const request = connection.request();
+    request.input("order_id", sql.Int, orderId);
+    request.input("vendor_id", sql.Int, vendorId);
+    request.input("order_status", sql.VarChar(30), orderStatus);
+
+
+    /*
+      Update the order status only if:
+      1. The order_id matches
+      2. The order belongs to a stall owned by this vendor
+
+      This prevents Vendor A from updating Vendor B's orders.
+    */
+    const result = await request.query(`
+      UPDATE o
+      SET o.order_status = @order_status
+      OUTPUT 
+        INSERTED.order_id,
+        INSERTED.order_status,
+        INSERTED.total_amount,
+        INSERTED.order_date
+      FROM Orders o
+      INNER JOIN Stalls s ON o.stall_id = s.stall_id
+      WHERE o.order_id = @order_id
+        AND s.vendor_id = @vendor_id;
+    `);
+
+    return result.recordset[0] || null;
+    }
+
+    catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } 
+  finally {
+    if (connection) await connection.close();
+  }
+}
+
+
+  
+
+// Helped update functions
+module.exports = {
+  createOrder,
+  getOrderStatus,
+  getOrderHistory,
+  getOrdersForVendor,
+  getOrderDetailsForVendor,
+  updateOrderStatusForVendor
+};
