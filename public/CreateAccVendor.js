@@ -2,10 +2,40 @@ const form = document.getElementById("vendorRegisterForm");
 const messageDiv = document.getElementById("message");
 const apiBaseUrl = "http://localhost:3000/api/auth/register";
 
+function isStrongPassword(password) {
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,50}$/.test(password);
+}
+
+
+function validatePassword(password) {
+  if (password.length < 8) {
+    return "Password must be at least 8 characters long.";
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    return "Password must include at least one uppercase letter.";
+  }
+
+  if (!/[a-z]/.test(password)) {
+    return "Password must include at least one lowercase letter.";
+  }
+
+  if (!/[0-9]/.test(password)) {
+    return "Password must include at least one number.";
+  }
+
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return "Password must include at least one special character.";
+  }
+
+  return null;
+}
+
 async function loadHawkerCentres() {
   const select = document.getElementById("hawker_centre_id");
 
   try {
+
     const response = await fetch("http://localhost:3000/api/hawkercentres");
 
     if (!response.ok) {
@@ -47,6 +77,22 @@ form.addEventListener("submit", async (event) => {
     unit_number: document.getElementById("unit_number").value.trim(),
     hawker_centre_id: document.getElementById("hawker_centre_id").value,
   };
+
+  const passwordError = validatePassword(newVendor.password);
+
+  if (passwordError) {
+    messageDiv.textContent = passwordError;
+    messageDiv.style.color = "red";
+    return;
+  }
+
+  if (newVendor.password !== newVendor.confirm_password) {
+  messageDiv.textContent = "Password and confirm password do not match.";
+  messageDiv.style.color = "red";
+  submitButton.disabled = false;
+  return;
+}
+
   
   try {
     const response = await fetch(`${apiBaseUrl}/vendor`, {
