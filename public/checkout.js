@@ -520,16 +520,21 @@ document.getElementById("applyPromoBtn")?.addEventListener("click", () => {
 await loadPromosFromFirestore();
 updateCheckoutSummary();
 
-// SUBMIT TO FIRESTORE
+// Submit checkout — saves the order to the SQL backend (was Firebase) =====
 const submitBtn = document.querySelector(".cta");
 
 submitBtn?.addEventListener("click", async () => {
+  // Recalculate totals and grab the current cart.
   const info = updateCheckoutSummary();
+
+  // Guard: don't proceed if the cart is empty.
   if (!info.cart.length) return alert("Cart is empty");
 
+  // Guard: validate the contact/collection form (name, phone, delivery fields).
   const form = validateCheckoutForm();
   if (!form.ok) return;
 
+  // Guard: if paying by card, make sure card details were saved first.
   const pay = document.querySelector('input[name="pay"]:checked')?.value || "card";
   if (pay === "card") {
     const saved = readCardDetails();
@@ -540,46 +545,70 @@ submitBtn?.addEventListener("click", async () => {
     }
   }
 
-  const firstItem = info.cart[0] || {};
-  const rootStallId = firstItem.stallId || "";
-  const rootStallName = firstItem.stallName || "";
-
+  // Show a processing state and disable the button so it can't be double-clicked.
   submitBtn.textContent = "Processing...";
   submitBtn.disabled = true;
 
   try {
-    //Get sequential order number from Firestore counter (1,2,3...)
-    const nextOrderNo = await getNextOrderNo();
+    // Read the logged-in patron's token (SignInPatron.js saved it under "token").
+    const token = localStorage.getItem("token");
 
-    await addDoc(collection(db, "orders"), {
-      userId: auth.currentUser ? auth.currentUser.uid : "guest",
-      orderNo: nextOrderNo, //sequential
-      createdAt: serverTimestamp(),
+    // Group cart items by their stall, e.g. { 2: [laksa items], 1: [beancurd items] }.
+    // This is what lets one checkout split into one order per stall.
+    const itemsByStall = {};
+    for (const item of info.cart) {
+      const sid = Number(item.stallId);          // stall id as a number
+      if (!itemsByStall[sid]) itemsByStall[sid] = [];
+      itemsByStall[sid].push(item);
+    }
 
-      stallId: rootStallId,
-      stallName: rootStallName,
+    // Create ONE order per stall by POSTing each group to the order API.
+    // Each POST is single-stall, so it passes the backend's stall validation.
+    const createdOrders = [];
+    for (const stallId in itemsByStall) {
+      // Build the body BED-20 expects: stall_id + items [{ menu_item_id, quantity }].
+      const payload = {
+        stall_id: Number(stallId),
+        items: itemsByStall[stallId].map(i => ({
+          menu_item_id: Number(i.id),            // cart item id = SQL menu_item_id
+          quantity: i.qty
+        }))
+      };
 
-      items: info.cart,
-      subtotal: info.subtotal,
-      ecoFee: info.ecoFee,
-      discount: info.discount,
-      promoCode: info.promoCode,
-      total: info.total,
-      status: "Paid",
-      payment: { method: pay, card: pay === "card" ? readCardDetails() : null },
-      contact: { fullName: form.fullName, phone: form.phone },
-      collection: { method: form.method }
-    });
+      // Send this stall's order to the backend, with the patron token for auth.
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
 
-    //save last order no so PaymentSuccesss.html can show it
-    localStorage.setItem(LAST_ORDER_NO_KEY, String(nextOrderNo));
+      // If any stall's order fails, stop and surface the error (don't fake success).
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error(errBody.message || `Order failed for stall ${stallId} (${response.status})`);
+      }
 
+      // Keep the created order so we can reference the last order id afterwards.
+      createdOrders.push(await response.json());
+    }
+
+    // Save the most recent order id so the success page can display it.
+    const lastOrder = createdOrders[createdOrders.length - 1];
+    localStorage.setItem(LAST_ORDER_NO_KEY, String(lastOrder.order.order_id));
+
+    // All stall orders saved -> clear the local cart, eco toggle, and promo.
     localStorage.removeItem(CART_KEY);
     localStorage.removeItem(ECO_KEY);
     localStorage.removeItem(COUPON_KEY);
 
+    // Send the customer to the success / awaiting-payment page.
     window.location.href = "PaymentSuccesss.html";
+
   } catch (e) {
+    // Any failure (network, auth, invalid item): show it and re-enable the button.
     console.error(e);
     alert("Error processing order: " + e.message);
     submitBtn.textContent = "Submit";

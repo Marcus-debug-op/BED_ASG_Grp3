@@ -101,7 +101,62 @@ async function getMenuByStallId(stallId) {
   }
 }
 
+// BED-85: Public reviews summary API - no auth needed, just an existing stall.
+// Returns null if the stall doesn't exist, so the controller can 404.
+async function getStallReviewsSummary(stallId) {
+  let connection;
+
+  try {
+    connection = await sql.connect(dbConfig);
+
+    const stallRequest = connection.request();
+    stallRequest.input("stall_id", sql.Int, stallId);
+
+    const stallResult = await stallRequest.query(`
+      SELECT stall_id FROM Stalls WHERE stall_id = @stall_id AND is_active = 1;
+    `);
+
+    if (stallResult.recordset.length === 0) {
+      return null;
+    }
+
+    const statsRequest = connection.request();
+    statsRequest.input("stall_id", sql.Int, stallId);
+
+    const statsResult = await statsRequest.query(`
+      SELECT AVG(CAST(rating AS FLOAT)) AS avg_rating, COUNT(*) AS total_reviews
+      FROM Feedbacks
+      WHERE stall_id = @stall_id;
+    `);
+
+    const recentRequest = connection.request();
+    recentRequest.input("stall_id", sql.Int, stallId);
+
+    const recentResult = await recentRequest.query(`
+      SELECT TOP (5) f.feedback_id, f.patron_id, f.rating, f.comment, f.created_at, u.full_name AS reviewer_name
+      FROM Feedbacks f
+      INNER JOIN Users u ON f.patron_id = u.user_id
+      WHERE f.stall_id = @stall_id
+      ORDER BY f.created_at DESC;
+    `);
+
+    // AVG() over zero rows returns SQL NULL - that's exactly the avg_rating: null
+    // empty state the ticket wants, so it's passed through as-is, not coerced to 0.
+    return {
+      avg_rating: statsResult.recordset[0].avg_rating,
+      total_reviews: statsResult.recordset[0].total_reviews,
+      recent_reviews: recentResult.recordset
+    };
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) await connection.close();
+  }
+}
+
 module.exports = {
   getAllStalls,
-  getMenuByStallId
+  getMenuByStallId,
+  getStallReviewsSummary
 };

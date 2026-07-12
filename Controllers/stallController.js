@@ -52,7 +52,38 @@ async function getStallMenu(req, res) {
   }
 }
 
+// BED-85: Public reviews summary API
+// GET /api/stalls/:stallId/reviews/summary
+async function getStallReviewsSummary(req, res) {
+  try {
+    const stallId = parseInt(req.params.stallId, 10);
+
+    if (Number.isNaN(stallId)) {
+      return res.status(400).json({
+        message: "Invalid stall ID."
+      });
+    }
+
+    const summary = await stallModel.getStallReviewsSummary(stallId);
+
+    if (!summary) {
+      return res.status(404).json({
+        message: "Stall not found."
+      });
+    }
+
+    res.status(200).json(summary);
+  } catch (error) {
+    console.error("Error getting stall reviews summary:", error);
+
+    res.status(500).json({
+      message: "Unable to load reviews summary."
+    });
+  }
+}
+
 module.exports = {
   getStalls,
-  getStallMenu
+  getStallMenu,
+  getStallReviewsSummary
 };

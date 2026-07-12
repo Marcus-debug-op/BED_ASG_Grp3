@@ -1,6 +1,3 @@
-import { fs } from "./firebase-init.js";
-import { doc, getDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
 function getStallId() {
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id") || params.get("stall");
@@ -25,13 +22,10 @@ function ratingBucket(rating) {
   return Math.max(1, Math.min(5, rounded));
 }
 
+// Updated to handle SQL Server Datetime format
 function fmtDate(value) {
   try {
     if (!value) return "";
-    if (typeof value === "object" && typeof value.toDate === "function") {
-      const d = value.toDate();
-      return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-    }
     const d = new Date(value);
     if (!isNaN(d.getTime())) {
       return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -42,17 +36,41 @@ function fmtDate(value) {
   }
 }
 
+// BED-92 frontend: who's logged in right now, so we know which review
+// cards are "yours" (SignInPatron.js stores this under the plain "user" key,
+// not through authStorage.js - see menu.js's BED-78 fix for why that matters).
+function getCurrentUser() {
+  try {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 function renderReviews(reviews) {
   const list = document.getElementById("reviewsList");
   if (!list) return;
 
   list.innerHTML = "";
 
+  const currentUser = getCurrentUser();
+
   for (const r of reviews) {
     const card = document.createElement("div");
     card.className = "review-post dynamic-review";
 
+    // Mapped to match your SQL column names (e.g., reviewer_name, created_at)
+    const reviewerName = r.reviewer_name || r.name || "Guest Patron";
+    const reviewDate = r.created_at || r.createdAt;
+    const reviewComment = r.comment || "";
+    const reviewRating = r.rating || 0;
+
     const hasPhoto = r.photo && typeof r.photo === "string" && r.photo.trim().length > 0;
+
+    // Only the patron who wrote this review sees a delete button on it -
+    // the backend also enforces this (403 on mismatch), this is just UI.
+    const isOwnReview = currentUser && r.patron_id === currentUser.user_id;
 
     card.innerHTML = `
       <div class="user-meta">
@@ -61,15 +79,18 @@ function renderReviews(reviews) {
         </div>
 
         <div class="user-title">
-          <strong>${r.name || "Guest Patron"}</strong>
+          <strong>${reviewerName}</strong>
           <div class="stars-gold-small"></div>
         </div>
 
-        <span class="post-date">${fmtDate(r.createdAt)}</span>
+        <div class="post-meta-right">
+          <span class="post-date">${fmtDate(reviewDate)}</span>
+          ${isOwnReview ? `<button type="button" class="review-delete-btn" data-feedback-id="${r.feedback_id}">Delete</button>` : ""}
+        </div>
       </div>
 
       <div class="review-content-row">
-        <p class="post-text">${r.comment || ""}</p>
+        <p class="post-text">${reviewComment}</p>
 
         ${hasPhoto ? `
           <div class="review-photo-wrap">
@@ -85,7 +106,7 @@ function renderReviews(reviews) {
     avatarImg.src = (r.avatar && r.avatar.trim()) ? r.avatar : "img/avatars/default.png";
     avatarImg.onerror = () => (avatarImg.src = "img/avatars/default.png");
 
-    createStars(card.querySelector(".stars-gold-small"), r.rating);
+    createStars(card.querySelector(".stars-gold-small"), reviewRating);
 
     const reviewPhoto = card.querySelector(".review-photo");
     if (reviewPhoto) {
@@ -96,9 +117,46 @@ function renderReviews(reviews) {
   }
 }
 
+// BED-92 frontend: delete own feedback. Delegated on the list container since
+// cards are re-rendered wholesale on every loadFeedback() call.
+async function handleDeleteClick(e) {
+  const btn = e.target.closest(".review-delete-btn");
+  if (!btn) return;
+
+  const feedbackId = btn.dataset.feedbackId;
+  if (!confirm("Delete this review? This can't be undone.")) return;
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("You must be logged in to delete your review.");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Deleting...";
+
+  try {
+    const response = await fetch(`/api/feedback/${feedbackId}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    if (!response.ok) throw new Error("Delete request failed");
+
+    // Re-fetch rather than just removing the card, so avg_rating/total_reviews/
+    // star breakdown all stay in sync with the server after the delete.
+    const stallId = getStallId();
+    await loadFeedback(stallId);
+  } catch (error) {
+    console.error("Error deleting feedback:", error);
+    alert("Couldn't delete your review. Please try again.");
+    btn.disabled = false;
+    btn.textContent = "Delete";
+  }
+}
+
 function updateStats(reviews) {
   const total = reviews.length;
-
   const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   let sum = 0;
 
@@ -133,60 +191,89 @@ function updateStats(reviews) {
   }
 }
 
+// Rewritten to use Express SQL API instead of Firebase
 async function loadStallInfo(stallId) {
-  const snap = await getDoc(doc(fs, "stalls", stallId));
-  if (!snap.exists()) {
-    alert("Stall not found in database");
+  try {
+    const response = await fetch('/api/stalls');
+    const allStalls = await response.json();
+    
+    // Find stall by snake_case stall_id
+    const s = allStalls.find(stall => stall.stall_id == stallId);
+
+    if (!s) {
+      alert("Stall not found in database");
+      return null;
+    }
+
+    const stallDisplayName = s.stall_name || `Stall ${stallId}`;
+
+    const nameEl = document.getElementById("stallNameText");
+    if (nameEl) nameEl.textContent = stallDisplayName;
+
+    const imgEl = document.getElementById("stallHeroImg");
+    if (imgEl) imgEl.src = s.image_url || "img/placeholder.jpg"; // Adjust for DB columns
+
+    const closeBtn = document.querySelector(".btn-close-modal");
+    if (closeBtn) closeBtn.addEventListener("click", () => window.history.back());
+
+    // Fix the "Add Feedback" button wiring
+    const returnUrl = `stallFeedback.html?id=${encodeURIComponent(stallId)}`;
+    const addLink = document.getElementById("addFeedbackLink");
+    if (addLink) {
+      // Ensure 'feedback.html' matches your actual submission form file name
+      addLink.href = `feedback.html?stall=${encodeURIComponent(stallDisplayName)}&id=${encodeURIComponent(stallId)}&return=${encodeURIComponent(returnUrl)}`;
+    }
+
+    document.title = `${stallDisplayName} - Feedback`;
+    return stallDisplayName;
+  } catch (error) {
+    console.error("Error loading stall info from backend:", error);
     return null;
   }
-
-  const s = snap.data();
-  const stallDisplayName = s.name || s.displayName || stallId;
-
-  const nameEl = document.getElementById("stallNameText");
-  if (nameEl) nameEl.textContent = stallDisplayName;
-
-  const imgEl = document.getElementById("stallHeroImg");
-  if (imgEl) imgEl.src = s.heroImage || s.image || "";
-
-  const closeBtn = document.querySelector(".btn-close-modal");
-  if (closeBtn) closeBtn.addEventListener("click", () => window.history.back());
-
-  const returnUrl = `stallFeedback.html?id=${encodeURIComponent(stallId)}`;
-  const addLink = document.getElementById("addFeedbackLink");
-  if (addLink) {
-    addLink.href =
-      `feedback.html?stall=${encodeURIComponent(stallDisplayName)}` +
-      `&id=${encodeURIComponent(stallId)}` +
-      `&return=${encodeURIComponent(returnUrl)}`;
-  }
-
-  document.title = `${stallDisplayName} - Feedback`;
-  return stallDisplayName;
 }
 
+// Rewritten to fetch BED-85 feature from Express
 async function loadFeedback(stallId) {
-  const feedbackRef = collection(fs, "stalls", stallId, "feedback");
-
-  let snaps;
   try {
-    snaps = await getDocs(query(feedbackRef, orderBy("createdAt", "desc")));
-  } catch (e) {
-    console.warn("orderBy(createdAt) failed, fallback to normal getDocs", e);
-    snaps = await getDocs(feedbackRef);
+    const response = await fetch(`/api/stalls/${stallId}/reviews/summary`);
+    
+    if (!response.ok) {
+        console.error("Failed to load reviews summary");
+        return;
+    }
+
+    const data = await response.json();
+    
+    // Defensive parsing: Handle whatever structure your SQL controller returns
+    let reviewsList = [];
+    if (Array.isArray(data)) {
+        reviewsList = data; // Fallback for raw arrays
+    } else if (data.recent_reviews) {
+        reviewsList = data.recent_reviews;
+    }
+
+    renderReviews(reviewsList);
+
+    // Apply exact SQL Math if your BED-85 query returns it
+    if (data.avg_rating !== undefined && data.total_reviews !== undefined) {
+        const avgRatingEl = document.getElementById("avgRating");
+        const avgStarsEl = document.getElementById("avgStars");
+        const totalEl = document.getElementById("totalReviews");
+
+        if (avgRatingEl) {
+            avgRatingEl.textContent = data.avg_rating !== null ? Number(data.avg_rating).toFixed(1) : "0.0";
+        }
+        if (totalEl) totalEl.textContent = data.total_reviews;
+        
+        createStars(avgStarsEl, Number(data.avg_rating || 0));
+        updateStats(reviewsList); // Run bar math
+    } else {
+        // Fallback to manual frontend calculation
+        updateStats(reviewsList);
+    }
+  } catch (error) {
+    console.error("Error loading feedback from backend:", error);
   }
-
-  const reviews = [];
-  snaps.forEach((d) => reviews.push({ id: d.id, ...d.data() }));
-
-  reviews.sort((a, b) => {
-    const at = a.createdAt?.toMillis?.() ?? 0;
-    const bt = b.createdAt?.toMillis?.() ?? 0;
-    return bt - at;
-  });
-
-  renderReviews(reviews);
-  updateStats(reviews);
 }
 
 async function init() {
@@ -195,6 +282,9 @@ async function init() {
     alert("Error: No stall selected.");
     return;
   }
+
+  const list = document.getElementById("reviewsList");
+  if (list) list.addEventListener("click", handleDeleteClick);
 
   await loadStallInfo(stallId);
   await loadFeedback(stallId);
