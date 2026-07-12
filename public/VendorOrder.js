@@ -1,342 +1,260 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+const token = localStorage.getItem("token");
+const role = localStorage.getItem("role");
 
-// --- PASTE YOUR FIREBASE CONFIG HERE ---
-const firebaseConfig = {
-  apiKey: "AIzaSyDo8B0OLtAj-Upfz7yNFeGz4cx3KWLZLuQ",
-  authDomain: "hawkerhub-64e2d.firebaseapp.com",
-  databaseURL: "https://hawkerhub-64e2d-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "hawkerhub-64e2d",
-  storageBucket: "hawkerhub-64e2d.firebasestorage.app",
-  messagingSenderId: "722888051277",
-  appId: "1:722888051277:web:59926d0a54ae0e4fe36a04"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-const ordersListElement = document.getElementById("orders-list");
+const ordersContainer = document.getElementById("ordersContainer");
 const searchInput = document.getElementById("order-search");
-const filterButtons = Array.from(document.querySelectorAll(".filter-chip"));
+const filterButtons = document.querySelectorAll(".filter-chip");
 
-// --- UI state ---
 let allOrders = [];
-let activeFilter = "all"; // all | new | preparing | ready | completed
-let searchTerm = "";
+let currentStatusFilter = "All";
 
-// --- workflow helpers ---
-function normalizeWorkflowStatus(raw) {
-    const s = (raw || "").toString().trim().toLowerCase();
-    if (!s) return "new";
-
-    if (s === "new" || s === "pending" || s === "paid") return "new";
-    if (s === "accepted" || s === "accept" || s === "preparing" || s === "in progress") return "preparing";
-    if (s === "ready" || s === "ready for pickup") return "ready";
-    if (s === "completed" || s === "complete" || s === "done") return "completed";
-
-    // fallback
-    return "new";
+/*
+  First check if the user is logged in.
+  Vendor order page should only be used by vendor accounts.
+*/
+if (!token) {
+  ordersContainer.innerHTML = "<p>Please login to view orders.</p>";
+} else if (role !== "vendor") {
+  ordersContainer.innerHTML = "<p>Please login as a vendor to view orders.</p>";
+} else {
+  loadVendorOrders();
 }
 
-function getWorkflowStatus(order) {
-    // We store vendor workflow in `orderStatus`. If missing, infer from old `status` usage.
-    if (order.orderStatus) return normalizeWorkflowStatus(order.orderStatus);
-    if (order.status === "completed") return "completed";
-    return "new";
-}
-
-function workflowLabel(s) {
-    if (s === "preparing") return "Preparing";
-    if (s === "ready") return "Ready";
-    if (s === "completed") return "Completed";
-    return "New";
-}
-
-function getNextWorkflowStatus(s) {
-    if (s === "new") return "preparing";
-    if (s === "preparing") return "ready";
-    if (s === "ready") return "completed";
-    return "completed";
-}
-
-function nextActionLabel(s) {
-    if (s === "new") return "Start Preparing";
-    if (s === "preparing") return "Mark Ready";
-    if (s === "ready") return "Complete";
-    return null;
-}
-
-function safeLower(v) {
-    return (v || "").toString().toLowerCase();
-}
-
-function orderMatchesSearch(order, term) {
-    if (!term) return true;
-    const t = term.trim().toLowerCase();
-    if (!t) return true;
-
-    const orderNo = (order.orderNo ?? "").toString();
-    const customerName = safeLower(order.userName || "");
-    const paymentMethod = safeLower(order.payment?.method || "");
-    const collectionMethod = safeLower(order.collectionMethod || "");
-
-    let itemsText = "";
-    if (Array.isArray(order.items)) {
-        itemsText = order.items.map(i => `${i?.name || ""} ${i?.qty || ""}`).join(" ").toLowerCase();
-    } else if (order["1"]) {
-        itemsText = `${order["1"]?.name || ""} ${order["1"]?.qty || ""}`.toLowerCase();
-    }
-
-    return (
-        orderNo.includes(t) ||
-        customerName.includes(t) ||
-        paymentMethod.includes(t) ||
-        collectionMethod.includes(t) ||
-        itemsText.includes(t) ||
-        safeLower(order.id).includes(t)
-    );
-}
-
-function applyFiltersAndRender() {
-    const filtered = allOrders
-        .filter(order => {
-            const ws = getWorkflowStatus(order);
-            const matchesFilter = activeFilter === "all" ? true : ws === activeFilter;
-            return matchesFilter && orderMatchesSearch(order, searchTerm);
-        })
-        .sort((a, b) => {
-            const pr = { new: 0, preparing: 1, ready: 2, completed: 3 };
-            const aS = getWorkflowStatus(a);
-            const bS = getWorkflowStatus(b);
-
-            const pDiff = (pr[aS] ?? 99) - (pr[bS] ?? 99);
-            if (pDiff !== 0) return pDiff;
-
-            // Oldest first (if timestamp exists)
-            const aT = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0;
-            const bT = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0;
-            if (aT !== bT) return aT - bT;
-
-            return (a.orderNo || 0) - (b.orderNo || 0);
-        });
-
-    renderOrders(filtered);
-}
-
-function renderOrders(orders) {
-    ordersListElement.innerHTML = "";
-
-    if (orders.length === 0) {
-        ordersListElement.innerHTML = '<div class="loading-text">No active orders found for this stall.</div>';
-        return;
-    }
-
-    orders.forEach((order, index) => {
-        const orderCard = document.createElement("div");
-        orderCard.className = "order-card";
-
-        const orderNo = order.orderNo || index + 1;
-        const customerName = order.userName || "Customer";
-
-        // Handle items
-        let itemsArray = [];
-        if (order.items && Array.isArray(order.items)) {
-            itemsArray = order.items;
-        } else if (order["1"]) {
-            itemsArray.push(order["1"]);
-        }
-        const itemCount = itemsArray.length;
-
-        const totalPrice = order.total || order.price || 0;
-        const formattedPrice = typeof totalPrice === 'number' ? totalPrice.toFixed(2) : totalPrice;
-
-        let timeString = "Recently";
-        if (order.timestamp) {
-            timeString = new Date(order.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        }
-
-        // --- Claim / unclaim (kept to avoid breaking existing logic elsewhere) ---
-        const isClaimed = order.isClaimed === true || order.status === "completed";
-        const displayClaim = isClaimed
-            ? "Paid (Claimed)"
-            : (order.status === "Paid" ? "Paid (Unclaimed)" : "Unclaimed");
-        const claimClass = isClaimed ? "claimed" : "unclaimed";
-
-        // --- PAYMENT CAPITALIZATION FIX ---
-        let rawPayment = order.payment?.method || 'PayNow';
-        let paymentText = rawPayment;
-        if (rawPayment === 'paynow') {
-            paymentText = 'PayNow';
-        } else {
-            paymentText = rawPayment.charAt(0).toUpperCase() + rawPayment.slice(1);
-        }
-
-        const collectionClass = order.collectionMethod === 'Delivery' ? 'delivery' : 'pickup';
-        const collectionText = order.collectionMethod || "Pickup";
-
-        // --- Vendor workflow status (NEW FEATURE) ---
-        const workflowStatus = getWorkflowStatus(order); // new | preparing | ready | completed
-        const workflowText = workflowLabel(workflowStatus);
-        const nextStatus = getNextWorkflowStatus(workflowStatus);
-        const nextText = nextActionLabel(workflowStatus);
-        const canAdvance = workflowStatus !== "completed";
-
-        let itemsHtml = itemsArray.map(item => `
-            <div class="item-row">
-                <span>• ${item.name}</span>
-                <span>x ${item.qty || 1}</span>
-            </div>
-        `).join("");
-
-        orderCard.innerHTML = `
-            <div class="queue-section">
-                <span class="queue-label">Queue No.</span>
-                <span class="queue-number">${orderNo}</span>
-            </div>
-
-            <div class="details-section">
-                <div class="customer-badge">${customerName}</div>
-                <div class="items-list">${itemsHtml}</div>
-                <div class="order-meta">
-                    <span class="item-count">${itemCount} Item</span>
-                    <span class="divider">|</span>
-                    <span class="total-price">$${formattedPrice}</span>
-                    <span class="time-stamp">${timeString}</span>
-                </div>
-            </div>
-
-            <div class="collection-section">
-                <span class="section-label">Collection</span>
-                <span class="status-text ${collectionClass}">${collectionText}</span>
-            </div>
-
-            <div class="payment-section">
-                <span class="section-label">Payment</span>
-                <span class="payment-method">${paymentText}</span>
-                <span class="order-status-badge ${workflowStatus}">${workflowText}</span>
-
-                ${nextText ? `
-                <div class="status-actions">
-                    <button class="status-btn primary"
-                    data-action="advance"
-                    data-id="${order.id}"
-                    data-next="${nextStatus}">
-                    ${nextText}
-                    </button>
-                </div>
-                ` : ""}
-
-
-                <button class="action-btn ${claimClass}" type="button" data-action="claim" data-id="${order.id}" data-claimed="${isClaimed}">
-                    ${displayClaim}
-                </button>
-            </div>
-        `;
-        ordersListElement.appendChild(orderCard);
-    });
-}
-
-// Event delegation (avoids re-binding listeners every render)
-ordersListElement.addEventListener("click", async (e) => {
-    const btn = e.target.closest("button");
-    if (!btn) return;
-
-    const action = btn.getAttribute("data-action");
-    if (!action) return;
-
-    const orderId = btn.getAttribute("data-id");
-    if (!orderId) return;
-
-    if (action === "claim") {
-        const claimed = btn.getAttribute("data-claimed") === "true";
-        await toggleClaimStatus(orderId, claimed);
-    }
-
-    if (action === "advance") {
-        const next = btn.getAttribute("data-next");
-        await updateWorkflowStatus(orderId, next);
-    }
-});
-
-async function toggleClaimStatus(orderId, isCurrentlyClaimed) {
-    const orderRef = doc(db, "orders", orderId);
-    try {
-        // Keep old `status` flip to avoid breaking existing features that rely on it.
-        const newLegacyStatus = isCurrentlyClaimed ? "pending" : "completed";
-        await updateDoc(orderRef, { status: newLegacyStatus, isClaimed: !isCurrentlyClaimed });
-    } catch (error) {
-        console.error("Claim update failed:", error);
-    }
-}
-
-async function updateWorkflowStatus(orderId, nextStatus) {
-    const orderRef = doc(db, "orders", orderId);
-    try {
-        await updateDoc(orderRef, { orderStatus: nextStatus });
-    } catch (error) {
-        console.error("Workflow update failed:", error);
-    }
-}
-
-function initVendorApp() {
-    console.log("Initializing Vendor App...");
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            const stallsRef = collection(db, "stalls");
-            const q = query(stallsRef, where("vendorId", "==", user.uid));
-            onSnapshot(q, (snapshot) => {
-                if (!snapshot.empty) {
-                    const stallDoc = snapshot.docs[0];
-                    const stallId = stallDoc.id;
-                    console.log("Found Vendor's Stall ID:", stallId);
-                    listenForOrders(stallId);
-                } else {
-                    ordersListElement.innerHTML = `<div class="loading-text">Error: No stall found linked to this account.</div>`;
-                }
-            });
-        } else {
-            ordersListElement.innerHTML = '<div class="loading-text">Please login to view orders.</div>';
+/*
+  Get all orders that belong to the logged-in vendor.
+  Backend uses the JWT token to know which vendor is logged in.
+*/
+async function loadVendorOrders() {
+  try {
+    const response = await fetch("/api/orders/vendor/my-orders", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+            Authorization: `Bearer ${token}`
         }
     });
+
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      ordersContainer.innerHTML = `<p>${data.message || "Unable to load orders."}</p>`;
+      return;
+    }
+
+    allOrders = data;
+    renderOrders();
+
+  } catch (error) {
+    console.error("Load vendor orders error:", error);
+    ordersContainer.innerHTML = "<p>Unable to connect to server.</p>";
+  }
 }
 
-function listenForOrders(targetStallId) {
-    const ordersRef = collection(db, "orders");
-    const q = query(ordersRef, where("stallId", "==", targetStallId));
-    onSnapshot(q, (snapshot) => {
-        const orders = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-        allOrders = orders;
-        applyFiltersAndRender();
-    }, (error) => {
-        console.error("Order Listener Error:", error);
+/*
+  Display the orders on the page.
+  Also applies search and status filter.
+*/
+function renderOrders() {
+  const searchText = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
+  let filteredOrders = allOrders;
+
+  if (currentStatusFilter !== "All") {
+    filteredOrders = filteredOrders.filter(order => {
+      return order.order_status === currentStatusFilter;
     });
+  }
+
+  if (searchText) {
+    filteredOrders = filteredOrders.filter(order => {
+      return (
+        String(order.order_id).includes(searchText) ||
+        String(order.patron_name || "").toLowerCase().includes(searchText) ||
+        String(order.stall_name || "").toLowerCase().includes(searchText)
+      );
+    });
+  }
+
+  if (filteredOrders.length === 0) {
+    ordersContainer.innerHTML = "<p>No orders found.</p>";
+    return;
+  }
+
+ordersContainer.innerHTML = filteredOrders.map(order => {
+  return `
+    <div class="order-card">
+      <div class="order-card-top">
+        <div>
+          <h3>Order #${order.order_id}</h3>
+          <p class="order-date">${new Date(order.order_date).toLocaleString()}</p>
+        </div>
+
+        <span class="status-badge ${order.order_status.toLowerCase()}">
+          ${order.order_status}
+        </span>
+      </div>
+
+      <div class="order-info-grid">
+        <div class="order-info">
+          <span>Customer</span>
+          <strong>${order.patron_name}</strong>
+        </div>
+
+        <div class="order-info">
+          <span>Stall</span>
+          <strong>${order.stall_name}</strong>
+        </div>
+
+        <div class="order-info">
+          <span>Total</span>
+          <strong>$${Number(order.total_amount).toFixed(2)}</strong>
+        </div>
+      </div>
+
+      <div class="order-actions">
+        <select id="status-${order.order_id}">
+          <option value="Pending" ${order.order_status === "Pending" ? "selected" : ""}>Pending</option>
+          <option value="Preparing" ${order.order_status === "Preparing" ? "selected" : ""}>Preparing</option>
+          <option value="Ready" ${order.order_status === "Ready" ? "selected" : ""}>Ready</option>
+          <option value="Completed" ${order.order_status === "Completed" ? "selected" : ""}>Completed</option>
+          <option value="Cancelled" ${order.order_status === "Cancelled" ? "selected" : ""}>Cancelled</option>
+        </select>
+
+        <button type="button" class="update-btn" onclick="updateOrderStatus(${order.order_id})">
+          Update Status
+        </button>
+
+        <button type="button" class="details-btn" onclick="viewOrderDetails(${order.order_id})">
+          View Details
+        </button>
+      </div>
+
+      <div id="details-${order.order_id}" class="order-details"></div>
+    </div>
+  `;
+}).join("");
+
 }
 
-// --- wire up UI controls ---
+/*
+  Update order status.
+  Example:
+  Pending -> Preparing
+  Preparing -> Ready
+  Ready -> Completed
+*/
+async function updateOrderStatus(orderId) {
+  const newStatus = document.getElementById(`status-${orderId}`).value;
+
+  try {
+    const response = await fetch(`/api/orders/vendor/my-orders/${orderId}/status`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        order_status: newStatus
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Unable to update order status.");
+      return;
+    }
+
+    alert("Order status updated successfully.");
+    loadVendorOrders();
+
+  } catch (error) {
+    console.error("Update order status error:", error);
+    alert("Unable to connect to server.");
+  }
+}
+
+/*
+  View the items inside one order.
+  This calls the backend order details route.
+*/
+async function viewOrderDetails(orderId) {
+  const detailsBox = document.getElementById(`details-${orderId}`);
+
+  if (detailsBox.innerHTML.trim() !== "") {
+    detailsBox.innerHTML = "";
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/orders/vendor/my-orders/${orderId}`, {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      detailsBox.innerHTML = `<p>${data.message || "Unable to load order details."}</p>`;
+      return;
+    }
+
+    detailsBox.innerHTML = `
+      <h4>Order Items</h4>
+      ${data.map(item => `
+        <div class="order-item-row">
+          <span>${item.item_name}</span>
+          <span>Qty: ${item.quantity}</span>
+          <span>$${Number(item.subtotal).toFixed(2)}</span>
+        </div>
+      `).join("")}
+    `;
+
+  } catch (error) {
+    console.error("View order details error:", error);
+    detailsBox.innerHTML = "<p>Unable to connect to server.</p>";
+  }
+}
+
+/*
+  Search orders when user types.
+*/
 if (searchInput) {
-    searchInput.addEventListener("input", (e) => {
-        searchTerm = e.target.value || "";
-        applyFiltersAndRender();
-    });
+  searchInput.addEventListener("input", renderOrders);
 }
 
-filterButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-        activeFilter = btn.getAttribute("data-filter") || "all";
-
-        filterButtons.forEach(b => {
-            const isActive = (b.getAttribute("data-filter") || "all") === activeFilter;
-            b.classList.toggle("is-active", isActive);
-            b.setAttribute("aria-selected", isActive ? "true" : "false");
-        });
-
-        applyFiltersAndRender();
+/*
+  Filter orders by status.
+*/
+filterButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    filterButtons.forEach(btn => {
+      btn.classList.remove("is-active");
+      btn.setAttribute("aria-selected", "false");
     });
-});
 
-initVendorApp();
+    button.classList.add("is-active");
+    button.setAttribute("aria-selected", "true");
+
+    const filterValue = button.dataset.filter;
+
+    if (filterValue === "all") {
+      currentStatusFilter = "All";
+    } else if (filterValue === "new") {
+      currentStatusFilter = "Pending";
+    } else if (filterValue === "preparing") {
+      currentStatusFilter = "Preparing";
+    } else if (filterValue === "ready") {
+      currentStatusFilter = "Ready";
+    } else if (filterValue === "completed") {
+      currentStatusFilter = "Completed";
+    }
+
+    renderOrders();
+  });
+});

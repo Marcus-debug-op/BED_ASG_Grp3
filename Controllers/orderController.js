@@ -39,4 +39,91 @@ async function getOrderStatus(req, res) {
   }
 }
 
-module.exports = { createOrder, getOrderStatus };
+async function getVendorOrders(req, res) {
+  try {
+    //req.user.sub comes from the JWT token, sub stores the logged-in user's user_id.
+    //Since this route is vendor-only, this user_id belongs to a vendor.
+    
+    const vendorId = req.user.sub;
+
+    const orders = await orderModel.getOrdersForVendor(vendorId);
+
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error("Error getting vendor orders:", error);
+    res.status(500).json({ message: "Unable to load vendor orders." });
+  }
+}
+
+async function getVendorOrderDetails(req, res) {
+  try {
+    const vendorId = req.user.sub; //  Get logged-in vendor ID from token.
+    const orderId = Number(req.params.orderId);// Get order ID fro  m the URL.
+
+    if (Number.isNaN(orderId)) { //Validate that orderId is a proper number.
+      return res.status(400).json({ message: "Invalid order ID." });
+    }
+
+    const orderDetails = await orderModel.getOrderDetailsForVendor(orderId, vendorId); // Retrieve full order details.
+
+    if (orderDetails.length === 0) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    res.status(200).json(orderDetails);
+  } catch (error) {
+    console.error("Error getting vendor order details:", error);
+    res.status(500).json({ message: "Unable to load order details." });
+  }
+}
+
+async function updateVendorOrderStatus(req, res) {
+  try {
+
+    const vendorId = req.user.sub; // Get logged-in vendor ID from token.
+    const orderId = Number(req.params.orderId); // Get order ID from URL.
+    const { order_status } = req.body;// Get new order status from frontend request body.
+
+    const allowedStatuses = ["Pending", "Preparing", "Ready", "Completed", "Cancelled"]; //only statuses vendors are allowed to set.
+
+    // /Validate order ID & status.
+
+    if (Number.isNaN(orderId)) {
+      return res.status(400).json({ message: "Invalid order ID." });
+    }
+
+    if (!allowedStatuses.includes(order_status)) {
+      return res.status(400).json({ message: "Invalid order status." });
+    }
+
+    const updatedOrder = await orderModel.updateOrderStatusForVendor(
+      orderId,
+      vendorId,
+      order_status
+    );
+
+    if (!updatedOrder) {
+      return res.status(404).json({
+        message: "Order not found or you do not own this stall."
+      });
+    }
+
+    res.status(200).json({
+      message: "Order status updated successfully.",
+      order: updatedOrder
+    });
+  } catch (error) {
+    console.error("Error updating vendor order status:", error);
+    res.status(500).json({ message: "Unable to update order status." });
+  }
+}
+
+
+
+module.exports = {
+  createOrder,
+  getOrderStatus,
+  getVendorOrders,
+  getVendorOrderDetails,
+  updateVendorOrderStatus
+};
