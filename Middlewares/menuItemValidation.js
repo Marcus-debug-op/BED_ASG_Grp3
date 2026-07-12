@@ -7,7 +7,8 @@ function validateMenuItem(req, res, next) {
     price: Joi.number().positive().precision(2).max(9999999.99).required(),
     category: Joi.string().max(50).allow("", null),
     image_url: Joi.string().uri().max(255).allow("", null),
-    is_available: Joi.boolean()
+    is_available: Joi.boolean(),
+    cuisine_ids: Joi.array().items(Joi.number().integer().positive()).unique()
   });
 
   const validation = schema.validate(req.body, {

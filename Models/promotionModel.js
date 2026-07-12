@@ -231,5 +231,102 @@ module.exports = {
   getPromotionsByStall,
   getPromotionByIdForVendor,
   createPromotion,
-  updatePromotion
+  updatePromotion,
+  validateAndApplyPromotion,
+  recordRedemption
 };
+
+// ---------------------------------------------------------------------
+// Checkout-time validation (used by Models/orderModel.js during checkout).
+// Runs on the SAME transaction the order is being created in, so an order
+// and its promo redemption always succeed or fail together.
+// ---------------------------------------------------------------------
+
+// Returns a discriminated result:
+//   { valid: false, reason: "...", message: "..." }   - specific, user-facing
+//   { valid: true, promotionId, discountAmount, discountedTotal }
+// subtotal is the pre-discount order total, calculated server-side by the
+// caller from real menu item prices - never trust a client-supplied total.
+async function validateAndApplyPromotion(transaction, stallId, patronId, promoCode, subtotal) {
+  const promoRequest = new sql.Request(transaction);
+  promoRequest.input("promo_code", sql.VarChar(50), promoCode);
+  promoRequest.input("stall_id", sql.Int, stallId);
+
+  const promoResult = await promoRequest.query(`
+    SELECT promotion_id, discount_percent, start_date, end_date, is_active,
+           min_spend_amount, max_redemptions
+    FROM Promotions
+    WHERE promo_code = @promo_code AND stall_id = @stall_id;
+  `);
+
+  const promo = promoResult.recordset[0];
+
+  if (!promo) {
+    return { valid: false, reason: "NOT_FOUND", message: "This promo code isn't valid for this stall." };
+  }
+
+  if (!promo.is_active) {
+    return { valid: false, reason: "INACTIVE", message: "This promo code is no longer active." };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (today < new Date(promo.start_date) || today > new Date(promo.end_date)) {
+    return { valid: false, reason: "EXPIRED", message: "This promo code isn't valid today - check its date range." };
+  }
+
+  if (promo.min_spend_amount && subtotal < promo.min_spend_amount) {
+    return {
+      valid: false,
+      reason: "MIN_SPEND_NOT_MET",
+      message: `This code needs a minimum spend of $${Number(promo.min_spend_amount).toFixed(2)} (your order is $${subtotal.toFixed(2)}).`
+    };
+  }
+
+  const patronRequest = new sql.Request(transaction);
+  patronRequest.input("promotion_id", sql.Int, promo.promotion_id);
+  patronRequest.input("patron_id", sql.Int, patronId);
+
+  const patronUseResult = await patronRequest.query(`
+    SELECT redemption_id FROM PromotionRedemptions
+    WHERE promotion_id = @promotion_id AND patron_id = @patron_id;
+  `);
+
+  if (patronUseResult.recordset.length > 0) {
+    return { valid: false, reason: "ALREADY_REDEEMED", message: "You've already used this promo code before." };
+  }
+
+  if (promo.max_redemptions !== null) {
+    const countRequest = new sql.Request(transaction);
+    countRequest.input("promotion_id", sql.Int, promo.promotion_id);
+
+    const countResult = await countRequest.query(`
+      SELECT COUNT(*) AS used_count FROM PromotionRedemptions WHERE promotion_id = @promotion_id;
+    `);
+
+    if (countResult.recordset[0].used_count >= promo.max_redemptions) {
+      return { valid: false, reason: "LIMIT_REACHED", message: "This promo code has reached its usage limit." };
+    }
+  }
+
+  // Server-side discount math - the only place the actual discount amount is
+  // ever calculated. A client can send whatever it wants; only this number counts.
+  const discountAmount = Math.round(subtotal * (promo.discount_percent / 100) * 100) / 100;
+  const discountedTotal = Math.round((subtotal - discountAmount) * 100) / 100;
+
+  return { valid: true, promotionId: promo.promotion_id, discountAmount, discountedTotal };
+}
+
+// Logs a redemption row on the same transaction as the order that used it.
+async function recordRedemption(transaction, promotionId, orderId, patronId, discountAmount) {
+  const request = new sql.Request(transaction);
+  request.input("promotion_id", sql.Int, promotionId);
+  request.input("order_id", sql.Int, orderId);
+  request.input("patron_id", sql.Int, patronId);
+  request.input("discount_amount", sql.Decimal(10, 2), discountAmount);
+
+  await request.query(`
+    INSERT INTO PromotionRedemptions (promotion_id, order_id, patron_id, discount_amount)
+    VALUES (@promotion_id, @order_id, @patron_id, @discount_amount);
+  `);
+}
