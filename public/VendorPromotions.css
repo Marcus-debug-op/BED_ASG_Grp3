@@ -32,6 +32,30 @@
   opacity: 0.85;
 }
 
+.promo-stall-select {
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  background: white;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.promo-cancel-btn {
+  background: #f1f1f1;
+  color: #555;
+  border: none;
+  padding: 12px 22px;
+  border-radius: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.promo-cancel-btn:hover {
+  background: #e6e6e6;
+}
+
 /* Cards */
 .promo-card {
   padding: 18px;

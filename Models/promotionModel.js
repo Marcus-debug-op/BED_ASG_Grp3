@@ -227,15 +227,6 @@ async function updatePromotion(promotionId, vendorId, promo) {
   }
 }
 
-module.exports = {
-  getPromotionsByStall,
-  getPromotionByIdForVendor,
-  createPromotion,
-  updatePromotion,
-  validateAndApplyPromotion,
-  recordRedemption
-};
-
 // ---------------------------------------------------------------------
 // Checkout-time validation (used by Models/orderModel.js during checkout).
 // Runs on the SAME transaction the order is being created in, so an order
@@ -258,6 +249,8 @@ async function validateAndApplyPromotion(transaction, stallId, patronId, promoCo
     FROM Promotions
     WHERE promo_code = @promo_code AND stall_id = @stall_id;
   `);
+  
+  
 
   const promo = promoResult.recordset[0];
 
@@ -330,3 +323,13 @@ async function recordRedemption(transaction, promotionId, orderId, patronId, dis
     VALUES (@promotion_id, @order_id, @patron_id, @discount_amount);
   `);
 }
+
+
+module.exports = {
+  getPromotionsByStall,
+  getPromotionByIdForVendor,
+  createPromotion,
+  updatePromotion,
+  validateAndApplyPromotion,
+  recordRedemption
+};
