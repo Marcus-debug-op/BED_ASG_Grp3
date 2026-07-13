@@ -3,14 +3,19 @@ const orderModel = require("../Models/orderModel");
 // POST /api/orders -> create the order (validation handled by validateOrder middleware).
 async function createOrder(req, res) {
   try {
-    // Identify the patron from their token and read the validated order body.
+    // Identify the patron from their token and read the validated order body.(damien)
     const patronId = req.user.sub;
-    const { stall_id, items } = req.body;
+    const { stall_id, items, promo_code } = req.body;
 
     // Create the order; the model flags an invalid/unavailable item.
-    const result = await orderModel.createOrder(patronId, stall_id, items);
+    const result = await orderModel.createOrder(patronId, stall_id, items, promo_code);
     if (result.error === "INVALID_ITEM") {
       return res.status(400).json({ message: `Invalid or unavailable menu item: ${result.menuItemId}` });
+    }
+    // Added for promotion application/redemption (damien) - specific,
+    // user-facing reasons a promo code was rejected.
+    if (result.error === "PROMO_INVALID") {
+      return res.status(400).json({ message: result.message, reason: result.reason });
     }
 
     // Success: 201 Created with the new order.
@@ -163,6 +168,3 @@ module.exports = {
   getVendorOrderDetails,
   updateVendorOrderStatus
 };
-
-
-

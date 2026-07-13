@@ -1,8 +1,11 @@
 const sql = require("mssql");
 const dbConfig = require("../dbConfig");
+// Added for promotion application/redemption (damien).
+const promotionModel = require("./promotionModel");
 
 // Creates an order and its line items as a single transaction (all-or-nothing).
-async function createOrder(patronId, stallId, items) {
+// promoCode is optional - added for promotion application/redemption (damien).
+async function createOrder(patronId, stallId, items, promoCode) {
   let connection;
   let transaction;
 
@@ -47,17 +50,45 @@ async function createOrder(patronId, stallId, items) {
       });
     }
 
+    // ---------------------------------------------------------------
+    // Promotion application (damien) - runs on the same transaction, so a
+    // failed/invalid promo cancels the whole order just like an invalid item.
+    // ---------------------------------------------------------------
+    let finalAmount = totalAmount;
+    let appliedPromotionId = null;
+    let appliedDiscountAmount = null;
+
+    if (promoCode) {
+      const promoResult = await promotionModel.validateAndApplyPromotion(
+        transaction,
+        stallId,
+        patronId,
+        promoCode,
+        totalAmount
+      );
+
+      if (!promoResult.valid) {
+        await transaction.rollback();
+        return { error: "PROMO_INVALID", reason: promoResult.reason, message: promoResult.message };
+      }
+
+      finalAmount = promoResult.discountedTotal;
+      appliedPromotionId = promoResult.promotionId;
+      appliedDiscountAmount = promoResult.discountAmount;
+    }
+
     // Insert the master Orders row and get back its new order_id
     // (order_status defaults to 'Pending' in the table).
     const orderRequest = new sql.Request(transaction);
     orderRequest.input("patron_id", sql.Int, patronId);
     orderRequest.input("stall_id", sql.Int, stallId);
-    orderRequest.input("total_amount", sql.Decimal(10, 2), totalAmount);
+    orderRequest.input("total_amount", sql.Decimal(10, 2), finalAmount);
+    orderRequest.input("promotion_id", sql.Int, appliedPromotionId);
 
     const orderResult = await orderRequest.query(`
-      INSERT INTO Orders (patron_id, stall_id, total_amount)
+      INSERT INTO Orders (patron_id, stall_id, total_amount, promotion_id)
       OUTPUT INSERTED.order_id, INSERTED.order_status, INSERTED.total_amount, INSERTED.order_date
-      VALUES (@patron_id, @stall_id, @total_amount);
+      VALUES (@patron_id, @stall_id, @total_amount, @promotion_id);
     `);
 
     const newOrder = orderResult.recordset[0];
@@ -78,9 +109,21 @@ async function createOrder(patronId, stallId, items) {
       `);
     }
 
+    // Log the redemption (damien) - same transaction, so it commits/rolls
+    // back together with the order it belongs to.
+    if (appliedPromotionId) {
+      await promotionModel.recordRedemption(transaction, appliedPromotionId, orderId, patronId, appliedDiscountAmount);
+    }
+
     // Everything worked: commit and return the created order.
     await transaction.commit();
-    return { order: newOrder, items: pricedItems };
+    return {
+      order: newOrder,
+      items: pricedItems,
+      promotion: appliedPromotionId
+        ? { promotion_id: appliedPromotionId, discount_amount: appliedDiscountAmount, subtotal: totalAmount }
+        : null
+    };
 
   } catch (error) {
     // On any failure, roll back so no partial order is left behind.

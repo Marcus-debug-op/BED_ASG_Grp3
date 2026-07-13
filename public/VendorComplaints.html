@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HawkerHub – Vendor Complaints</title> 
-  
+  <title>HawkerHub – Vendor Complaints</title>
+
   <link rel="stylesheet" href="VendorAccount.css">
   <link rel="stylesheet" href="topnav.css">
-  <link rel="stylesheet" href="VendorComplaints.css"> 
+  <link rel="stylesheet" href="VendorComplaints.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -24,22 +24,32 @@
 
       <div class="banner-text">
         <h1 id="stallNameDisplay">Loading Stall...</h1>
-        <p>View and Respond to Complaints from Patrons</p>
+        <p>View complaints from patrons and acknowledge that you've seen them</p>
       </div>
     </div>
   </section>
 
   <main class="container complaint-layout">
-    
+
     <div class="vendor-profile-card">
         <h3 id="vendorName">Vendor</h3>
-        <p id="vendorEmail" class="email-text">Loading...</p>
+        <p id="vendorEmail" class="email-text">Vendor Portal</p>
         <button id="logoutBtn" class="logout-btn">Logout</button>
     </div>
 
     <div class="complaints-section">
-        <h2 class="section-title">Complaints Form</h2>
-        
+        <div class="section-title-row">
+            <h2 class="section-title">Complaints</h2>
+            <select id="statusFilter">
+                <option value="">All statuses</option>
+                <option value="Open">Open</option>
+                <option value="Acknowledged">Acknowledged</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
+            </select>
+        </div>
+
         <div id="complaints-list" class="complaints-list">
             <p class="loading-text">Checking for complaints...</p>
         </div>
@@ -53,51 +63,40 @@
         <h2>Complaint Details</h2>
         <span class="close-btn" id="closeDetailModal">&times;</span>
       </div>
-      
+
       <div class="modal-body">
          <div class="modal-meta-row">
             <div>
                 <p><strong>From:</strong> <span id="modalUser">...</span></p>
                 <p><strong>Date:</strong> <span id="modalDate">...</span></p>
             </div>
-            
+
             <div class="status-control">
-                <label for="statusSelect">Current Status:</label>
-                <div class="status-action-row">
-                    <select id="statusSelect" class="status-dropdown">
-                        <option value="Pending">Pending</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Resolved">Resolved</option>
-                        <option value="Rejected">Rejected</option>
-                    </select>
-                    <button id="deleteIconBtn" class="delete-icon-btn" title="Delete this record">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-                <span id="saveStatusIndicator" class="save-indicator">Saved!</span>
+                <label>Current Status:</label>
+                <span id="statusBadge" class="status-pill">...</span>
             </div>
          </div>
 
          <hr class="modal-divider">
-         
+
+         <p class="label">Complaint Type:</p>
+         <p id="modalType" class="text-content">...</p>
+
          <p class="label">Complaint:</p>
          <p id="modalComplaint" class="text-content">...</p>
-         
-         <p class="label">Suggested Improvement:</p>
-         <p id="modalImprovement" class="text-content">...</p>
-         
-         <div class="modal-evidence">
-             <p class="label">Evidence Image:</p>
-             <img id="modalImage" src="" alt="Evidence">
-             <p id="noImageText">No image provided.</p>
-         </div>
 
          <hr class="modal-divider">
-         <div class="reply-section">
-             <label class="label">Vendor Reply:</label>
-             <textarea id="vendorReplyInput" placeholder="Type your response to the customer here..."></textarea>
-             <button id="sendReplyBtn" class="send-reply-btn">Send Reply</button>
-             <p id="replyStatusText" class="reply-status"></p>
+
+         <p class="label">Handled By:</p>
+         <p id="modalOfficer" class="text-content">Not yet assigned to an officer.</p>
+
+         <p class="label">Notes from Officer:</p>
+         <div id="modalNotes" class="notes-list"></div>
+         <p id="modalNotesEmpty" class="text-content hidden">No notes yet.</p>
+
+         <div class="acknowledge-row">
+            <button id="acknowledgeBtn" class="acknowledge-btn">Acknowledge Complaint</button>
+            <p id="acknowledgeStatusText" class="reply-status"></p>
          </div>
 
       </div>

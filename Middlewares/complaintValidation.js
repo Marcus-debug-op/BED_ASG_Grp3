@@ -1,14 +1,10 @@
 const Joi = require("joi");
+const { VALID_STATUSES } = require("../Models/complaintModel");
 
-function validateMenuItem(req, res, next) {
+function validateStatusUpdate(req, res, next) {
   const schema = Joi.object({
-    item_name: Joi.string().min(2).max(100).required(),
-    description: Joi.string().max(255).allow("", null),
-    price: Joi.number().positive().precision(2).max(9999999.99).required(),
-    category: Joi.string().max(50).allow("", null),
-    image_url: Joi.string().uri().max(255).allow("", null),
-    is_available: Joi.boolean(),
-    cuisine_ids: Joi.array().items(Joi.number().integer().positive()).unique()
+    status: Joi.string().valid(...VALID_STATUSES).required(),
+    note: Joi.string().max(500).allow("", null)
   });
 
   const validation = schema.validate(req.body, {
@@ -25,9 +21,13 @@ function validateMenuItem(req, res, next) {
   next();
 }
 
-function validateAvailability(req, res, next) {
+const COMPLAINT_TYPES = ["Hygiene", "Service", "Food Quality", "Overcharging", "Other"];
+
+function validateComplaintSubmission(req, res, next) {
   const schema = Joi.object({
-    is_available: Joi.boolean().required()
+    stall_id: Joi.number().integer().positive().required(),
+    complaint_type: Joi.string().valid(...COMPLAINT_TYPES).required(),
+    description: Joi.string().min(10).max(500).required()
   });
 
   const validation = schema.validate(req.body, {
@@ -45,6 +45,6 @@ function validateAvailability(req, res, next) {
 }
 
 module.exports = {
-  validateMenuItem,
-  validateAvailability
+  validateStatusUpdate,
+  validateComplaintSubmission
 };

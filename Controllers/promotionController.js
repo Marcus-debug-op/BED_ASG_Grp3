@@ -1,5 +1,6 @@
 const promotionModel = require("../Models/promotionModel");
 
+// GET /api/vendor/promotions/stall/:stallId
 async function getPromotionsByStall(req, res) {
   try {
     const vendorId = req.user.sub;
@@ -23,26 +24,53 @@ async function getPromotionsByStall(req, res) {
   }
 }
 
+// GET /api/vendor/promotions/:promotionId
+async function getPromotion(req, res) {
+  try {
+    const vendorId = req.user.sub;
+    const promotionId = Number(req.params.promotionId);
+
+    const promotion = await promotionModel.getPromotionByIdForVendor(promotionId, vendorId);
+
+    if (!promotion) {
+      return res.status(404).json({
+        message: "Promotion not found."
+      });
+    }
+
+    res.status(200).json(promotion);
+  } catch (error) {
+    console.error("Error getting promotion:", error);
+
+    res.status(500).json({
+      message: "Unable to load promotion."
+    });
+  }
+}
+
+// POST /api/vendor/promotions/stall/:stallId
 async function createPromotion(req, res) {
   try {
     const vendorId = req.user.sub;
     const stallId = Number(req.params.stallId);
 
-    const created = await promotionModel.createPromotion(stallId, vendorId, req.body);
+    const result = await promotionModel.createPromotion(stallId, vendorId, req.body);
 
-    if (created === null) {
-      return res.status(403).json({
-        message: "You do not own this stall."
-      });
+    if (result.outcome === "not_owner") {
+      return res.status(403).json({ message: "You do not own this stall." });
     }
 
-    if (created.error === "DUPLICATE_CODE") {
+    if (result.outcome === "duplicate_code") {
+      return res.status(400).json({ message: `Promo code "${req.body.promo_code}" is already in use.` });
+    }
+
+    if (result.outcome === "date_overlap") {
       return res.status(409).json({
-        message: "This promo code is already in use."
+        message: "This stall already has an active promotion during that date range. Deactivate it first or choose different dates."
       });
     }
 
-    res.status(201).json(created);
+    res.status(201).json(result.promotion);
   } catch (error) {
     console.error("Error creating promotion:", error);
 
@@ -52,26 +80,30 @@ async function createPromotion(req, res) {
   }
 }
 
+// PUT /api/vendor/promotions/:promotionId - full update, including toggling
+// is_active off. Never deletes the row, so historical/order-linked data stays intact.
 async function updatePromotion(req, res) {
   try {
     const vendorId = req.user.sub;
     const promotionId = Number(req.params.promotionId);
 
-    const updated = await promotionModel.updatePromotion(promotionId, vendorId, req.body);
+    const result = await promotionModel.updatePromotion(promotionId, vendorId, req.body);
 
-    if (updated && updated.error === "DUPLICATE_CODE") {
+    if (result.outcome === "not_found") {
+      return res.status(404).json({ message: "Promotion not found." });
+    }
+
+    if (result.outcome === "duplicate_code") {
+      return res.status(400).json({ message: `Promo code "${req.body.promo_code}" is already in use.` });
+    }
+
+    if (result.outcome === "date_overlap") {
       return res.status(409).json({
-        message: "This promo code is already in use."
+        message: "This stall already has another active promotion during that date range. Deactivate it first or choose different dates."
       });
     }
 
-    if (!updated) {
-      return res.status(404).json({
-        message: "Promotion not found."
-      });
-    }
-
-    res.status(200).json(updated);
+    res.status(200).json(result.promotion);
   } catch (error) {
     console.error("Error updating promotion:", error);
 
@@ -81,65 +113,9 @@ async function updatePromotion(req, res) {
   }
 }
 
-async function setActive(req, res) {
-  try {
-    const vendorId = req.user.sub;
-    const promotionId = Number(req.params.promotionId);
-    const { is_active } = req.body;
-
-    const updated = await promotionModel.setPromotionActive(promotionId, vendorId, is_active);
-
-    if (!updated) {
-      return res.status(404).json({
-        message: "Promotion not found."
-      });
-    }
-
-    res.status(200).json(updated);
-  } catch (error) {
-    console.error("Error updating promotion status:", error);
-
-    res.status(500).json({
-      message: "Unable to update promotion status."
-    });
-  }
-}
-
-async function deletePromotion(req, res) {
-  try {
-    const vendorId = req.user.sub;
-    const promotionId = Number(req.params.promotionId);
-
-    const deleted = await promotionModel.deletePromotion(promotionId, vendorId);
-
-    if (!deleted) {
-      return res.status(404).json({
-        message: "Promotion not found."
-      });
-    }
-
-    res.status(200).json({
-      message: "Promotion deleted."
-    });
-  } catch (error) {
-    console.error("Error deleting promotion:", error);
-
-    if (error.number === 547) {
-      return res.status(409).json({
-        message: "This promotion is linked to past orders and cannot be deleted. Set it inactive instead."
-      });
-    }
-
-    res.status(500).json({
-      message: "Unable to delete promotion."
-    });
-  }
-}
-
 module.exports = {
   getPromotionsByStall,
+  getPromotion,
   createPromotion,
-  updatePromotion,
-  setActive,
-  deletePromotion
+  updatePromotion
 };
