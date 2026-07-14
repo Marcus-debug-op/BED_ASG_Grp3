@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const passport = require("./Config/passport");
 
 // Routes
 const registerRoute = require("./Routes/registerRoute");
@@ -19,6 +20,7 @@ const promotionRoute = require("./Routes/promotionRoute");
 const app = express();
 
 app.use(express.json());
+app.use(passport.initialize());
 
 // Serve frontend files from public folder
 app.use(express.static(path.join(__dirname, "public")));
