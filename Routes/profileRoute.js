@@ -3,35 +3,24 @@ const path = require("path");
 
 const express = require("express");
 const profileController = require("../Controllers/profileController");
+const { validateUpdateProfile } = require("../Middlewares/profileValidation");
+const uploadProfileImage = require("../Middlewares/uploadProfileImage");
 const { requireAuth, blockGuests } = require("../Middlewares/authMiddleware");
+
 
 const router = express.Router();
 
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/uploads/profile");
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
-    cb(null, uniqueName);
-  }
-});
 
-const upload = multer({
-  storage: storage,
-  fileFilter: (req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("Only image files are allowed."));
-    }
-
-    cb(null, true);
-  }
-});
-
-router.get("/my-profile", requireAuth, blockGuests, profileController.getMyProfile);
-router.put("/my-profile", requireAuth, blockGuests, profileController.updateMyProfile);
+router.get("/my-profile", requireAuth, blockGuests, profileController.getMyProfile
+  /*
+    #swagger.tags = ['Profile']
+    #swagger.description = 'Get logged-in user profile'
+    #swagger.security = [{ "bearerAuth": [] }]
+  */
+);
+router.put("/my-profile", requireAuth, blockGuests, validateUpdateProfile, profileController.updateMyProfile);
 router.put("/profile-picture", requireAuth, blockGuests, profileController.updateMyProfileImage);
-router.put("/profile-picture-upload", requireAuth, blockGuests, upload.single("profileImage"), profileController.uploadMyProfileImage);
+router.put("/profile-picture-upload", requireAuth, blockGuests, uploadProfileImage.single("profileImage"), profileController.uploadMyProfileImage);
 
 module.exports = router;
