@@ -1,10 +1,6 @@
 const bcrypt = require("bcrypt");
-const passport = require("passport");
 const registerModel = require("../Models/registerModel");
 const { generateUserToken, generateGuestToken } = require("../Utils/token");
-
-const FRONTEND_APP_URL = process.env.FRONTEND_APP_URL || "/index.html";
-const FRONTEND_LOGIN_URL = process.env.FRONTEND_LOGIN_URL || "/SigninPatron.html";
 
 // Shared login logic for a specific required role ("patron" | "vendor").
 async function loginWithRole(req, res, requiredRole) {
@@ -104,32 +100,11 @@ async function getCurrentSession(req, res) {
   });
 }
 
-// GET /api/auth/google/callback -> Google redirects here after consent. Passport's Google
-// strategy (Config/passport.js) does the token exchange + profile fetch + DB find-or-create;
-// this handler just decides what to do with the result (issue our JWT, or redirect on failure).
-function googleAuthCallback(req, res, next) {
-  passport.authenticate("google", { session: false }, (err, user, info) => {
-    if (err) {
-      console.error("Error during Google auth callback:", err);
-      return res.redirect(`${FRONTEND_LOGIN_URL}?error=google_auth_failed`);
-    }
-
-    if (!user) {
-      const reason = info?.reason || "google_auth_failed";
-      return res.redirect(`${FRONTEND_LOGIN_URL}?error=${reason}`);
-    }
-
-    const token = generateUserToken(user);
-    return res.redirect(`${FRONTEND_APP_URL}?token=${encodeURIComponent(token)}`);
-  })(req, res, next);
-}
-
 module.exports = {
   loginPatron,
   loginVendor,
   loginOfficer,
   loginOperator,
   createGuestSession,
-  getCurrentSession,
-  googleAuthCallback
+  getCurrentSession
 };

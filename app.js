@@ -1,6 +1,5 @@
 const express = require("express");
 const path = require("path");
-const passport = require("./Config/passport");
 
 //Swagger
 const swaggerUi = require("swagger-ui-express");
@@ -24,7 +23,6 @@ const promotionRoute = require("./Routes/promotionRoute");
 const app = express();
 
 app.use(express.json());
-app.use(passport.initialize());
 
 // Swagger 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
