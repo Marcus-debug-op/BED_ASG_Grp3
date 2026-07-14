@@ -98,11 +98,6 @@ async function updateMyProfile(req, res) {
     const userId = req.user.sub;
     const { full_name, phone_number } = req.body;
 
-    if (!full_name || !phone_number) {
-      return res.status(400).json({
-        message: "Full name and phone number are required."
-      });
-    }
 
     const updatedUser = await profileModel.updateProfileByUserId(
       userId,
