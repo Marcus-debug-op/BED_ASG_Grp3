@@ -6,25 +6,57 @@ function isStrongPassword(password) {
 }
 
 
-function validatePassword(password) {
-  if (password.length < 8) {
+function validatePatronForm(newPatron) {
+  if (!newPatron.full_name) {
+    return "Full name is required.";
+  }
+
+  if (!newPatron.email) {
+    return "Email address is required.";
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newPatron.email)) {
+    return "Please enter a valid email address.";
+  }
+
+  if (!newPatron.phone_number) {
+    return "Phone number is required.";
+  }
+
+  if (!/^\d+$/.test(newPatron.phone_number)) {
+    return "Phone number must contain numbers only.";
+  }
+
+  if (!/^[689]\d{7}$/.test(newPatron.phone_number)) {
+    return "Phone number must be 8 digits and start with 6, 8, or 9.";
+  }
+
+  if (!newPatron.password) {
+    return "Password is required.";
+  }
+
+  if (newPatron.password.length < 8) {
     return "Password must be at least 8 characters long.";
   }
 
-  if (!/[A-Z]/.test(password)) {
+  if (!/[A-Z]/.test(newPatron.password)) {
     return "Password must include at least one uppercase letter.";
   }
 
-  if (!/[a-z]/.test(password)) {
+  if (!/[a-z]/.test(newPatron.password)) {
     return "Password must include at least one lowercase letter.";
   }
 
-  if (!/[0-9]/.test(password)) {
+  if (!/[0-9]/.test(newPatron.password)) {
     return "Password must include at least one number.";
   }
 
-  if (!/[^A-Za-z0-9]/.test(password)) {
+  if (!/[^A-Za-z0-9]/.test(newPatron.password)) {
     return "Password must include at least one special character.";
+  }
+
+  if (newPatron.password !== newPatron.confirm_password) {
+    return "Password and confirm password do not match.";
   }
 
   return null;
@@ -45,22 +77,15 @@ form.addEventListener("submit", async (event) => {
   }
 
 
-  const passwordError = validatePassword(newPatron.password);
-  
-  if (passwordError) {
-    messageDiv.textContent = passwordError;
-    messageDiv.style.color = "red";
-    submitButton.disabled = false;
-    return;
-  }
+  const validationError = validatePatronForm(newPatron);
 
-  if (newPatron.password !== newPatron.confirm_password) {
-    messageDiv.textContent = "Password and confirm password do not match.";
+  if (validationError) {
+    messageDiv.textContent = validationError;
     messageDiv.style.color = "red";
     submitButton.disabled = false;
     return;
   }
-  
+    
 
 
   try {

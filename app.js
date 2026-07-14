@@ -1,6 +1,10 @@
 const express = require("express");
 const path = require("path");
 
+//Swagger
+const swaggerUi = require("swagger-ui-express");
+const swaggerDocument = require("./swagger-output.json");
+
 // Routes
 const registerRoute = require("./Routes/registerRoute");
 const authRoute = require("./Routes/authRoute");
@@ -19,6 +23,10 @@ const promotionRoute = require("./Routes/promotionRoute");
 const app = express();
 
 app.use(express.json());
+
+// Swagger 
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 
 // Serve frontend files from public folder
 app.use(express.static(path.join(__dirname, "public")));
@@ -48,6 +56,14 @@ app.get("/api/test", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+
+/* When you run node app.js, then the server starts normally
+When Jest imports app.js, then the server does not start twice */
+
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+}
+
+module.exports = app;

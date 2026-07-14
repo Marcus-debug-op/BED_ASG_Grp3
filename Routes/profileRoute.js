@@ -12,7 +12,13 @@ const router = express.Router();
 
 
 
-router.get("/my-profile", requireAuth, blockGuests, profileController.getMyProfile);
+router.get("/my-profile", requireAuth, blockGuests, profileController.getMyProfile
+  /*
+    #swagger.tags = ['Profile']
+    #swagger.description = 'Get logged-in user profile'
+    #swagger.security = [{ "bearerAuth": [] }]
+  */
+);
 router.put("/my-profile", requireAuth, blockGuests, validateUpdateProfile, profileController.updateMyProfile);
 router.put("/profile-picture", requireAuth, blockGuests, profileController.updateMyProfileImage);
 router.put("/profile-picture-upload", requireAuth, blockGuests, uploadProfileImage.single("profileImage"), profileController.uploadMyProfileImage);
