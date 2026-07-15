@@ -19,6 +19,7 @@ const complaintRoute = require("./Routes/complaintRoute");
 const vendorComplaintRoute = require("./Routes/vendorComplaintRoute");
 const menuItemLikeRoute = require("./Routes/menuItemLikeRoute");
 const promotionRoute = require("./Routes/promotionRoute");
+const { prototype } = require("module");
 
 const app = express();
 
@@ -61,8 +62,8 @@ const PORT = process.env.PORT || 3000;
 When Jest imports app.js, then the server does not start twice */
 
 if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 
