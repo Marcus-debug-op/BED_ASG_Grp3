@@ -31,7 +31,7 @@ const Joi = require("joi");
     }),
 
     phone_number: Joi.string().pattern(/^[689]\d{7}$/).required()
-    .message({
+    .messages({
       "string.pattern.base": "Phone number must be 8 digits and start with 6, 8, or 9.",
       "string.empty": "Phone number is required.",
       "any.required": "Phone number is required."
