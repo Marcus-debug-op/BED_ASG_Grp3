@@ -1,239 +1,247 @@
-import { auth, fs } from "./firebase-init.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { collection, query, where, getDocs, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-const stallNameDisplay = document.getElementById('stallNameDisplay');
-const complaintsList = document.getElementById('complaints-list');
-const vendorName = document.getElementById('vendorName');
-const vendorEmail = document.getElementById('vendorEmail');
-
-// Modal Elements
-const modal = document.getElementById('detailModal');
-const closeModal = document.getElementById('closeDetailModal');
-const closeBtnSecondary = document.getElementById('closeBtnSecondary');
-
-// Status & Delete Elements
-const statusSelect = document.getElementById('statusSelect');
-const saveIndicator = document.getElementById('saveStatusIndicator');
-const deleteIconBtn = document.getElementById('deleteIconBtn');
-
-// Reply Elements
-const replyInput = document.getElementById('vendorReplyInput');
-const sendReplyBtn = document.getElementById('sendReplyBtn');
-const replyStatusText = document.getElementById('replyStatusText');
-
-let currentStallId = null;
 let currentComplaintId = null;
+let currentStatusFilter = "";
 
-// 1. Check Auth & Load Stall
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        vendorEmail.textContent = user.email;
-        vendorName.textContent = user.displayName || "Vendor";
-        await findVendorStall(user.uid);
-    } else {
-        window.location.href = "signup.html"; 
-    }
-});
+const stallNameDisplay = document.getElementById("stallNameDisplay");
+const complaintsList = document.getElementById("complaints-list");
+const vendorName = document.getElementById("vendorName");
+const statusFilter = document.getElementById("statusFilter");
 
-// 2. Find which stall belongs to this user
-async function findVendorStall(userId) {
-    try {
-        const q = query(collection(fs, "stalls"), where("vendorId", "==", userId));
-        const querySnapshot = await getDocs(q);
+const modal = document.getElementById("detailModal");
+const closeModal = document.getElementById("closeDetailModal");
+const closeBtnSecondary = document.getElementById("closeBtnSecondary");
 
-        if (!querySnapshot.empty) {
-            const stallDoc = querySnapshot.docs[0];
-            currentStallId = stallDoc.id;
-            stallNameDisplay.textContent = stallDoc.data().name;
-            loadComplaints(currentStallId);
-        } else {
-            stallNameDisplay.textContent = "No Stall Linked";
-            complaintsList.innerHTML = `<div class="state-message error-state"><p>No stall linked to this account.</p></div>`;
-        }
-    } catch (error) {
-        console.error("Error finding stall:", error);
-    }
+const acknowledgeBtn = document.getElementById("acknowledgeBtn");
+const acknowledgeStatusText = document.getElementById("acknowledgeStatusText");
+
+function getToken() {
+  return localStorage.getItem("token");
 }
 
-// 3. Load Complaints
-async function loadComplaints(stallId) {
-    complaintsList.innerHTML = "<p class='loading-text'>Loading complaints...</p>";
-
-    try {
-        const complaintsRef = collection(fs, "stalls", stallId, "complaints");
-        const snapshot = await getDocs(complaintsRef);
-
-        if (snapshot.empty) {
-            complaintsList.innerHTML = `
-                <div class="state-message success-state">
-                    <h3>No active complaints</h3>
-                    <p>Good job keeping your customers happy! 🎉</p>
-                </div>`;
-            return;
-        }
-
-        complaintsList.innerHTML = ""; 
-
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const currentStatus = data.status || "Pending"; 
-            const statusClass = currentStatus.toLowerCase().replace(" ", ""); 
-
-            let dateStr = "Unknown Date";
-            if (data.timestamp) {
-                dateStr = new Date(data.timestamp.seconds * 1000).toLocaleDateString("en-SG", {
-                    day: 'numeric', month: 'short', year: 'numeric'
-                });
-            }
-            
-            const card = document.createElement('div');
-            card.className = `complaint-card status-${statusClass}`;
-            
-            card.innerHTML = `
-                <div class="card-header">
-                    <div class="user-info">
-                        <span class="user-badge">${data.userEmail ? data.userEmail.split('@')[0] : 'Anonymous'}</span>
-                        <span class="status-pill ${statusClass}">${currentStatus}</span>
-                    </div>
-                    <span class="date-text">${dateStr}</span>
-                </div>
-                <p class="reason-text"><strong>Reason:</strong> ${data.complaint}</p>
-                <button class="view-details-btn" data-id="${doc.id}">View Details</button>
-            `;
-
-            card.querySelector('.view-details-btn').addEventListener('click', () => {
-                openModal(doc.id, data, dateStr);
-            });
-
-            complaintsList.appendChild(card);
-        });
-
-    } catch (error) {
-        console.error("Error fetching complaints:", error);
-    }
+function authFetch(url, options = {}) {
+  const token = getToken();
+  const headers = {
+    ...(options.headers || {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+  return fetch(url, { ...options, headers });
 }
 
-// 4. Modal Logic
-function openModal(docId, data, date) {
-    currentComplaintId = docId;
-    
-    // Fill Text Data
-    document.getElementById('modalUser').textContent = data.userEmail || "Anonymous";
-    document.getElementById('modalDate').textContent = date;
-    document.getElementById('modalComplaint').textContent = data.complaint;
-    document.getElementById('modalImprovement').textContent = data.improvement || "None provided";
-    
-    // Fill Reply Data
-    replyInput.value = data.vendorReply || ""; 
-    replyStatusText.textContent = "";
-
-    // Set Status & Show/Hide Delete Icon
-    statusSelect.value = data.status || "Pending";
-    toggleDeleteIcon(statusSelect.value);
-    
-    saveIndicator.classList.remove('visible'); 
-
-    // Handle Image
-    const imgEl = document.getElementById('modalImage');
-    const noImgText = document.getElementById('noImageText');
-    
-    if (data.imageURL) {
-        imgEl.src = data.imageURL;
-        imgEl.classList.add('show');
-        imgEl.classList.remove('hide');
-        noImgText.classList.add('hide');
-        noImgText.classList.remove('show');
-    } else {
-        imgEl.classList.add('hide');
-        imgEl.classList.remove('show');
-        noImgText.classList.add('show');
-        noImgText.classList.remove('hide');
-    }
-
-    modal.classList.add('flex-show');
+function statusToClass(status) {
+  return "status-" + status.toLowerCase().replace(/\s+/g, "-");
 }
 
-// Helper: Show Delete Icon only if Resolved/Rejected
-function toggleDeleteIcon(status) {
-    if (status === "Resolved" || status === "Rejected") {
-        deleteIconBtn.classList.add("visible");
-    } else {
-        deleteIconBtn.classList.remove("visible");
-    }
+function formatDate(isoString) {
+  if (!isoString) return "Unknown Date";
+  return new Date(isoString).toLocaleDateString("en-SG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
 }
 
-// 5. Update Status Listener
-statusSelect.addEventListener('change', async (e) => {
-    if (!currentStallId || !currentComplaintId) return;
+function escapeHtml(value) {
+  const div = document.createElement("div");
+  div.textContent = value ?? "";
+  return div.innerHTML;
+}
 
-    const newStatus = e.target.value;
-    
-    // Immediate UI update
-    toggleDeleteIcon(newStatus);
+// 1. Check Auth
+document.addEventListener("DOMContentLoaded", () => {
+  const token = getToken();
+  const role = localStorage.getItem("role");
 
-    try {
-        const docRef = doc(fs, "stalls", currentStallId, "complaints", currentComplaintId);
-        await updateDoc(docRef, { status: newStatus });
+  if (!token || role !== "vendor") {
+    window.location.href = "SignInVendor.html";
+    return;
+  }
 
-        saveIndicator.classList.add('visible');
-        setTimeout(() => saveIndicator.classList.remove('visible'), 2000);
-        loadComplaints(currentStallId); // Refresh background list
-    } catch (error) {
-        console.error("Error updating status:", error);
-        alert("Failed to update status.");
-    }
+  vendorName.textContent = localStorage.getItem("full_name") || "Vendor";
+
+  loadStallName();
+  loadComplaints();
+
+  statusFilter.addEventListener("change", (e) => {
+    currentStatusFilter = e.target.value;
+    loadComplaints();
+  });
+
+  [closeModal, closeBtnSecondary].forEach((btn) => {
+    btn.addEventListener("click", () => modal.classList.remove("flex-show"));
+  });
+
+  acknowledgeBtn.addEventListener("click", handleAcknowledge);
+
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("full_name");
+    window.location.href = "SignInVendor.html";
+  });
 });
 
-// 6. Reply Logic
-sendReplyBtn.addEventListener('click', async () => {
-    if (!currentStallId || !currentComplaintId) return;
-    
-    const replyText = replyInput.value.trim();
-    if (!replyText) {
-        alert("Please type a reply first.");
-        return;
+// 2. Show which stall this is (first active stall for this vendor)
+async function loadStallName() {
+  try {
+    const response = await authFetch("/api/vendor/my-stalls");
+    if (!response.ok) return;
+
+    const stalls = await response.json();
+    stallNameDisplay.textContent = stalls.length ? stalls[0].stall_name : "No Stall Linked";
+  } catch (error) {
+    console.error("Error loading stall name:", error);
+  }
+}
+
+// 3. Load Complaints (against any of this vendor's stalls)
+async function loadComplaints() {
+  complaintsList.innerHTML = "<p class='loading-text'>Loading complaints...</p>";
+
+  try {
+    const query = currentStatusFilter ? `?status=${encodeURIComponent(currentStatusFilter)}` : "";
+    const response = await authFetch(`/api/vendor/complaints${query}`);
+
+    if (response.status === 401 || response.status === 403) {
+      window.location.href = "SignInVendor.html";
+      return;
     }
 
-    try {
-        sendReplyBtn.textContent = "Sending...";
-        const docRef = doc(fs, "stalls", currentStallId, "complaints", currentComplaintId);
-        
-        await updateDoc(docRef, { vendorReply: replyText });
+    const complaints = await response.json();
 
-        replyStatusText.textContent = "Reply Sent Successfully!";
-        sendReplyBtn.textContent = "Send Reply";
-    } catch (error) {
-        console.error("Error sending reply:", error);
-        replyStatusText.textContent = "Error sending reply.";
-        sendReplyBtn.textContent = "Send Reply";
+    if (!complaints.length) {
+      complaintsList.innerHTML = `
+        <div class="state-message success-state">
+            <h3>No complaints here</h3>
+            <p>Good job keeping your customers happy! 🎉</p>
+        </div>`;
+      return;
     }
-});
 
-// 7. Delete Logic (Trash Icon)
-deleteIconBtn.addEventListener('click', async () => {
-    if (!currentStallId || !currentComplaintId) return;
+    complaintsList.innerHTML = "";
 
-    if (confirm("Are you sure you want to permanently delete this record?")) {
-        try {
-            await deleteDoc(doc(fs, "stalls", currentStallId, "complaints", currentComplaintId));
-            modal.classList.remove('flex-show');
-            loadComplaints(currentStallId); 
-            alert("Record deleted.");
-        } catch (error) {
-            console.error("Error deleting:", error);
-            alert("Failed to delete.");
-        }
-    }
-});
+    complaints.forEach((complaint) => {
+      const statusClass = statusToClass(complaint.complaint_status);
 
-// Close Modal
-[closeModal, closeBtnSecondary].forEach(btn => {
-    btn.addEventListener('click', () => {
-        modal.classList.remove('flex-show');
+      const card = document.createElement("div");
+      card.className = `complaint-card status-${statusClass}`;
+
+      card.innerHTML = `
+        <div class="card-header">
+            <div class="user-info">
+                <span class="user-badge">${escapeHtml(complaint.patron_name)}</span>
+                <span class="status-pill ${statusClass}">${escapeHtml(complaint.complaint_status)}</span>
+            </div>
+            <span class="date-text">${formatDate(complaint.created_at)}</span>
+        </div>
+        <p class="reason-text"><strong>${escapeHtml(complaint.complaint_type)}:</strong> ${escapeHtml(complaint.description)}</p>
+        <button class="view-details-btn" data-id="${complaint.complaint_id}">View Details</button>
+      `;
+
+      card.querySelector(".view-details-btn").addEventListener("click", () => {
+        openModal(complaint.complaint_id);
+      });
+
+      complaintsList.appendChild(card);
     });
-});
+  } catch (error) {
+    console.error("Error fetching complaints:", error);
+    complaintsList.innerHTML = "<p class='loading-text'>Something went wrong loading complaints.</p>";
+  }
+}
 
-document.getElementById('logoutBtn').addEventListener('click', () => {
-    signOut(auth).then(() => window.location.href = "signup.html");
-});
+// 4. Modal Logic - fetches full detail (incl. officer notes) for one complaint
+async function openModal(complaintId) {
+  currentComplaintId = complaintId;
+  acknowledgeStatusText.textContent = "";
+
+  try {
+    const response = await authFetch(`/api/vendor/complaints/${complaintId}`);
+
+    if (response.status === 401 || response.status === 403) {
+      window.location.href = "SignInVendor.html";
+      return;
+    }
+
+    if (!response.ok) {
+      alert("Unable to load that complaint.");
+      return;
+    }
+
+    const complaint = await response.json();
+    renderModal(complaint);
+    modal.classList.add("flex-show");
+  } catch (error) {
+    console.error("Error loading complaint detail:", error);
+    alert("Something went wrong loading the complaint.");
+  }
+}
+
+function renderModal(complaint) {
+  document.getElementById("modalUser").textContent = complaint.patron_name || "Anonymous";
+  document.getElementById("modalDate").textContent = formatDate(complaint.created_at);
+  document.getElementById("modalType").textContent = complaint.complaint_type;
+  document.getElementById("modalComplaint").textContent = complaint.description;
+  document.getElementById("modalOfficer").textContent = complaint.officer_name || "Not yet assigned to an officer.";
+
+  const badge = document.getElementById("statusBadge");
+  badge.textContent = complaint.complaint_status;
+  badge.className = `status-pill ${statusToClass(complaint.complaint_status)}`;
+
+  const notesList = document.getElementById("modalNotes");
+  const notesEmpty = document.getElementById("modalNotesEmpty");
+  notesList.innerHTML = "";
+
+  if (!complaint.notes || complaint.notes.length === 0) {
+    notesEmpty.classList.remove("hidden");
+  } else {
+    notesEmpty.classList.add("hidden");
+    complaint.notes.forEach((note) => {
+      const noteEl = document.createElement("div");
+      noteEl.className = "note-item";
+      noteEl.innerHTML = `<div>${escapeHtml(note.note)}</div><div class="note-meta">${escapeHtml(note.officer_name)} · ${formatDate(note.created_at)}</div>`;
+      notesList.appendChild(noteEl);
+    });
+  }
+
+  // Vendors can only acknowledge while a complaint is still "Open".
+  const canAcknowledge = complaint.complaint_status === "Open";
+  acknowledgeBtn.disabled = !canAcknowledge;
+  acknowledgeBtn.textContent = canAcknowledge ? "Acknowledge Complaint" : "Already Acknowledged";
+}
+
+// 5. Acknowledge (the vendor's only write action)
+async function handleAcknowledge() {
+  if (!currentComplaintId) return;
+
+  acknowledgeBtn.disabled = true;
+  acknowledgeBtn.textContent = "Saving...";
+
+  try {
+    const response = await authFetch(`/api/vendor/complaints/${currentComplaintId}/acknowledge`, {
+      method: "PATCH"
+    });
+
+    const data = await response.json();
+
+    if (response.status === 401 || response.status === 403) {
+      window.location.href = "SignInVendor.html";
+      return;
+    }
+
+    if (!response.ok) {
+      acknowledgeStatusText.textContent = data.message || "Unable to acknowledge complaint.";
+      acknowledgeBtn.disabled = false;
+      acknowledgeBtn.textContent = "Acknowledge Complaint";
+      return;
+    }
+
+    renderModal(data);
+    acknowledgeStatusText.textContent = "Acknowledged!";
+    loadComplaints();
+  } catch (error) {
+    console.error("Error acknowledging complaint:", error);
+    acknowledgeStatusText.textContent = "Something went wrong. Please try again.";
+    acknowledgeBtn.disabled = false;
+    acknowledgeBtn.textContent = "Acknowledge Complaint";
+  }
+}

@@ -1,8 +1,11 @@
 const sql = require("mssql");
 const dbConfig = require("../dbConfig");
+// Added for promotion application/redemption (damien).
+const promotionModel = require("./promotionModel");
 
 // Creates an order and its line items as a single transaction (all-or-nothing).
-async function createOrder(patronId, stallId, items) {
+// promoCode is optional - added for promotion application/redemption (damien).
+async function createOrder(patronId, stallId, items, promoCode) {
   let connection;
   let transaction;
 
@@ -47,17 +50,45 @@ async function createOrder(patronId, stallId, items) {
       });
     }
 
+    // ---------------------------------------------------------------
+    // Promotion application (damien) - runs on the same transaction, so a
+    // failed/invalid promo cancels the whole order just like an invalid item.
+    // ---------------------------------------------------------------
+    let finalAmount = totalAmount;
+    let appliedPromotionId = null;
+    let appliedDiscountAmount = null;
+
+    if (promoCode) {
+      const promoResult = await promotionModel.validateAndApplyPromotion(
+        transaction,
+        stallId,
+        patronId,
+        promoCode,
+        totalAmount
+      );
+
+      if (!promoResult.valid) {
+        await transaction.rollback();
+        return { error: "PROMO_INVALID", reason: promoResult.reason, message: promoResult.message };
+      }
+
+      finalAmount = promoResult.discountedTotal;
+      appliedPromotionId = promoResult.promotionId;
+      appliedDiscountAmount = promoResult.discountAmount;
+    }
+
     // Insert the master Orders row and get back its new order_id
     // (order_status defaults to 'Pending' in the table).
     const orderRequest = new sql.Request(transaction);
     orderRequest.input("patron_id", sql.Int, patronId);
     orderRequest.input("stall_id", sql.Int, stallId);
-    orderRequest.input("total_amount", sql.Decimal(10, 2), totalAmount);
+    orderRequest.input("total_amount", sql.Decimal(10, 2), finalAmount);
+    orderRequest.input("promotion_id", sql.Int, appliedPromotionId);
 
     const orderResult = await orderRequest.query(`
-      INSERT INTO Orders (patron_id, stall_id, total_amount)
+      INSERT INTO Orders (patron_id, stall_id, total_amount, promotion_id)
       OUTPUT INSERTED.order_id, INSERTED.order_status, INSERTED.total_amount, INSERTED.order_date
-      VALUES (@patron_id, @stall_id, @total_amount);
+      VALUES (@patron_id, @stall_id, @total_amount, @promotion_id);
     `);
 
     const newOrder = orderResult.recordset[0];
@@ -78,9 +109,21 @@ async function createOrder(patronId, stallId, items) {
       `);
     }
 
+    // Log the redemption (damien) - same transaction, so it commits/rolls
+    // back together with the order it belongs to.
+    if (appliedPromotionId) {
+      await promotionModel.recordRedemption(transaction, appliedPromotionId, orderId, patronId, appliedDiscountAmount);
+    }
+
     // Everything worked: commit and return the created order.
     await transaction.commit();
-    return { order: newOrder, items: pricedItems };
+    return {
+      order: newOrder,
+      items: pricedItems,
+      promotion: appliedPromotionId
+        ? { promotion_id: appliedPromotionId, discount_amount: appliedDiscountAmount, subtotal: totalAmount }
+        : null
+    };
 
   } catch (error) {
     // On any failure, roll back so no partial order is left behind.
@@ -286,11 +329,57 @@ async function updateOrderStatusForVendor(orderId, vendorId, orderStatus) {
   }
 }
 
+// Fetches ONE order (with its stall name) and ALL of its line items from SQL Server.
+// Returns { order, items }. order is null if the id doesn't exist.
+async function getOrderDetails(orderId) {
+  let connection;
+  try {
+    connection = await sql.connect(dbConfig);
 
-  
+    // --- Query 1: the order header ---
+    // Join Stalls to get the stall name. Also select patron_id so the CONTROLLER
+    // can check ownership (it strips it out before sending to the user).
+    const orderReq = connection.request();
+    orderReq.input("order_id", sql.Int, orderId);
+    const orderResult = await orderReq.query(`
+      SELECT o.order_id, o.patron_id, o.stall_id, s.stall_name,
+             o.order_status, o.total_amount, o.order_date
+      FROM Orders o
+      JOIN Stalls s ON o.stall_id = s.stall_id
+      WHERE o.order_id = @order_id;
+    `);
+
+    const order = orderResult.recordset[0] || null;
+    // If there's no such order, stop here — no point querying items.
+    if (!order) return { order: null, items: [] };
+
+    // --- Query 2: the line items for this order ---
+    // Join MenuItems to get each dish's name. A fresh request() object is used
+    // because a parameter (@order_id) can't be re-declared on the same request.
+    const itemsReq = connection.request();
+    itemsReq.input("order_id", sql.Int, orderId);
+    const itemsResult = await itemsReq.query(`
+      SELECT oi.order_item_id, oi.menu_item_id, m.item_name,
+             oi.quantity, oi.unit_price, oi.subtotal
+      FROM OrderItems oi
+      JOIN MenuItems m ON oi.menu_item_id = m.menu_item_id
+      WHERE oi.order_id = @order_id
+      ORDER BY oi.order_item_id;
+    `);
+
+    return { order, items: itemsResult.recordset };
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    // Always close the connection, whether it succeeded or failed.
+    if (connection) await connection.close();
+  }
+} 
 
 // Helped update functions
 module.exports = {
+  getOrderDetails,
   createOrder,
   getOrderStatus,
   getOrderHistory,

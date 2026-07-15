@@ -36,8 +36,15 @@ async function loadProfile() {
     document.getElementById("profilePhone").textContent =
       profile.phone_number || "-";
 
-    document.getElementById("profileImage").src =
-      profile.profile_image_url || "img/avatars/default-profile.png";
+    const DEFAULT_PROFILE_IMAGE = "img/avatars/default-profile.png";
+
+    const profileImage = document.getElementById("profileImage");
+
+    profileImage.src = profile.profile_image_url || DEFAULT_PROFILE_IMAGE;
+
+    profileImage.onerror = () => {
+      profileImage.src = DEFAULT_PROFILE_IMAGE;
+    };
 
   } catch (error) {
     console.error("Vendor profile loading failed:", error);

@@ -2,34 +2,82 @@ const form = document.getElementById("vendorRegisterForm");
 const messageDiv = document.getElementById("message");
 const apiBaseUrl = "http://localhost:3000/api/auth/register";
 
-function isStrongPassword(password) {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,50}$/.test(password);
-}
+function validateVendorForm(newVendor) {
+  if (!newVendor.full_name) {
+    return "Full name is required.";
+  }
 
+  if (!newVendor.email) {
+    return "Email address is required.";
+  }
 
-function validatePassword(password) {
-  if (password.length < 8) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newVendor.email)) {
+    return "Please enter a valid email address.";
+  }
+
+  if (!newVendor.phone_number) {
+    return "Phone number is required.";
+  }
+
+  if (!/^\d+$/.test(newVendor.phone_number)) {
+    return "Phone number must contain numbers only.";
+  }
+
+  if (!/^[689]\d{7}$/.test(newVendor.phone_number)) {
+    return "Phone number must be 8 digits and start with 6, 8, or 9.";
+  }
+
+  if (!newVendor.password) {
+    return "Password is required.";
+  }
+
+  if (newVendor.password.length < 8) {
     return "Password must be at least 8 characters long.";
   }
 
-  if (!/[A-Z]/.test(password)) {
+  if (!/[A-Z]/.test(newVendor.password)) {
     return "Password must include at least one uppercase letter.";
   }
 
-  if (!/[a-z]/.test(password)) {
+  if (!/[a-z]/.test(newVendor.password)) {
     return "Password must include at least one lowercase letter.";
   }
 
-  if (!/[0-9]/.test(password)) {
+  if (!/[0-9]/.test(newVendor.password)) {
     return "Password must include at least one number.";
   }
 
-  if (!/[^A-Za-z0-9]/.test(password)) {
+  if (!/[^A-Za-z0-9]/.test(newVendor.password)) {
     return "Password must include at least one special character.";
+  }
+
+  if (newVendor.password !== newVendor.confirm_password) {
+    return "Password and confirm password do not match.";
+  }
+
+  if (!newVendor.stall_name) {
+    return "Stall name is required.";
+  }
+
+  if (!newVendor.hawker_centre_id) {
+    return "Please select a hawker centre.";
+  }
+
+  if (!newVendor.cuisine_type) {
+    return "Cuisine type is required.";
+  }
+
+  if (!newVendor.unit_number) {
+    return "Unit number is required.";
+  }
+
+  if (!newVendor.description) {
+    return "Stall description is required.";
   }
 
   return null;
 }
+
 
 async function loadHawkerCentres() {
   const select = document.getElementById("hawker_centre_id");
@@ -78,22 +126,15 @@ form.addEventListener("submit", async (event) => {
     hawker_centre_id: document.getElementById("hawker_centre_id").value,
   };
 
-  const passwordError = validatePassword(newVendor.password);
+  const validationError = validateVendorForm(newVendor);
 
-  if (passwordError) {
-    messageDiv.textContent = passwordError;
+  if (validationError) {
+    messageDiv.textContent = validationError;
     messageDiv.style.color = "red";
+    submitButton.disabled = false;
     return;
   }
-
-  if (newVendor.password !== newVendor.confirm_password) {
-  messageDiv.textContent = "Password and confirm password do not match.";
-  messageDiv.style.color = "red";
-  submitButton.disabled = false;
-  return;
-}
-
-  
+    
   try {
     const response = await fetch(`${apiBaseUrl}/vendor`, {
       method: "POST",

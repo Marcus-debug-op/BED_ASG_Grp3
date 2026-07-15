@@ -1,5 +1,19 @@
 const menuItemModel = require("../Models/menuItemModel");
 
+// Lets the front-end populate a cuisine checklist when adding/editing a dish.
+async function getCuisines(req, res) {
+  try {
+    const cuisines = await menuItemModel.getAllCuisines();
+    res.status(200).json(cuisines);
+  } catch (error) {
+    console.error("Error getting cuisines:", error);
+
+    res.status(500).json({
+      message: "Unable to load cuisines."
+    });
+  }
+}
+
 async function getMenuByStall(req, res) {
   try {
     const vendorId = req.user.sub; // Logged-in vendor's user ID from the JWT subject claim.
@@ -126,6 +140,7 @@ async function deleteMenuItem(req, res) {
 }
 
 module.exports = {
+  getCuisines,
   getMenuByStall,
   createMenuItem,
   updateMenuItem,

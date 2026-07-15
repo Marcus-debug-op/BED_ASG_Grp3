@@ -6,6 +6,7 @@ const { validateMenuItem, validateAvailability } = require("../Middlewares/menuI
 const router = express.Router();
 
 // All menu management routes are vendor-only.
+router.get("/cuisines", requireRole("vendor"), menuItemController.getCuisines);
 router.get("/stall/:stallId", requireRole("vendor"), menuItemController.getMenuByStall);
 router.post("/stall/:stallId", requireRole("vendor"), validateMenuItem, menuItemController.createMenuItem);
 

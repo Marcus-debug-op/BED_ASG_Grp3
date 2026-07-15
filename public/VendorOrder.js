@@ -1,9 +1,11 @@
 const token = localStorage.getItem("token");
 const role = localStorage.getItem("role");
+const savedUser = localStorage.getItem("user");
 
 const ordersContainer = document.getElementById("ordersContainer");
 const searchInput = document.getElementById("order-search");
 const filterButtons = document.querySelectorAll(".filter-chip");
+
 
 let allOrders = [];
 let currentStatusFilter = "All";
@@ -67,14 +69,19 @@ function renderOrders() {
   }
 
   if (searchText) {
-    filteredOrders = filteredOrders.filter(order => {
-      return (
-        String(order.order_id).includes(searchText) ||
-        String(order.patron_name || "").toLowerCase().includes(searchText) ||
-        String(order.stall_name || "").toLowerCase().includes(searchText)
-      );
-    });
-  }
+  filteredOrders = filteredOrders.filter(order => {
+    const searchableText = `
+      ${order.order_id || ""}
+      ${order.patron_name || ""}
+      ${order.stall_name || ""}
+      ${order.order_status || ""}
+      ${order.total_amount || ""}
+      ${order.order_date || ""}
+    `.toLowerCase();
+
+    return searchableText.includes(searchText);
+  });
+}
 
   if (filteredOrders.length === 0) {
     ordersContainer.innerHTML = "<p>No orders found.</p>";
