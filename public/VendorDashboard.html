@@ -8,64 +8,14 @@
 
     <link rel="stylesheet" href="VendorDashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="topnav.css">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
-<div class="sidebar">
 
-    <div class="logo">
 
-        <img src="img/Logo.png" alt="HawkerHub Logo">
-
-        <h2>Vendor Portal</h2>
-
-    </div>
-
-    <ul>
-
-        <li class="active" onclick="window.location.href='VendorDashboard.html'">
-            <i class="fa-solid fa-chart-line"></i>
-            <span>Dashboard</span>
-        </li>
-
-        <li onclick="window.location.href='VendorMenu.html'">
-            <i class="fa-solid fa-utensils"></i>
-            <span>Menu</span>
-        </li>
-
-        <li onclick="window.location.href='VendorOrder.html'">
-            <i class="fa-solid fa-bag-shopping"></i>
-            <span>Orders</span>
-        </li>
-
-        <li onclick="window.location.href='VendorPromotions.html'">
-            <i class="fa-solid fa-bullhorn"></i>
-            <span>Promotions</span>
-        </li>
-
-        <li onclick="window.location.href='VendorStallDetails.html'">
-            <i class="fa-solid fa-store"></i>
-            <span>Stall Details</span>
-        </li>
-
-        <li onclick="window.location.href='VendorProfile.html'">
-            <i class="fa-solid fa-user"></i>
-            <span>Account</span>
-        </li>
-
-    </ul>
-
-    <button id="logoutBtn" class="logout">
-
-        <i class="fa-solid fa-right-from-bracket"></i>
-
-        Logout
-
-    </button>
-
-</div>
 
 <div class="main">
 
@@ -372,6 +322,7 @@
 </div>
 
 <script src="VendorDashboard.js"></script>
+<script type="module" src="navbar-init.js"></script>
 
 </body>
 </html>

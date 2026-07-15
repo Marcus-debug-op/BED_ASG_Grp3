@@ -15,15 +15,27 @@ function setNavTarget(el, url) {
 
 function applyRoleBasedNav(role) {
   document.querySelectorAll("[data-role]").forEach((el) => {
-    const allowed = (el.dataset.role || "").toLowerCase(); // all/patron/vendor
+    const allowedRoles = (el.dataset.role || "")
+      .toLowerCase()
+      .split(",")
+      .map(role => role.trim());
 
     if (!role) {
-      el.style.display = allowed === "all" ? "" : "none";
-    } else {
-      el.style.display = allowed === "all" || allowed === role ? "" : "none";
+      el.style.display =
+        allowedRoles.includes("guest") || allowedRoles.includes("all")
+          ? ""
+          : "none";
+      return;
     }
+
+    el.style.display =
+      allowedRoles.includes("all") || allowedRoles.includes(role)
+        ? ""
+        : "none";
   });
 }
+
+
 
 async function fetchUserProfile(uid) {
   const snap = await getDoc(doc(fs, "users", uid));
@@ -61,6 +73,7 @@ export function initNavbarAuth() {
 
   const signinBtn = document.getElementById("signinBtn");
   const dashboardAuthBtn = document.getElementById("dashboardAuthBtn");
+  const logoLink = document.getElementById("logoLink");
 
   const token = localStorage.getItem("token");
   const savedUser = localStorage.getItem("user");
@@ -75,6 +88,11 @@ export function initNavbarAuth() {
 
   // No SQL/JWT login stored
   if (!token || !user) {
+
+    if (logoLink) {
+      logoLink.href = "index.html";
+    }
+    
     if (signinBtn) {
       signinBtn.textContent = "Sign in";
       setNavTarget(signinBtn, "signup.html");
@@ -96,9 +114,15 @@ export function initNavbarAuth() {
 
   let targetUrl = "PatronProfile.html";
 
+
+
   if (role === "vendor") {
     targetUrl = "VendorProfile.html";
   }
+
+  if (logoLink) {
+  logoLink.href = role === "vendor" ? "VendorDashboard.html" : "index.html";
+}
 
   if (signinBtn) {
     signinBtn.textContent = fullName;
