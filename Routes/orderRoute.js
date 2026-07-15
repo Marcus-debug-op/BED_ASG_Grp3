@@ -11,6 +11,10 @@ router.post("/", requireRole("patron"), validateOrder, orderController.createOrd
 // mistaken for an :id value.
 router.get("/history", requireRole("patron"), orderController.getOrderHistory);
 router.get("/:id/status", requireRole("patron"), orderController.getOrderStatus);
+// One of the patron's own orders, WITH its line items.
+// This is ONE segment ("/:id"), so it MUST be placed AFTER "/history" and
+// "/:id/status" — otherwise Express would treat the word "history" as an :id.
+router.get("/:id", requireRole("patron"), orderController.getOrderDetails);
 
 //vendor routes
 
