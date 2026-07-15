@@ -65,11 +65,7 @@ When Jest imports app.js, then the server does not start twice */
 
 if (require.main === module) {
   app.listen(PORT, () => {
-<<<<<<< HEAD
     console.log(`Server running at http://localhost:${PORT}`);
-=======
-    console.log(`Server running on http://localhost:${PORT}`);
->>>>>>> c1bf9f3294f5ee91343688ab08a8ff466b4aee2c
   });
 }
 
