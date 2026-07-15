@@ -329,11 +329,57 @@ async function updateOrderStatusForVendor(orderId, vendorId, orderStatus) {
   }
 }
 
+// Fetches ONE order (with its stall name) and ALL of its line items from SQL Server.
+// Returns { order, items }. order is null if the id doesn't exist.
+async function getOrderDetails(orderId) {
+  let connection;
+  try {
+    connection = await sql.connect(dbConfig);
 
-  
+    // --- Query 1: the order header ---
+    // Join Stalls to get the stall name. Also select patron_id so the CONTROLLER
+    // can check ownership (it strips it out before sending to the user).
+    const orderReq = connection.request();
+    orderReq.input("order_id", sql.Int, orderId);
+    const orderResult = await orderReq.query(`
+      SELECT o.order_id, o.patron_id, o.stall_id, s.stall_name,
+             o.order_status, o.total_amount, o.order_date
+      FROM Orders o
+      JOIN Stalls s ON o.stall_id = s.stall_id
+      WHERE o.order_id = @order_id;
+    `);
+
+    const order = orderResult.recordset[0] || null;
+    // If there's no such order, stop here — no point querying items.
+    if (!order) return { order: null, items: [] };
+
+    // --- Query 2: the line items for this order ---
+    // Join MenuItems to get each dish's name. A fresh request() object is used
+    // because a parameter (@order_id) can't be re-declared on the same request.
+    const itemsReq = connection.request();
+    itemsReq.input("order_id", sql.Int, orderId);
+    const itemsResult = await itemsReq.query(`
+      SELECT oi.order_item_id, oi.menu_item_id, m.item_name,
+             oi.quantity, oi.unit_price, oi.subtotal
+      FROM OrderItems oi
+      JOIN MenuItems m ON oi.menu_item_id = m.menu_item_id
+      WHERE oi.order_id = @order_id
+      ORDER BY oi.order_item_id;
+    `);
+
+    return { order, items: itemsResult.recordset };
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    // Always close the connection, whether it succeeded or failed.
+    if (connection) await connection.close();
+  }
+} 
 
 // Helped update functions
 module.exports = {
+  getOrderDetails,
   createOrder,
   getOrderStatus,
   getOrderHistory,
