@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const passport = require("./config/passport");
 
 //Swagger
 const swaggerUi = require("swagger-ui-express");
@@ -24,6 +25,7 @@ const { prototype } = require("module");
 const app = express();
 
 app.use(express.json());
+app.use(passport.initialize());
 
 // Swagger 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -63,7 +65,11 @@ When Jest imports app.js, then the server does not start twice */
 
 if (require.main === module) {
   app.listen(PORT, () => {
+<<<<<<< HEAD
+    console.log(`Server running at http://localhost:${PORT}`);
+=======
     console.log(`Server running on http://localhost:${PORT}`);
+>>>>>>> c1bf9f3294f5ee91343688ab08a8ff466b4aee2c
   });
 }
 
