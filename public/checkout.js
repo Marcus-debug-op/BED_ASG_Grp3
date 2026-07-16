@@ -229,7 +229,7 @@ function isValidSGPostal(raw) {
 
 function isValidCardNumber(num) {
   const d = digitsOnly(num);
-  return d.length >= 13 && d.length <= 19;
+  return d.length === 16;
 }
 
 function isValidExpiry(mmYY) {
@@ -249,7 +249,7 @@ function isValidExpiry(mmYY) {
 
 function isValidCvv(cvv) {
   const d = digitsOnly(cvv);
-  return d.length === 3 || d.length === 4;
+  return d.length === 3;
 }
 
 // Form elements
@@ -261,10 +261,164 @@ const postalCode = document.getElementById("postalCode");
 const fullNameInput = document.getElementById("fullName");
 const phoneInput = document.getElementById("phoneNumber");
 
+// Live phone validation
+const phoneMsg = document.getElementById("phoneMsg");
+
+function validatePhoneLive() {
+  const raw = String(phoneInput.value || "");
+  const digits = raw.replace(/\D/g, "");
+
+  phoneInput.classList.remove("input-valid", "input-invalid");
+  if (phoneMsg) {
+    phoneMsg.textContent = "";
+    phoneMsg.className = "field-msg";
+  }
+
+  // don't show an error until they start typing
+  if (raw.trim() === "") return;
+
+  let error = "";
+  if (/[a-zA-Z]/.test(raw)) {
+    error = "Numbers only, no letters.";
+  } else if (!/^[689]/.test(digits)) {
+    error = "Must start with 6, 8 or 9.";
+  } else if (digits.length !== 8) {
+    error = "Phone number must be 8 digits.";
+  }
+
+  if (error) {
+    phoneInput.classList.add("input-invalid");
+    if (phoneMsg) {
+      phoneMsg.textContent = error;
+      phoneMsg.className = "field-msg err";
+    }
+  } else {
+    phoneInput.classList.add("input-valid");
+    if (phoneMsg) {
+      phoneMsg.textContent = "Looks good!";
+      phoneMsg.className = "field-msg ok";
+    }
+  }
+}
+
+phoneInput?.addEventListener("input", validatePhoneLive);
+
+// Live full name validation
+const fullNameMsg = document.getElementById("fullNameMsg");
+
+function validateNameLive() {
+  const raw = String(fullNameInput.value || "");
+
+  fullNameInput.classList.remove("input-valid", "input-invalid");
+  if (fullNameMsg) {
+    fullNameMsg.textContent = "";
+    fullNameMsg.className = "field-msg";
+  }
+
+  if (raw === "") return;
+
+  let error = "";
+  if (raw.trim() === "") {
+    error = "Full name must be filled.";
+  } else if (/\d/.test(raw)) {
+    error = "Name must not contain numbers.";
+  }
+
+  if (error) {
+    fullNameInput.classList.add("input-invalid");
+    if (fullNameMsg) {
+      fullNameMsg.textContent = error;
+      fullNameMsg.className = "field-msg err";
+    }
+  } else {
+    fullNameInput.classList.add("input-valid");
+    if (fullNameMsg) {
+      fullNameMsg.textContent = "Looks good!";
+      fullNameMsg.className = "field-msg ok";
+    }
+  }
+}
+
+fullNameInput?.addEventListener("input", validateNameLive);
+
+// Live delivery details validation
+const addressMsg = document.getElementById("addressMsg");
+const postalMsg = document.getElementById("postalMsg");
+
+function clearFieldState(input, msgEl) {
+  input.classList.remove("input-valid", "input-invalid");
+  if (msgEl) {
+    msgEl.textContent = "";
+    msgEl.className = "field-msg";
+  }
+}
+
+function validateAddressLive() {
+  const raw = String(deliveryAddress.value || "");
+  clearFieldState(deliveryAddress, addressMsg);
+
+  if (raw === "") return;
+
+  let error = "";
+  if (raw.trim() === "") {
+    error = "Delivery address must be filled.";
+  }
+
+  if (error) {
+    deliveryAddress.classList.add("input-invalid");
+    if (addressMsg) {
+      addressMsg.textContent = error;
+      addressMsg.className = "field-msg err";
+    }
+  } else {
+    deliveryAddress.classList.add("input-valid");
+    if (addressMsg) {
+      addressMsg.textContent = "Looks good!";
+      addressMsg.className = "field-msg ok";
+    }
+  }
+}
+
+function validatePostalLive() {
+  const raw = String(postalCode.value || "");
+  clearFieldState(postalCode, postalMsg);
+
+  if (raw.trim() === "") return;
+
+  let error = "";
+  if (/[a-zA-Z]/.test(raw)) {
+    error = "Numbers only, no letters.";
+  } else if (raw.replace(/\D/g, "").length !== 6) {
+    error = "Postal code must be 6 digits.";
+  }
+
+  if (error) {
+    postalCode.classList.add("input-invalid");
+    if (postalMsg) {
+      postalMsg.textContent = error;
+      postalMsg.className = "field-msg err";
+    }
+  } else {
+    postalCode.classList.add("input-valid");
+    if (postalMsg) {
+      postalMsg.textContent = "Looks good!";
+      postalMsg.className = "field-msg ok";
+    }
+  }
+}
+
+deliveryAddress?.addEventListener("input", validateAddressLive);
+postalCode?.addEventListener("input", validatePostalLive);
+
 function applyDeliveryUI() {
   const isDelivery = collectionMethod?.value === "Delivery";
   if (deliveryAddressField) deliveryAddressField.style.display = isDelivery ? "block" : "none";
   if (postalCodeField) postalCodeField.style.display = isDelivery ? "block" : "none";
+
+  if (!isDelivery) {
+    if (deliveryAddress) clearFieldState(deliveryAddress, addressMsg);
+    if (postalCode) clearFieldState(postalCode, postalMsg);
+  }
 }
 
 collectionMethod?.addEventListener("change", applyDeliveryUI);
@@ -279,6 +433,7 @@ function validateCheckoutForm() {
   const errors = [];
 
   if (!name) errors.push("Please enter your full name.");
+  else if (/\d/.test(name)) errors.push("Your name must not contain numbers.");
   if (!phoneRaw) errors.push("Please enter your phone number.");
   else if (!isValidSGPhone(phoneRaw)) errors.push("Please enter a valid Singapore phone number (e.g. 91234567).");
 
@@ -348,6 +503,99 @@ const cardName = document.getElementById("cardName");
 const cardNumber = document.getElementById("cardNumber");
 const cardExpiry = document.getElementById("cardExpiry");
 const cardCvv = document.getElementById("cardCvv");
+// Live card validation
+const cardNameMsg = document.getElementById("cardNameMsg");
+const cardNumberMsg = document.getElementById("cardNumberMsg");
+const cardExpiryMsg = document.getElementById("cardExpiryMsg");
+const cardCvvMsg = document.getElementById("cardCvvMsg");
+
+// keeps what was typed so it comes back when switching payment away and back
+const cardDraft = { name: "", number: "", expiry: "", cvv: "" };
+
+function setFieldState(input, msgEl, error) {
+  input.classList.remove("input-valid", "input-invalid");
+  if (msgEl) {
+    msgEl.textContent = "";
+    msgEl.className = "field-msg";
+  }
+
+  if (String(input.value || "").trim() === "") return;
+
+  if (error) {
+    input.classList.add("input-invalid");
+    if (msgEl) {
+      msgEl.textContent = error;
+      msgEl.className = "field-msg err";
+    }
+  } else {
+    input.classList.add("input-valid");
+    if (msgEl) {
+      msgEl.textContent = "Looks good!";
+      msgEl.className = "field-msg ok";
+    }
+  }
+}
+
+function formatCardNumber(value) {
+  const d = value.replace(/\D/g, "").slice(0, 16);
+  return d.replace(/(\d{4})(?=\d)/g, "$1 ");
+}
+
+function formatExpiry(value) {
+  const d = value.replace(/\D/g, "").slice(0, 4);
+  if (d.length >= 3) return d.slice(0, 2) + "/" + d.slice(2);
+  return d;
+}
+
+function checkCardName() {
+  const raw = String(cardName.value || "");
+  let error = "";
+  if (raw.trim() && !/^[A-Za-z\s'-]+$/.test(raw)) {
+    error = "Name must contain letters only.";
+  }
+  setFieldState(cardName, cardNameMsg, error);
+  cardDraft.name = cardName.value;
+}
+
+function checkCardNumber() {
+  cardNumber.value = formatCardNumber(cardNumber.value);
+  const d = cardNumber.value.replace(/\D/g, "");
+  let error = "";
+  if (d.length !== 16) {
+    error = "Card number must be 16 digits.";
+  }
+  setFieldState(cardNumber, cardNumberMsg, error);
+  cardDraft.number = cardNumber.value;
+}
+
+function checkCardExpiry() {
+  cardExpiry.value = formatExpiry(cardExpiry.value);
+  const v = cardExpiry.value;
+  let error = "";
+  if (v.length > 0 && v.length < 5) {
+    error = "Expiry date must be in MM/YY format.";
+  } else if (v.length === 5) {
+    const mm = Number(v.slice(0, 2));
+    if (mm < 1 || mm > 12) error = "Month must be between 01 and 12.";
+  }
+  setFieldState(cardExpiry, cardExpiryMsg, error);
+  cardDraft.expiry = cardExpiry.value;
+}
+
+function checkCardCvv() {
+  cardCvv.value = cardCvv.value.replace(/\D/g, "").slice(0, 3);
+  let error = "";
+  if (cardCvv.value.length !== 3) {
+    error = "Security code must be 3 digits.";
+  }
+  setFieldState(cardCvv, cardCvvMsg, error);
+  cardDraft.cvv = cardCvv.value;
+}
+
+cardName?.addEventListener("input", checkCardName);
+cardNumber?.addEventListener("input", checkCardNumber);
+cardExpiry?.addEventListener("input", checkCardExpiry);
+cardCvv?.addEventListener("input", checkCardCvv);
 
 function showCardError(msg) {
   if (!cardMsg) return;
@@ -361,10 +609,10 @@ function openCardModal() {
     if (cardMsg) cardMsg.style.display = "none";
     cardOverlay.style.display = "flex";
     const saved = readCardDetails();
-    if (saved && cardName) {
-      cardName.value = saved.name || "";
-      if (cardExpiry) cardExpiry.value = saved.expiry || "";
-    }
+    if (cardName) cardName.value = cardDraft.name || saved?.name || "";
+    if (cardNumber) cardNumber.value = cardDraft.number || "";
+    if (cardExpiry) cardExpiry.value = cardDraft.expiry || saved?.expiry || "";
+    if (cardCvv) cardCvv.value = cardDraft.cvv || "";
   }
 }
 
