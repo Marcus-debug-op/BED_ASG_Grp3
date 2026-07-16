@@ -485,3 +485,28 @@ input:focus, select:focus{
   margin-bottom:8px;
   word-break:break-word;
 }
+
+
+.input-invalid { 
+  border: 2px solid #e53935 !important; 
+}
+
+.input-valid{ 
+  border: 2px solid #2e7d32 !important; 
+}
+
+.field-msg{ 
+  display: block; 
+  margin-top: 4px; 
+  font-size: 12px; 
+  font-weight: 600; 
+}
+
+
+.field-msg.err{ 
+  color: #e53935; 
+}
+
+.field-msg.ok{
+  color: #2e7d32; 
+}
