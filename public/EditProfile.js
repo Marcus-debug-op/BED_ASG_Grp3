@@ -1,6 +1,43 @@
 const token = localStorage.getItem("token");
 const savedUser = localStorage.getItem("user");
 
+const form = document.getElementById("editProfileForm");
+const message = document.getElementById("message");
+
+if (!token || !savedUser) {
+  window.location.href = "signup.html";
+} else {
+  loadProfile();
+}
+
+async function loadProfile() {
+  try {
+    const response = await fetch("/api/profile/my-profile", {
+      method: "GET",
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const profile = await response.json();
+
+    if (!response.ok) {
+      message.textContent = profile.message || "Unable to load profile details.";
+      message.style.color = "red";
+      return;
+    }
+
+    document.getElementById("full_name").value = profile.full_name || "";
+    document.getElementById("email").value = profile.email || "";
+    document.getElementById("phone_number").value = profile.phone_number || "";
+
+  } catch (error) {
+    console.error("Load edit profile error:", error);
+    message.textContent = "Unable to connect to server.";
+    message.style.color = "red";
+  }
+}
 
 function validateSingaporePhone(phoneNumber) {
   const cleanedPhone = phoneNumber.trim();
@@ -15,19 +52,6 @@ function validateSingaporePhone(phoneNumber) {
 
   return null;
 }
-
-if (!token || !savedUser) {
-  window.location.href = "signup.html";
-} else {
-  const user = JSON.parse(savedUser);
-
-  document.getElementById("full_name").value = user.full_name || "";
-  document.getElementById("email").value = user.email || "";
-  document.getElementById("phone_number").value = user.phone_number || "";
-}
-
-const form = document.getElementById("editProfileForm");
-const message = document.getElementById("message");
 
 if (form) {
   form.addEventListener("submit", async (event) => {
@@ -59,19 +83,15 @@ if (form) {
       const data = await response.json();
 
       if (!response.ok) {
-        if (message) {
-          message.textContent = data.message || "Unable to update profile.";
-          message.style.color = "red";
-        }
+        message.textContent = data.message || "Unable to update profile.";
+        message.style.color = "red";
         return;
       }
 
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      if (message) {
-        message.textContent = "Profile updated successfully.";
-        message.style.color = "green";
-      }
+      message.textContent = "Profile updated successfully.";
+      message.style.color = "green";
 
       setTimeout(() => {
         window.location.href = "PatronProfile.html";
@@ -79,11 +99,8 @@ if (form) {
 
     } catch (error) {
       console.error("Update profile error:", error);
-
-      if (message) {
-        message.textContent = "Unable to connect to server.";
-        message.style.color = "red";
-      }
+      message.textContent = "Unable to connect to server.";
+      message.style.color = "red";
     }
   });
 }

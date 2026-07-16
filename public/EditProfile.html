@@ -1,65 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HawkerHub Profile</title>
-    
-    <link rel="stylesheet" href="Profile.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="topnav.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Patron Profile</title>
+
+  <link rel="stylesheet" href="Profile.css">
+  <link rel="stylesheet" href="topnav.css">
 </head>
+
 <body>
+  <header class="profile-header">
+    <div class="header-content">
+      <h1>Edit Patron Profile</h1>
+      <p>Update your patron account details</p>
+    </div>
+  </header>
 
-    <header class="profile-header">
+  <main class="main-body">
+    <div class="content-wrapper">
+      <section class="discount-section">
+        <h2 class="section-title">Account Details</h2>
 
-    </header>
+        <form id="editProfileForm" class="edit-profile-form">
+          <div class="form-group">
+            <label for="full_name">Full Name</label>
+            <input id="full_name" type="text" required>
+          </div>
 
-    <main class="main-body">
-        <div class="content-wrapper">
-            <section class="edit-profile-card">
-                <h1>Edit Profile</h1>
-                <p class="edit-subtitle">Update your account details.</p>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input id="email" type="email" disabled>
+          </div>
 
-                <form id="editProfileForm">
-                    <div class="form-group">
-                    <label for="full_name">Full Name</label>
-                    <input id="full_name" type="text" required>
-                    </div>
+          <div class="form-group">
+            <label for="phone_number">Phone Number</label>
 
-                    <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input id="email" type="email" disabled>
-                    </div>
+            <div class="phone-input-group">
+              <span class="phone-prefix">+65</span>
+              <input
+                id="phone_number"
+                type="tel"
+                maxlength="8"
+                pattern="[689][0-9]{7}"
+                placeholder="Enter phone number"
+                required
+              >
+            </div>
+          </div>
 
-                    <div class="form-group">
-                    <label for="phone_number">Phone Number</label>
+          <button type="submit" class="save-changes-btn">
+            Save Changes
+          </button>
 
-                    <div class="phone-input-group">
-                        <span class="phone-prefix">+65</span>
-                        <input id="phone_number" type="tel" maxlength="8" pattern="[689][0-9]{7}" placeholder="Enter phone number" required>
-                    </div>
-                    </div>
+          <button
+            type="button"
+            class="cancel-btn"
+            onclick="window.location.href='PatronProfile.html'">
+            Cancel
+          </button>
 
-                    <div class="edit-actions">
-                    <button
-                        type="button"
-                        class="cancel-btn"
-                        onclick="window.location.href='PatronProfile.html'">
-                        Cancel
-                    </button>
+          <p id="message"></p>
+        </form>
+      </section>
+    </div>
+  </main>
 
-                    <button type="submit" class="save-btn">
-                        Save Changes
-                    </button>
-                    </div>
-
-                    <p id="message"></p>
-                </form>
-        </section>
-          
-        
-    <script type="module" src="navbar-init.js"></script>
-    <script src="EditProfile.js"></script>       
+  <script type="module" src="navbar-init.js"></script>
+  <script src="EditProfile.js"></script>
 </body>
 </html>

@@ -57,6 +57,8 @@
             <p><i class="fa-solid fa-phone"></i> <span id="profilePhone">-</span></p>
           </div>
 
+          
+
           <button class="edit-profile-btn" type="button" onclick="window.location.href='EditVendorProfile.html'">
             Edit Profile
         </button>
@@ -70,25 +72,27 @@
           Vendor Tools
         </h2>
 
-        <div class="voucher-card">
-          <div class="vc-details">
-            <h3>My Stalls</h3>
-            <p class="offer">View and manage stalls linked to your account</p>
-          </div>
-          <div class="vc-actions">
-            <a class="redeem-btn tool-link" href="VendorStallDetails.html">Open</a>
-          </div>
-        </div>
 
-        <div class="voucher-card">
-          <div class="vc-details">
-            <h3>Dashboard</h3>
-            <p class="offer">View sales, menu items, and analytics</p>
+        <div class="vendor-details-panel">
+          <h3>Business Details</h3>
+
+          <div class="vendor-summary-grid">
+            <div class="vendor-summary-card">
+              <span>Total Stalls</span>
+              <strong id="totalStalls">0</strong>
+            </div>
+
+            <div class="vendor-summary-card">
+              <span>Main Hawker Centre</span>
+              <strong id="mainHawkerCentre">-</strong>
+            </div>
           </div>
-          <div class="vc-actions">
-            <a class="redeem-btn tool-link" href="VendorDashboard.html">Open</a>
+
+          <div id="vendorStallsList" class="vendor-stalls-list">
+            <p>Loading stall details...</p>
           </div>
-        </div>
+      </div>
+
       </section>
 
     </div>

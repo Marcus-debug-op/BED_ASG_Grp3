@@ -16,6 +16,23 @@ if (!token || !savedUser) {
   }
 }
 
+
+
+function validateSingaporePhone(phoneNumber) {
+  const cleanedPhone = phoneNumber.trim();
+
+  if (!/^\d+$/.test(cleanedPhone)) {
+    return "Phone number must contain numbers only.";
+  }
+
+  if (!/^[689]\d{7}$/.test(cleanedPhone)) {
+    return "Phone number must be 8 digits and start with 6, 8, or 9.";
+  }
+
+  return null;
+}
+
+
 async function loadProfile() {
   try {
     const response = await fetch("/api/profile/my-profile", {
@@ -48,6 +65,13 @@ form.addEventListener("submit", async (event) => {
     full_name: document.getElementById("full_name").value.trim(),
     phone_number: document.getElementById("phone_number").value.trim()
   };
+  const phoneError = validateSingaporePhone(updatedProfile.phone_number);
+
+  if (phoneError) {
+    message.textContent = phoneError;
+    message.style.color = "red";
+    return;
+  }
 
   try {
     const response = await fetch("/api/profile/my-profile", {

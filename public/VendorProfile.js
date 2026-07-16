@@ -1,6 +1,8 @@
 const token = localStorage.getItem("token");
 const savedUser = localStorage.getItem("user");
 
+console.log("VendorProfile.js loaded"); 
+
 if (!token || !savedUser) {
   window.location.href = "SignInVendor.html";
 } else {
@@ -10,8 +12,12 @@ if (!token || !savedUser) {
     window.location.href = "index.html";
   } else {
     loadProfile();
+    loadVendorStalls();
   }
 }
+
+
+
 
 async function loadProfile() {
   try {
@@ -48,6 +54,61 @@ async function loadProfile() {
 
   } catch (error) {
     console.error("Vendor profile loading failed:", error);
+  }
+}
+
+
+async function loadVendorStalls() {
+  console.log("Loading vendor stalls...");
+
+  const totalStalls = document.getElementById("totalStalls");
+  const mainHawkerCentre = document.getElementById("mainHawkerCentre");
+  const vendorStallsList = document.getElementById("vendorStallsList");
+
+  try {
+    const response = await fetch("/api/vendor/my-stalls", {
+      method: "GET",
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    console.log("Vendor stalls response status:", response.status);
+
+    const stalls = await response.json();
+    console.log("Vendor stalls data:", stalls);
+
+    if (!response.ok) {
+      vendorStallsList.innerHTML = `<p>${stalls.message || "Unable to load stall details."}</p>`;
+      return;
+    }
+
+    totalStalls.textContent = stalls.length;
+
+    if (stalls.length === 0) {
+      mainHawkerCentre.textContent = "-";
+      vendorStallsList.innerHTML = "<p>No stalls linked to this vendor.</p>";
+      return;
+    }
+
+    mainHawkerCentre.textContent = stalls[0].centre_name || "-";
+
+    vendorStallsList.innerHTML = stalls.map(stall => {
+      return `
+        <div class="vendor-stall-card">
+          <h4>${stall.stall_name}</h4>
+          <p><strong>Hawker Centre:</strong> ${stall.centre_name || "-"}</p>
+          <p><strong>Cuisine:</strong> ${stall.cuisine_type || "-"}</p>
+          <p><strong>Unit:</strong> ${stall.unit_number || "-"}</p>
+          <p><strong>Status:</strong> ${stall.is_active ? "Active" : "Inactive"}</p>
+        </div>
+      `;
+    }).join("");
+
+  } catch (error) {
+    console.error("Load vendor stalls error:", error);
+    vendorStallsList.innerHTML = "<p>Unable to connect to server.</p>";
   }
 }
 
