@@ -6,6 +6,8 @@
 let allOrders = [];
 
 // ---------- AUTH HELPERS (SQL token, not Firebase) ----------
+// Reads the JWT saved by the patron login. Its presence is how this page
+// knows someone is signed in.
 function getToken() {
   return localStorage.getItem("token");
 }
@@ -19,6 +21,8 @@ function getUser() {
 }
 
 // ---------- UI STATE MESSAGES ----------
+// Replaces the order list with a sign-in prompt. Used when there is no token,
+// or when the API rejects the token (401/403).
 function showAuthRequired() {
   const listEl = document.getElementById("historyList");
   const emptyEl = document.getElementById("historyEmpty");
@@ -45,6 +49,9 @@ function showAuthRequired() {
 }
 
 // ---------- UTILS ----------
+// Converts characters that mean something in HTML (< > & " ') into safe text.
+// Needed because the order data is injected with innerHTML — without this,
+// a stall or item name containing HTML could run as code (XSS).
 function escapeHtml(s) {
   return String(s || "")
     .replace(/&/g, "&amp;")
@@ -60,6 +67,7 @@ function formatMoney(n) {
 }
 
 // Order date from SQL is an ISO string (e.g. "2026-07-11T18:27:58.523Z").
+// SQL Server returns dates as ISO strings, so convert to a readable local date.
 function formatDate(dateValue) {
   if (!dateValue) return "";
   const d = new Date(dateValue);
@@ -72,6 +80,8 @@ function formatDate(dateValue) {
 // so the detail view shows the summary fields we have.
 // Opens the detail view for one order and loads its full breakdown (with items)
 // from the new GET /api/orders/:id endpoint.
+// Opens one order and loads its full breakdown, including each item,
+// from the order details endpoint.
 async function showDetail(orderId) {
   // Switch from the list view to the detail view.
   document.getElementById("listView")?.classList.add("hidden");
@@ -136,6 +146,9 @@ async function showDetail(orderId) {
 }
 
 // ---------- LOAD HISTORY (SQL API) ----------
+// Loads the patron's past orders and renders them newest-first.
+// The backend works out whose orders to return from the token, so no id
+// is sent in the URL.
 async function loadHistory() {
   const listEl = document.getElementById("historyList");
   const emptyEl = document.getElementById("historyEmpty");
@@ -228,6 +241,7 @@ async function loadHistory() {
 }
 
 // ---------- BACK TO LIST ----------
+// Returns from the detail view back to the list of orders.
 function showList() {
   document.getElementById("listView")?.classList.remove("hidden");
   document.getElementById("detailView")?.classList.add("hidden");

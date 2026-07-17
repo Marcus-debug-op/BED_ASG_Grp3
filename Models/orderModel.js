@@ -331,6 +331,10 @@ async function updateOrderStatusForVendor(orderId, vendorId, orderStatus) {
 
 // Fetches ONE order (with its stall name) and ALL of its line items from SQL Server.
 // Returns { order, items }. order is null if the id doesn't exist.
+// Fetches ONE order plus ALL of its line items.
+// Returns { order, items }. order is null if the id doesn't exist.
+// Two separate queries are used because one order has many items
+// (a single JOIN would repeat the order header on every item row).
 async function getOrderDetails(orderId) {
   let connection;
   try {
