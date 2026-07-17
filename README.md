@@ -6,6 +6,18 @@ The project uses a Node.js and Express backend with Microsoft SQL Server as the 
 
 ---
 
+## Team Feature Ownership
+
+| Member | Features |
+
+| Marcus Ng| Registration, profile view/edit, vendor profile business details, vendor order management |
+| Ryan Ng | Login and authentication flow |
+| Damien Tan| To be updated |
+| Ben Goh| To be updated |
+| Ryan Tan | To be updated |
+
+---
+
 ## Project Objectives
 
 The objective of HawkerHub is to provide a web-based platform that improves the way patrons and vendors interact within a hawker centre environment. The system aims to make hawker stall discovery, account management, and order handling more organised, efficient, and user-friendly.
@@ -24,6 +36,7 @@ Through this project, the team aims to:
 - Verify key backend features using Jest and Supertest API testing
 
 ---
+
 
 ## Tech Stack
 
@@ -66,201 +79,25 @@ Through this project, the team aims to:
 
 ## Main Features
 
-### 1. Patron Registration
-
-Patrons can create an account using their full name, email, phone number, and password.
-
-Validation includes:
-
-- Full name is required
-- Email must be valid
-- Phone number must be a valid Singapore phone number
-- Password must meet strength requirements
-- Confirm password must match password
-
-API route:
-
-```txt
-POST /api/auth/register/patron
-```
-
----
-
-### 2. Vendor Registration
-
-Vendors can create an account and register their stall at the same time.
-
-Vendor registration creates:
-
-- A user record in the `Users` table
-- A stall record in the `Stalls` table
-
-Validation includes:
-
-- Full name is required
-- Email must be valid
-- Phone number must be valid
-- Password must meet requirements
-- Confirm password must match password
-- Stall name is required
-- Cuisine type is required
-- Stall description is required
-- Unit number is required
-- Hawker centre must be selected
-
-API route:
-
-```txt
-POST /api/auth/register/vendor
-```
-
----
-
-### 3. Login and Authentication
-
-The system uses JWT authentication for protected routes. After login, the frontend stores the token, role, and user information in LocalStorage.
-
-Protected API routes require this header:
-
-```txt
-Authorization: Bearer <token>
-```
-
-Common authentication routes:
-
-```txt
-POST /api/auth/login/patron
-POST /api/auth/login/vendor
-GET /api/auth/me
-```
-
-Role-based authorization prevents users from accessing routes outside their role.
-
----
-
-### 4. Google OAuth
-
-The project includes Google OAuth 2.0 support using Passport.js.
-
-Google OAuth routes:
-
-```txt
-GET /api/auth/google
-GET /api/auth/google/callback
-```
-
-Google OAuth requires Google client details to be configured in the `.env` file.
-
----
-
-### 5. Profile View and Edit
-
-Logged-in users can view and update their profile details.
-
-Users can view:
-
-- Full name
-- Email
-- Phone number
-- Profile image
-
-Users can update:
-
-- Full name
-- Phone number
-
-Email is not editable because it is used as a unique account identifier.
-
-API routes:
-
-```txt
-GET /api/profile/my-profile
-PUT /api/profile/my-profile
-```
-
----
-
-### 6. Profile Picture Upload
-
-Users can upload a profile picture. The uploaded image is stored in the server upload folder, and the image path is saved in the database.
-
-API route:
-
-```txt
-PUT /api/profile/profile-picture-upload
-```
-
----
-
-### 7. Vendor Profile Business Details
-
-The vendor profile page includes a view-only business details section.
-
-It displays:
-
-- Total stalls owned
-- Main hawker centre
-- Stall name
-- Cuisine type
-- Unit number
-- Active status
-
-This section is for viewing purposes only. Full stall editing and management should be handled in the vendor stall management page.
-
-API route:
-
-```txt
-GET /api/vendor/my-stalls
-```
-
----
-
-### 8. Vendor Order Management
-
-Vendors can view customer orders made to their stalls and update the order status.
-
-Vendors can:
-
-- View orders from their stalls
-- View order details
-- Update order status
-
-API routes:
-
-```txt
-GET /api/orders/vendor/my-orders
-GET /api/orders/vendor/my-orders/:orderId
-PUT /api/orders/vendor/my-orders/:orderId/status
-```
-
----
-
-### 9. Patron Order Features
-
-Patrons can place orders and view order-related information.
-
-Common order routes:
-
-```txt
-POST /api/orders
-GET /api/orders/history
-GET /api/orders/:id
-GET /api/orders/:id/status
-```
-
----
-
-### 10. Other Features
-
-The project also includes other backend features such as:
-
+- Patron registration
+- Vendor registration
+- Login and authentication
+- Google OAuth sign-in/sign-up
+- Role-based authorization
+- Profile view and edit
+- Profile picture upload
+- Vendor profile business details
 - Stall browsing
-- Menu item management
-- Feedback
-- Complaints
-- Promotions
-- Vendor-related management features
-
+- Stall details viewing
+- Menu item viewing
+- Cart and checkout
+- Patron order history
+- Vendor order management
+- Vendor menu management
+- Vendor promotions
+- Feedback and complaints
+- Swagger API documentation
+- Jest and Supertest API testing
 ---
 
 ## Project Folder Structure
@@ -277,6 +114,17 @@ BED_ASG_Grp3/
 │   ├── init.sql
 │   └── seed.sql
 ├── public/
+│   ├── auth/
+│   ├── profile/
+│   ├── vendor/
+│   ├── patron/
+│   ├── officer/
+│   ├── operator/
+│   ├── shared/
+│   ├── credits/
+│   ├── img/
+│   ├── uploads/
+│   └── index.html
 ├── tests/
 │   ├── register.test.js
 │   ├── profile.test.js
@@ -286,6 +134,7 @@ BED_ASG_Grp3/
 ├── app.js
 ├── dbConfig.js
 ├── package.json
+├── package-lock.json
 ├── swagger.js
 ├── swagger-output.json
 └── README.md
@@ -577,14 +426,3 @@ before starting the server.
 
 ---
 
-## Team Feature Ownership
-
-| Member | Features |
-
-| Marcus Ng| Registration, profile view/edit, vendor profile business details, vendor order management |
-| Ryan Ng | Login and authentication flow |
-| Damien Tan| To be updated |
-| Ben Goh| To be updated |
-| Ryan Tan | To be updated |
-
-Update the member names and features based on the final group allocation.
