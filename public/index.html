@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HawkerHub Home Page</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="/shared/styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-  <link rel="stylesheet" href="topnav.css" />
+  <link rel="stylesheet" href="/shared/topnav.css" />
 </head>
 
 <body>
@@ -25,7 +25,7 @@
         <button id="guestPromptGuestBtn" class="guest-prompt-btn guest" type="button">
           Continue as guest
         </button>
-        <a id="guestPromptSigninBtn" class="guest-prompt-btn signin" href="signup.html">
+        <a id="guestPromptSigninBtn" class="guest-prompt-btn signin" href="/auth/signup.html">
           Sign in
         </a>
       </div>
@@ -43,7 +43,7 @@
     <div class="container hero-content">
       <p class="hero-small">Discover & Order from Hawker Centres</p>
       <h1 class="hero-title">Explore hawker stalls, discover popular dishes, and order with ease</h1>
-      <a class="btn btn-cta" href="browsestalls.html">Browse stalls →</a>
+      <a class="btn btn-cta" href="/patron/browsestalls.html">Browse stalls →</a>
     </div>
   </section>
 
@@ -65,16 +65,16 @@
   <!-- Footer -->
   <footer class="footer">
     <small>© 2026 HawkerHub. All rights reserved.</small>
-    <a href="credit.html">
+    <a href="/credits/credit.html">
       <small>Credits</small>
     </a>
     
   </footer>
 
-  <script src="googleAuthComplete.js"></script>
-  <script type="module" src="navbar-init.js"></script>
+  <script src="/auth/googleAuthComplete.js"></script>
+  <script type="module" src="/shared/navbar-init.js"></script>
   <script type="module" src="home-guest.js"></script>
-  <script type="module" src="guestPrompt.js"></script>
+  <script type="module" src="/auth/guestPrompt.js"></script>
 
 </body>
 </html>

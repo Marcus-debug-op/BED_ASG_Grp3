@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Manage Menu - HawkerHub Vendor</title>
+
+    <link rel="stylesheet" href="VendorDashboard.css">
+    <link rel="stylesheet" href="VendorMenu.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+
+<body>
+<div class="sidebar">
+
+    <div class="logo">
+        <img src="/img/Logo.png" alt="HawkerHub Logo">
+        <h2>Vendor Portal</h2>
+    </div>
+
+    <ul>
+        <li onclick="window.location.href='/vendor/VendorDashboard.html'">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>Dashboard</span>
+        </li>
+
+        <li class="active" onclick="window.location.href='/vendor/VendorMenu.html'">
+            <i class="fa-solid fa-utensils"></i>
+            <span>Menu</span>
+        </li>
+
+        <li onclick="window.location.href='/vendor/VendorOrder.html'">
+            <i class="fa-solid fa-bag-shopping"></i>
+            <span>Orders</span>
+        </li>
+
+        <li onclick="window.location.href='/vendor/VendorPromotions.html'">
+            <i class="fa-solid fa-bullhorn"></i>
+            <span>Promotions</span>
+        </li>
+
+        <li onclick="window.location.href='/vendor/VendorStallDetails.html'">
+            <i class="fa-solid fa-store"></i>
+            <span>Stall Details</span>
+        </li>
+
+        <li onclick="window.location.href='/profile/VendorProfile.html'">
+            <i class="fa-solid fa-user"></i>
+            <span>Account</span>
+        </li>
+    </ul>
+
+    <button id="logoutBtn" class="logout">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        Logout
+    </button>
+
+</div>
+
+<div class="main">
+
+    <div class="top">
+        <div>
+            <h1>Menu Management</h1>
+            <p id="stallLabel" class="subtitle">Loading your stall...</p>
+        </div>
+
+        <div class="top-actions">
+            <select id="stallSelect" class="stall-select" hidden></select>
+            <button id="addItemBtn" class="action-btn menu-add-btn">
+                <i class="fa-solid fa-plus"></i>
+                <span>Add Item</span>
+            </button>
+        </div>
+    </div>
+
+    <p id="menuMsg" class="menu-msg" aria-live="polite"></p>
+
+    <div id="menuGrid" class="menu-grid">
+        <p class="empty-text">Loading menu items...</p>
+    </div>
+
+</div>
+
+<!-- Add / Edit item modal -->
+<div id="itemModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2 id="modalTitle">Add Menu Item</h2>
+            <button type="button" id="closeModalBtn" class="modal-close">&times;</button>
+        </div>
+
+        <form id="itemForm" class="item-form">
+            <input type="hidden" id="itemId">
+
+            <label for="itemName">Item Name</label>
+            <input type="text" id="itemName" required maxlength="100" placeholder="e.g. Chicken Rice">
+
+            <label for="itemDescription">Description</label>
+            <textarea id="itemDescription" maxlength="255" placeholder="Short description (optional)"></textarea>
+
+            <div class="form-row-2">
+                <div>
+                    <label for="itemPrice">Price ($)</label>
+                    <input type="number" id="itemPrice" required min="0.01" step="0.01" placeholder="e.g. 4.50">
+                </div>
+
+                <div>
+                    <label for="itemCategory">Category</label>
+                    <input type="text" id="itemCategory" maxlength="50" placeholder="e.g. Rice, Noodles">
+                </div>
+            </div>
+
+            <label for="itemImageUrl">Image URL</label>
+            <input type="url" id="itemImageUrl" maxlength="255" placeholder="https://... (optional)">
+
+            <label class="checkbox-row">
+                <input type="checkbox" id="itemAvailable" checked>
+                Available for order
+            </label>
+
+            <p id="formMsg" class="form-msg" aria-live="polite"></p>
+
+            <div class="form-actions">
+                <button type="button" id="cancelBtn" class="btn-secondary">Cancel</button>
+                <button type="submit" class="btn-primary">Save Item</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="VendorMenu.js"></script>
+
+</body>
+</html>

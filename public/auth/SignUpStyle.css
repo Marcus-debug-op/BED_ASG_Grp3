@@ -1,0 +1,663 @@
+:root {
+        --bg: #FFF7DC;
+  --text: #1f1f1f;
+  --faded-text: #6b6b6b;
+
+  --accent: #F97316;
+  --accent-red: #F43C13;
+  
+  --radius: 18px;
+
+    }
+
+    * {
+        box-sizing: border-box;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+    margin: 0;
+    min-height: 100vh;
+
+    background: url("/img/Signin-bg.png") no-repeat center center fixed;
+    background-size: cover;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+   .app {
+    width: 100%;
+    max-width: 1400px;
+    min-height: 100vh;
+
+    background: transparent;
+    position: relative;
+}
+
+    
+
+    /* Header */
+    .header {
+    padding: 24px 16px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    }
+
+
+    .back-btn {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+
+    padding: 8px 14px;
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    backdrop-filter: blur(6px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
+
+    .back-btn:hover {
+      transform: translateY(-1px);
+      background: white;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.16);
+    }
+
+    .back-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.14);
+    }
+
+
+    .logo {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    }
+
+
+
+    .logo img {
+      height: 300px;
+      width: auto;
+      margin: 0;
+      display: block;
+    }
+
+    /* Content */
+    .content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 16px;
+
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    flex-wrap: wrap;
+    }
+
+
+    .patron-card,
+    .vendor-card {
+    width: 320px;          /* adjust if needed */
+    height: 450px;         /* controls total card height */
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;      
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+}
+
+.patron-card {
+    border-top: 4px solid #2563EB;
+}
+
+.vendor-card {
+    border-top: 4px solid #E11D48;
+}
+
+
+.patron-card {
+    border-top: 4px solid #2563EB;
+}
+
+.vendor-card {
+    border-top: 4px solid #E11D48;
+}
+
+/* Header styling */
+.patron-card h2,
+.vendor-card h2 {
+    margin: 0 0 12px 0;
+    text-align: center;
+    padding: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1f1f1f;
+    line-height: 1.3;
+}
+
+/* Description text */
+.patron-card p,
+.vendor-card p {
+    margin: 0 0 20px 0;
+    text-align: center;
+    padding: 0;
+    color: var(--faded-text);
+    font-size: 14.5px;
+    line-height: 1.6;
+    flex-grow: 1;
+}
+
+/* Features list */
+.patron-card .features,
+.vendor-card .features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 30px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    color: #4b5563;
+    text-align: center;
+}
+
+/* CTA Link styling - Pill buttons */
+.patron-card .cta,
+.vendor-card .cta {
+    margin: 0 70 auto;
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    align-self: center;
+}
+
+/* Patron specific - Calm Blue */
+.patron-card .cta {
+    color: #2563EB;
+    border-color: #2563EB;
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.patron-card .cta:hover {
+    background: #2563EB;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* Vendor specific - Vibrant Red/Rose */
+.vendor-card .cta {
+    color: #E11D48;
+    border-color: #E11D48;
+    background: rgba(225, 29, 72, 0.05);
+}
+
+.vendor-card .cta:hover {
+    background: #E11D48;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+}
+
+/* Arrow animation */
+.patron-card .cta::after,
+.vendor-card .cta::after {
+    content: "→";
+    transition: transform 0.2s ease;
+}
+
+.patron-card .cta:hover::after,
+.vendor-card .cta:hover::after {
+    transform: translateX(4px);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .patron-card,
+    .vendor-card {
+        width: 100%;
+        max-width: 320px;
+    }
+}
+
+.illustration {
+    height: 45%;           /* top half of the card */
+    width: 100%;
+}
+
+.illustration img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;     /* fills area without stretching */
+    display: block;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-content {
+  flex: 1;                    /* fills remaining space */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;    /* vertical centering */
+padding: 24px 24px 24px 32px;
+}
+
+
+
+.card-header {
+  height: 180px;        
+  overflow: hidden;
+}
+
+/* Image is larger, pushed up */
+.card-header img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  transform: translateY(-20px); /* crops lower part, keeps top */
+  display: block;
+}
+    
+
+    .card h2 {
+        margin: 20;
+        padding: auto;
+        font-size: 22px;
+        color: var(--text-dark);
+    }
+
+    .card p {
+        margin: 0   ;
+        padding: auto;
+        color: var(--muted);
+        font-size: 14.5px;
+        line-height: 1.5;
+    }
+
+    .features {
+        list-style: none;
+        padding: 0;
+        margin: 10px 0 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 14px;
+        color: var(--text-dark);
+         padding-left: 15px;
+    }
+
+    .features li::before {
+        content: "•";
+        color: var(--orange-dark);
+        margin-right: 8px;
+        font-weight: bold;
+    }
+
+    .cta {
+        margin-top: auto;
+        margin-bottom: 20px;
+        font-weight: 600;
+        color: var(--orange-dark);
+        cursor: pointer;
+        display: inline-flex;
+        gap: 10px;
+        padding-left: 15px;
+    }
+
+    .cta:hover {
+        text-decoration: underline;
+    }
+
+
+.more-options-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 30px;
+    padding: 20px;
+    gap: 16px;
+}
+
+.more-options-text {
+    font-size: 14px;
+    color: var(--faded-text);
+    margin: 0;
+    font-weight: 500;
+}
+
+.more-options-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 32px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-red) 100%);
+    border: none;
+    border-radius: 999px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(249, 115, 22, 0.35);
+    transition: all 0.3s ease;
+    min-width: 200px;
+}
+
+.more-options-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 32px rgba(249, 115, 22, 0.45);
+}
+
+.more-options-btn:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+.btn-icon {
+    font-size: 18px;
+}
+
+.btn-text {
+    display: inline-block;
+}
+
+.btn-arrow {
+    display: inline-block;
+}
+
+.more-options-btn:hover .btn-arrow {
+    transform: translateX(4px);
+}
+/* ----------------------------------------
+   OFFICER & OPERATOR CARD STYLES
+   ---------------------------------------- */
+.officer-card,
+.operator-card {
+    width: 320px;
+    height: 260px;
+    min-height: auto;           /* Remove fixed height */
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    padding: 28px 24px 24px;    /* Unified padding */
+    text-align: center;         /* Center align content */
+    position: relative;
+}
+
+/* Top accent borders */
+.officer-card {
+    border-top: 4px solid #f6964c;
+}
+
+.operator-card {
+    border-top: 4px solid #10B981;
+}
+
+/* Header styling */
+.officer-card h2,
+.operator-card h2 {
+    margin: 0 0 12px 0;         /* Tight margin below title */
+    padding: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1f1f1f;
+    line-height: 1.3;
+}
+
+/* Description text */
+.officer-card p,
+.operator-card p {
+    margin: 0 0 20px 0;         /* Space before link */
+    padding: 0;
+    color: var(--faded-text);
+    font-size: 14.5px;
+    line-height: 1.6;
+    flex-grow: 1;               /* Pushes link to bottom if needed */
+}
+
+.officer-card .features li::before,
+.operator-card .features li::before {
+    content: none;              /* Remove bullets for cleaner look */
+}
+
+/* CTA Link styling */
+.officer-card .cta,
+.operator-card .cta {
+    margin: 0;                  /* Remove auto margins */
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    align-self: center;         /* Center the button */
+}
+
+/* Officer specific link styling */
+.officer-card .cta {
+    color: rgba(249, 115, 22, 0.25);;
+    border-color: #f6964c;;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.officer-card .cta:hover {
+    background: #f6964c;;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: rgba(249, 115, 22, 0.25);;
+}
+
+/* Operator specific link styling */
+.operator-card .cta {
+    color: #10B981;
+    border-color: #10B981;
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.operator-card .cta:hover {
+    background: #10B981;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Arrow animation */
+.officer-card .cta::after,
+.operator-card .cta::after {
+    content: "→";
+    transition: transform 0.2s ease;
+}
+
+.officer-card .cta:hover::after,
+.operator-card .cta:hover::after {
+    transform: translateX(4px);
+}
+
+
+.officer-card .illustration,
+.operator-card .illustration,
+.officer-card .card-header,
+.operator-card .card-header {
+    display: none;
+}
+
+/* ----------------------------------------
+   CONTINUE AS GUEST BUTTON (same orange style)
+   ---------------------------------------- */
+.guest-btn {
+    width: 300px;          /* same width as More Options */
+    padding: 18px 24px;
+    border: none;
+    border-radius: 40px;
+    background: #ff5a00;
+    color: white;
+    font-size: 20px;
+    font-weight: 600;
+    cursor: pointer;
+
+    /* Fix alignment */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    margin: 0 auto;
+}
+
+.guest-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 32px rgba(249, 115, 22, 0.45);
+}
+
+.guest-btn:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+.guest-btn:hover .btn-arrow {
+    transform: translateX(4px);
+}
+
+
+/* ----------------------------------------
+   ADDITIONAL LINKS SECTION
+   ---------------------------------------- */
+.additional-links {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 30px;
+    padding: 20px;
+    gap: 12px;
+}
+
+.links-text {
+    font-size: 14px;
+    color: var(--faded-text);
+    margin: 0;
+    font-weight: 500;
+}
+
+/* Guest Link */
+.guest-link-container {
+    margin-top: 10px;
+}
+
+.guest-link {
+    font-size: 14px;
+    color: var(--faded-text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    padding: 10px 20px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.guest-link:hover {
+    color: var(--accent);
+    background: rgba(249, 115, 22, 0.1);
+    border-color: var(--accent);
+}
+
+
+/* ----------------------------------------
+   RESPONSIVE ADJUSTMENTS - OfficerOperator
+   ---------------------------------------- */
+
+   @media (max-width: 900px) {
+    .officer-card,
+    .operator-card {
+        width: 100%;
+        max-width: 320px;
+    }
+}
+@media (max-width: 600px) {
+    .more-options-btn {
+        padding: 12px 24px;
+        font-size: 14px;
+        min-width: 160px;
+    }
+    
+    .links-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .divider {
+        display: none;
+    }
+    
+    .link-btn {
+        width: 180px;
+        justify-content: center;
+    }
+}
+
+/* ----------------------------------------
+   RESPONSIVE ADJUSTMENTS - PatronVendor
+   ---------------------------------------- */
+@media (max-width: 900px) {
+  .content {
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+
+    .logo img {
+        height: 120px;
+    }
+}
+
+@media (max-width: 600px) {
+    .back-btn {
+        left: 16px;
+        top: 20px;
+        padding: 8px 14px;
+        font-size: 13px;
+    }
+}

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stall Details</title>
+  <link rel="stylesheet" href="/shared/topnav.css" />
+  <link rel="stylesheet" href="Menu.css" />
+
+</head>
+
+<body class="details-page">
+
+  <div class="page-shell">
+  <div class="details-wrapper">
+    <a href="/patron/browsestalls.html" class="btn-go-back">↩ Go Back</a>
+
+    <div class="stall-modal-card">
+      <div class="modal-img-container">
+        <img id="stall-img" src="" alt="Stall Image">
+        <div class="badge-popular" id="stall-badge" style="display:none;"></div>
+      </div>
+
+      <div class="modal-content">
+        <div class="content-header">
+          <div class="header-text">
+            
+            <div class="title-row">
+              <h1 id="stall-name">Loading...</h1>
+              <span class="hygiene-tag" id="stall-hygiene"></span>
+              
+              <span class="stall-id-text" id="stall-id-display"></span>
+            </div>
+
+            <p class="cuisine-type" id="stall-cuisine"></p>
+          </div>
+        </div>
+
+        <div class="rating-action-row">
+          <div class="rating-box">
+            <span class="star-icon">★</span>
+            <span class="score" id="stall-rating"></span>
+          </div>
+          <div class="action-btns">
+            <a id="feedback-link" href="#" class="btn-orange-sm">View Feedbacks</a>
+            <a id="add-complaint-btn" href="#" class="btn-orange-sm">+ Add Complaint</a>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="description-section">
+          <h3>Description</h3>
+          <p id="stall-desc"></p>
+        </div>
+
+        <div class="info-box">
+          <div class="info-item">
+            <img src="/img/pin.png" alt="Location" class="info-icon">
+            <span id="stall-location">Loading...</span>
+          </div>
+          <div class="info-item">
+            <img src="/img/clock (2).png" alt="Hours" class="info-icon">
+            <span id="stall-hours">Loading...</span>
+          </div>
+          <div class="info-item">
+            <img src="/img/dollar-symbol.png" alt="Price" class="info-icon">
+            <span id="stall-price">Loading...</span>
+          </div>
+          <div class="info-item">
+            <img src="/img/phone.png" alt="Phone" class="info-icon">
+            <span id="stall-phone">Loading...</span>
+          </div>
+        </div>
+
+        <a id="menu-link" href="/patron/menus.html" class="btn-view-menu">View Menu</a>
+        </div>
+    </div>
+  </div>
+</div>
+  <script type="module" src="/shared/loadNavbar.js"></script>
+  <script type="module" src="/shared/navbar-auth.js"></script>
+  <script type="module" src="stalldetails.js"></script>
+</body>
+</html>
