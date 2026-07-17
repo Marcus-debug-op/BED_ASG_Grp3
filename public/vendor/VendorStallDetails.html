@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HawkerHub – Vendor Details</title>
+
+  <link rel="stylesheet" href="/auth/CreateAccVendorPatronStyle.css">
+  <link rel="stylesheet" href="VendorStallDetails.css">
+
+</head>
+<body data-auth-role="vendor">
+  <div class="app">
+    <button class="back-btn" type="button" onclick="history.back()">← Go Back</button>
+
+    <div class="logo">
+      <img src="/img/Logo.png" alt="HawkerHub Logo" />
+    </div>
+
+    <div class="panel-wrap">
+      <div class="panel">
+        <div class="panel-top">
+        </div>
+
+        <div class="panel-body">
+          <div class="icon"></div>
+          <div class="title">Vendor Details</div>
+          <div class="subtitle">Select the stall(s) you manage</div>
+
+          <div class="form-scroll">
+            <label for="stallSelect">Choose a stall</label>
+            <select id="stallSelect">
+              <option value="">Loading stalls...</option>
+            </select>
+
+            <div class="row">
+              <button class="secondary-btn" id="addStallBtn" type="button">Add Stall</button>
+              <button class="secondary-btn" id="clearBtn" type="button">Clear</button>
+            </div>
+
+            <div class="chips" id="selectedChips"></div>
+
+            <p class="hint">You must select at least one.</p>
+
+            <hr class="separator" />
+
+            <button class="submit-btn" id="saveVendorSetupBtn" type="button">Save & Continue to Sign In</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+
+<script src="VendorStallDetails.js"></script>
+</html>

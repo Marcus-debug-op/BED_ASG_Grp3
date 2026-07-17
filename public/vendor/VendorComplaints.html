@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HawkerHub – Vendor Complaints</title>
+
+  <link rel="stylesheet" href="VendorAccount.css">
+  <link rel="stylesheet" href="/shared/topnav.css">
+  <link rel="stylesheet" href="VendorComplaints.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <section class="banner">
+    <div class="container">
+      <div class="banner-tabs">
+        <a href="Profile(Patron & Vendor).html">Profile</a>
+        <span>|</span>
+        <a href="/vendor/VendorComplaints.html" class="active">Complaints</a>
+        <span>|</span>
+        <a href="VenderAccount.html">Stall</a>
+      </div>
+
+      <div class="banner-text">
+        <h1 id="stallNameDisplay">Loading Stall...</h1>
+        <p>View complaints from patrons and acknowledge that you've seen them</p>
+      </div>
+    </div>
+  </section>
+
+  <main class="container complaint-layout">
+
+    <div class="vendor-profile-card">
+        <h3 id="vendorName">Vendor</h3>
+        <p id="vendorEmail" class="email-text">Vendor Portal</p>
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+    </div>
+
+    <div class="complaints-section">
+        <div class="section-title-row">
+            <h2 class="section-title">Complaints</h2>
+            <select id="statusFilter">
+                <option value="">All statuses</option>
+                <option value="Open">Open</option>
+                <option value="Acknowledged">Acknowledged</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
+            </select>
+        </div>
+
+        <div id="complaints-list" class="complaints-list">
+            <p class="loading-text">Checking for complaints...</p>
+        </div>
+    </div>
+
+  </main>
+
+  <div id="detailModal" class="modal-overlay">
+    <div class="modal-content complaint-modal">
+      <div class="modal-header">
+        <h2>Complaint Details</h2>
+        <span class="close-btn" id="closeDetailModal">&times;</span>
+      </div>
+
+      <div class="modal-body">
+         <div class="modal-meta-row">
+            <div>
+                <p><strong>From:</strong> <span id="modalUser">...</span></p>
+                <p><strong>Date:</strong> <span id="modalDate">...</span></p>
+            </div>
+
+            <div class="status-control">
+                <label>Current Status:</label>
+                <span id="statusBadge" class="status-pill">...</span>
+            </div>
+         </div>
+
+         <hr class="modal-divider">
+
+         <p class="label">Complaint Type:</p>
+         <p id="modalType" class="text-content">...</p>
+
+         <p class="label">Complaint:</p>
+         <p id="modalComplaint" class="text-content">...</p>
+
+         <hr class="modal-divider">
+
+         <p class="label">Handled By:</p>
+         <p id="modalOfficer" class="text-content">Not yet assigned to an officer.</p>
+
+         <p class="label">Notes from Officer:</p>
+         <div id="modalNotes" class="notes-list"></div>
+         <p id="modalNotesEmpty" class="text-content hidden">No notes yet.</p>
+
+         <div class="acknowledge-row">
+            <button id="acknowledgeBtn" class="acknowledge-btn">Acknowledge Complaint</button>
+            <p id="acknowledgeStatusText" class="reply-status"></p>
+         </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="cancel-btn" id="closeBtnSecondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/shared/navbar-init.js"></script>
+  <script type="module" src="VendorComplaints.js"></script>
+</body>
+</html>
