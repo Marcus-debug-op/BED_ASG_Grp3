@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HawkerHub - My Likes</title>
+    
+    <link rel="stylesheet" href="Profile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/shared/topnav.css">
+</head>
+<body>
+
+    <header class="profile-header">
+        <div class="header-content">
+            <h1>My Likes</h1>
+            <p>Your favorite menu items from HawkerHub stalls</p>
+        </div>
+
+        <div class="banner-tabs">
+            <a href="/profile/PatronProfile.html">Profile</a>
+            <a href="Likes.html" class="active">Likes</a>
+        </div>
+    </header>
+
+    <main class="main-body">
+        <div class="content-wrapper">
+            
+            <aside class="left-sidebar">
+                <div class="profile-card">
+                    <div class="avatar-container">
+                        <img src="/img/profile.jpg" alt="Profile Picture" class="avatar-img">
+                    </div>
+
+                    <div class="info-item">
+                        <label>Name</label>
+                        <p><i class="fa-regular fa-user"></i> <span id="profileName">-</span></p>
+                    </div>
+
+                    <div class="info-item">
+                        <label>Email</label>
+                        <p><i class="fa-regular fa-envelope"></i> <span id="profileEmail">-</span></p>
+                    </div>
+
+                    <button class="logout-btn">Logout</button>
+                </div>
+            </aside>
+
+            <section class="discount-section">
+                <h2 class="section-title">
+                    <i class="fa-solid fa-heart"></i> Liked Menu Items
+                </h2>
+                
+                <div id="likes-container">
+                    <p class="loading-text">Loading your liked items...</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script type="module" src="/shared/navbar-init.js"></script>
+    <script type="module" src="Likes.js"></script>
+</body>
+</html>

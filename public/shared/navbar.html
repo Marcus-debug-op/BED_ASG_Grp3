@@ -1,0 +1,75 @@
+<header class="topbar">
+  <div class="container topbar-inner">
+    <img src="/img/Dashboard button.png" alt="Dashboard" class="icon-btn" id="menu-btn" />
+
+    <div class="brand">
+      <a href="/index.html" id="logoLink">
+        <img src="/img/Logo.png" alt="HawkerHub Logo" class="logo" />
+      </a>
+    </div>
+
+    <nav class="navlinks">
+      <a href="/patron/browsestalls.html" class="navlink" data-role="guest,patron">Browse</a>
+      <a href="/patron/history.html" class="navlink" data-role="guest,patron">History</a>
+      <a href="/patron/cart.html" class="navlink" data-role="guest,patron">Cart</a>
+
+
+
+      <a href="/vendor/VendorDashboard.html" class="navlink" data-role="vendor">Dashboard</a>
+      <a href="/vendor/VendorMenu.html" class="navlink" data-role="vendor">Menu</a>
+      <a href="/vendor/VendorOrder.html" class="navlink" data-role="vendor">Orders</a>
+      <a href="/vendor/VendorPromotions.html" class="navlink" data-role="vendor">Promotions</a>
+      <a href="/vendor/VendorStallDetails.html" class="navlink" data-role="vendor">Stall Details</a>
+    </nav>
+
+    <a class="btn btn-signin" href="/auth/signup.html" id="signinBtn">Sign in</a>
+  </div>
+</header>
+
+<div id="overlay" class="overlay hidden"></div>
+
+<div id="dashboard" class="dashboard hidden">
+  <div class="dashboard-header">
+    <div class="dashboard-brand">
+      <img src="/img/Logo.png" alt="HawkerHub" class="logo" />
+      <span>HawkerHub</span>
+    </div>
+    <button id="close-btn" type="button">X</button>
+  </div>
+
+  <a href="/patron/browsestalls.html" data-role="guest,patron">Browse</a>
+  <a href="/patron/history.html" data-role="guest,patron">History</a>
+  <a href="/patron/cart.html" data-role="guest,patron">Cart</a>
+  
+
+  <a href="/vendor/VendorDashboard.html" data-role="vendor">Dashboard</a>
+  <a href="/vendor/VendorMenu.html" data-role="vendor">Menu</a>
+  <a href="/vendor/VendorOrder.html" data-role="vendor">Orders</a>
+  <a href="/vendor/VendorPromotions.html" data-role="vendor">Promotions</a>
+  <a href="/vendor/VendorStallDetails.html" data-role="vendor">Stall Details</a>
+  <a href="/profile/VendorProfile.html" data-role="vendor">Account</a>
+
+  <div class="dashboard-footer">
+    <p>Hungry? Let's get started!</p>
+    <button id="dashboardAuthBtn" class="dashboard-auth-btn">
+      Sign in
+    </button>
+  </div>
+</div>
+
+<div id="logoutModal" class="logout-modal hidden">
+  <div class="logout-modal-box">
+    <h2>Log out?</h2>
+    <p>Are you sure you want to log out of your account?</p>
+
+    <div class="logout-modal-actions">
+      <button id="cancelLogoutBtn" type="button" class="logout-cancel-btn">
+        Cancel
+      </button>
+
+      <button id="confirmLogoutBtn" type="button" class="logout-confirm-btn">
+        Yes, Log Out
+      </button>
+    </div>
+  </div>
+</div>

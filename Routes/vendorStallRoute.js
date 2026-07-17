@@ -1,9 +1,9 @@
 const express = require("express");
 const vendorStallController = require("../Controllers/vendorStallController");
-const { requireAuth } = require("../Middlewares/authMiddleware");
+const { requireRole } = require("../Middlewares/authMiddleware");
 
 const router = express.Router();
 
-router.get("/my-stalls", requireAuth, vendorStallController.getMyStalls);
+router.get("/my-stalls", requireRole("vendor"), vendorStallController.getMyStalls);
 
 module.exports = router;

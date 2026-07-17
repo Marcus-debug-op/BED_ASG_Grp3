@@ -3,8 +3,8 @@ const passport = require("passport");
 const registerModel = require("../Models/registerModel");
 const { generateUserToken, generateGuestToken } = require("../Utils/token");
 
-const FRONTEND_APP_URL = process.env.FRONTEND_APP_URL || "/index.html";
-const FRONTEND_LOGIN_URL = process.env.FRONTEND_LOGIN_URL || "/SigninPatron.html";
+const FRONTEND_APP_URL = process.env.FRONTEND_APP_URL || "index.html";
+const FRONTEND_LOGIN_URL = process.env.FRONTEND_LOGIN_URL || "/auth/SigninPatron.html";
 
 // Shared login logic for a specific required role ("patron" | "vendor").
 async function loginWithRole(req, res, requiredRole) {

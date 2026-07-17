@@ -36,7 +36,7 @@ function renderTrending(container, list) {
     .map((s) => {
       const name = s.stall_name || "Unnamed Stall";
       const cuisine = s.cuisine_type || "Food";
-      const imageUrl = "img/placeholder.jpg";
+      const imageUrl = "/img/placeholder.jpg";
       const desc = s.description || "";
 
       return `
@@ -52,7 +52,7 @@ function renderTrending(container, list) {
               class="food-btn"
               type="button"
               data-i18n="btn_view"
-              data-href="stalldetails.html?stall=${encodeURIComponent(s.stall_id)}">
+              data-href="/patron/stalldetails.html?stall=${encodeURIComponent(s.stall_id)}">
               View
             </button>
           </div>
