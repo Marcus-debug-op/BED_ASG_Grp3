@@ -1,45 +1,12 @@
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  serverTimestamp,
-  getDocs,
-  doc,
-  runTransaction,
-  increment
-} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDo8B0OLtAj-Upfz7yNFeGz4cx3KWLZLuQ",
-  authDomain: "hawkerhub-64e2d.firebaseapp.com",
-  databaseURL: "https://hawkerhub-64e2d-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "hawkerhub-64e2d",
-  storageBucket: "hawkerhub-64e2d.firebasestorage.app",
-  messagingSenderId: "722888051277",
-  appId: "1:722888051277:web:59926d0a54ae0e4fe36a04"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
 //Storage keys
 const CART_KEY = "hawkerhub_cart";
 const ECO_KEY = "hawkerhub_eco_packaging";
-const COUPON_KEY = "hawkerhub_coupon";
 const CARD_DETAILS_KEY = "hawkerhub_card_details";
 const ECO_FEE = 0.20;
 
 
 const LAST_ORDER_NO_KEY = "hawkerhub_last_order_no";
 
-let PROMOS = {}; // key = CODE (uppercase)
-let PROMO_LIST = []; // array for dropdown
 
 //Helpers 
 function readCart() {
@@ -72,143 +39,6 @@ function readCardDetails() {
 
 function saveCardDetails(details) {
   localStorage.setItem(CARD_DETAILS_KEY, JSON.stringify(details));
-}
-
-function isWeekday() {
-  const d = new Date().getDay(); 
-  return d >= 1 && d <= 5;
-}
-
-function parseExpiryDate(expiryStr) {
-  const s = String(expiryStr || "").trim();
-  if (!s) return null;
-
-  const d = new Date(s);
-  if (!Number.isNaN(d.getTime())) return d;
-
-  return null;
-}
-
-
-function parseOffer(offerStr) {
-  const offer = String(offerStr || "").toLowerCase();
-
-  const pm = offer.match(/(\d+(?:\.\d+)?)\s*%/);
-  if (pm) return { type: "percent", value: Number(pm[1]) / 100 };
-
-  const fm = offer.match(/\$\s*(\d+(?:\.\d+)?)/);
-  if (fm) return { type: "flat", value: Number(fm[1]) };
-
-  return { type: "unknown", value: 0 };
-}
-
-
-function parseMinSpend(offerStr) {
-  const offer = String(offerStr || "").toLowerCase();
-
-  if (offer.includes("no min")) return 0;
-
-  const mm = offer.match(/min\.?\s*spend\s*\$?\s*(\d+(?:\.\d+)?)/);
-  if (mm) return Number(mm[1]);
-
-  return 0;
-}
-
-function isExpired(expiryStr) {
-  const d = parseExpiryDate(expiryStr);
-  if (!d) return false;
-
-  const end = new Date(d);
-  end.setHours(23, 59, 59, 999);
-  return Date.now() > end.getTime();
-}
-
-
-async function getNextOrderNo() {
-  const counterRef = doc(db, "counters", "orders");
-
-  const nextNo = await runTransaction(db, async (tx) => {
-    const snap = await tx.get(counterRef);
-
-    if (!snap.exists()) {
-
-      tx.set(counterRef, { next: 2 });
-      return 1;
-    }
-
-    const data = snap.data() || {};
-    const current = Number(data.next || 1);
-
-    tx.update(counterRef, { next: increment(1) });
-    return current;
-  });
-
-  return nextNo; // 1,2,3,...
-}
-
-// Load promo codes from Firestore 
-async function loadPromosFromFirestore() {
-  const selectEl = document.getElementById("promoCodeSelect");
-  if (!selectEl) {
-    console.error("promoCodeSelect not found in HTML. Check your checkout.html id.");
-    return;
-  }
-
-  selectEl.innerHTML = `<option value="">No promo</option>`;
-
-  try {
-    const snap = await getDocs(collection(db, "promocodes"));
-    console.log("promocodes docs count:", snap.size);
-
-    PROMOS = {};
-    PROMO_LIST = [];
-
-    snap.forEach((docSnap) => {
-      const data = docSnap.data() || {};
-      console.log("promo raw doc:", docSnap.id, data);
-
-      const code = String(data.code || docSnap.id || "").trim().toUpperCase();
-      if (!code) return;
-
-      const status = String(data.status || "").trim();
-      if (status !== "Active") return;
-
-      if (isExpired(data.expiry)) return;
-
-      const offerParsed = parseOffer(data.offer);
-      const minSpend = parseMinSpend(data.offer);
-
-      const promoObj = {
-        id: docSnap.id,
-        code,
-        title: String(data.title || code),
-        offer: String(data.offer || ""),
-        expiry: String(data.expiry || ""),
-        type: offerParsed.type,
-        value: offerParsed.value,
-        minSubtotal: minSpend,
-        weekdayOnly: Boolean(data.weekdayOnly || false)
-      };
-
-      PROMOS[code] = promoObj;
-      PROMO_LIST.push(promoObj);
-    });
-
-    console.log("filtered active promos:", PROMO_LIST.map((p) => p.code));
-
-    PROMO_LIST.forEach((p) => {
-      const opt = document.createElement("option");
-      opt.value = p.code;
-      opt.textContent = `${p.title} (${p.code}) - ${p.offer}`;
-      selectEl.appendChild(opt);
-    });
-
-    const saved = (localStorage.getItem(COUPON_KEY) || "").trim().toUpperCase();
-    if (saved && PROMOS[saved]) selectEl.value = saved;
-    else selectEl.value = "";
-  } catch (e) {
-    console.error("PROMO LOAD FAILED:", e);
-  }
 }
 
 // Validation Helpers
@@ -264,10 +94,13 @@ const phoneInput = document.getElementById("phoneNumber");
 // Live phone validation
 const phoneMsg = document.getElementById("phoneMsg");
 
+// Checks the phone number on every keystroke and shows red/green feedback.
 function validatePhoneLive() {
   const raw = String(phoneInput.value || "");
+  // \D means "any character that is NOT a digit", so this strips spaces, +65, dashes etc.
   const digits = raw.replace(/\D/g, "");
 
+  // Clear any previous red/green state so we start from a clean slate each time.
   phoneInput.classList.remove("input-valid", "input-invalid");
   if (phoneMsg) {
     phoneMsg.textContent = "";
@@ -277,15 +110,19 @@ function validatePhoneLive() {
   // don't show an error until they start typing
   if (raw.trim() === "") return;
 
+  // Work out which rule is broken. Only the first matching error is shown,
+  // so the patron fixes one clear problem at a time.
   let error = "";
   if (/[a-zA-Z]/.test(raw)) {
     error = "Numbers only, no letters.";
   } else if (!/^[689]/.test(digits)) {
+    // Singapore numbers start with 6 (landline), 8 or 9 (mobile).
     error = "Must start with 6, 8 or 9.";
   } else if (digits.length !== 8) {
     error = "Phone number must be 8 digits.";
   }
 
+  // Apply the result: red border + error message, or green border + confirmation.
   if (error) {
     phoneInput.classList.add("input-invalid");
     if (phoneMsg) {
@@ -301,11 +138,14 @@ function validatePhoneLive() {
   }
 }
 
+// The "input" event fires on every keystroke, so feedback appears as they type.
+// ?. means "only add the listener if the field actually exists on this page".
 phoneInput?.addEventListener("input", validatePhoneLive);
 
 // Live full name validation
 const fullNameMsg = document.getElementById("fullNameMsg");
 
+// Checks the full name is filled in and contains no numbers.
 function validateNameLive() {
   const raw = String(fullNameInput.value || "");
 
@@ -319,8 +159,10 @@ function validateNameLive() {
 
   let error = "";
   if (raw.trim() === "") {
+    // trim() removes spaces, so a name of only spaces still counts as empty.
     error = "Full name must be filled.";
   } else if (/\d/.test(raw)) {
+    // \d matches any digit 0-9.
     error = "Name must not contain numbers.";
   }
 
@@ -345,6 +187,7 @@ fullNameInput?.addEventListener("input", validateNameLive);
 const addressMsg = document.getElementById("addressMsg");
 const postalMsg = document.getElementById("postalMsg");
 
+// Helper: resets a field back to neutral (no red, no green, no message).
 function clearFieldState(input, msgEl) {
   input.classList.remove("input-valid", "input-invalid");
   if (msgEl) {
@@ -353,6 +196,7 @@ function clearFieldState(input, msgEl) {
   }
 }
 
+// The delivery address is free text, so the only rule is that it is filled in.
 function validateAddressLive() {
   const raw = String(deliveryAddress.value || "");
   clearFieldState(deliveryAddress, addressMsg);
@@ -379,6 +223,7 @@ function validateAddressLive() {
   }
 }
 
+// Singapore postal codes are exactly 6 digits.
 function validatePostalLive() {
   const raw = String(postalCode.value || "");
   clearFieldState(postalCode, postalMsg);
@@ -512,6 +357,8 @@ const cardCvvMsg = document.getElementById("cardCvvMsg");
 // keeps what was typed so it comes back when switching payment away and back
 const cardDraft = { name: "", number: "", expiry: "", cvv: "" };
 
+// Helper: one shared function that applies the red/green state and message
+// to any card field, so all four fields behave identically.
 function setFieldState(input, msgEl, error) {
   input.classList.remove("input-valid", "input-invalid");
   if (msgEl) {
@@ -536,17 +383,22 @@ function setFieldState(input, msgEl, error) {
   }
 }
 
+// Auto-formats the card number as 1234 5678 9012 3456 while typing,
+// and stops at 16 digits.
 function formatCardNumber(value) {
   const d = value.replace(/\D/g, "").slice(0, 16);
   return d.replace(/(\d{4})(?=\d)/g, "$1 ");
 }
 
+// Auto-inserts the slash, so typing 0623 becomes 06/23.
 function formatExpiry(value) {
   const d = value.replace(/\D/g, "").slice(0, 4);
   if (d.length >= 3) return d.slice(0, 2) + "/" + d.slice(2);
   return d;
 }
 
+// Name on card allows letters, spaces, hyphens and apostrophes
+// (so names like "Anne-Marie O'Brien" are accepted).
 function checkCardName() {
   const raw = String(cardName.value || "");
   let error = "";
@@ -557,6 +409,7 @@ function checkCardName() {
   cardDraft.name = cardName.value;
 }
 
+// Card number must be exactly 16 digits.
 function checkCardNumber() {
   cardNumber.value = formatCardNumber(cardNumber.value);
   const d = cardNumber.value.replace(/\D/g, "");
@@ -568,6 +421,7 @@ function checkCardNumber() {
   cardDraft.number = cardNumber.value;
 }
 
+// Expiry must be MM/YY with the month between 01 and 12.
 function checkCardExpiry() {
   cardExpiry.value = formatExpiry(cardExpiry.value);
   const v = cardExpiry.value;
@@ -582,6 +436,7 @@ function checkCardExpiry() {
   cardDraft.expiry = cardExpiry.value;
 }
 
+// Security code must be exactly 3 digits.
 function checkCardCvv() {
   cardCvv.value = cardCvv.value.replace(/\D/g, "").slice(0, 3);
   let error = "";
@@ -692,34 +547,13 @@ document.getElementById("paynowCloseBtn")?.addEventListener("click", () => {
 });
 
 // Promo Logic (Firestore-backed)
-function computeDiscount(subtotal, code) {
-  if (!code) return { ok: true, discount: 0, message: "" };
-
-  const promo = PROMOS[code];
-  if (!promo) return { ok: false, discount: 0, message: "Invalid promo code." };
-
-  if (isExpired(promo.expiry)) return { ok: false, discount: 0, message: "Promo code expired." };
-
-  if (promo.weekdayOnly && !isWeekday()) return { ok: false, discount: 0, message: "Weekdays only." };
-  if (promo.minSubtotal && subtotal < promo.minSubtotal) {
-    return { ok: false, discount: 0, message: `Min spend $${promo.minSubtotal}.` };
-  }
-
-  let discount = 0;
-  if (promo.type === "percent") discount = subtotal * promo.value;
-  else if (promo.type === "flat") discount = Math.min(promo.value, subtotal);
-
-  return { ok: true, discount, message: `${promo.code} applied.` };
-}
 
 function updateCheckoutSummary() {
   const cart = readCart();
   const subtotal = cart.reduce((sum, i) => sum + i.qty * i.price, 0);
   const ecoFee = readEco() ? ECO_FEE : 0;
 
-  const code = (localStorage.getItem(COUPON_KEY) || "").trim().toUpperCase();
-  const promoResult = computeDiscount(subtotal, code);
-  const total = Math.max(0, subtotal + ecoFee - promoResult.discount);
+  const total = Math.max(0, subtotal + ecoFee);
 
   document.getElementById("checkoutSubtotal").textContent = formatMoney(subtotal);
   document.getElementById("checkoutTotal").textContent = formatMoney(total);
@@ -730,42 +564,11 @@ function updateCheckoutSummary() {
     document.getElementById("checkoutEcoFee").textContent = `+${formatMoney(ecoFee)}`;
   }
 
-  const discRow = document.getElementById("discountRow");
-  if (discRow) {
-    discRow.style.display = promoResult.discount > 0 ? "flex" : "none";
-    document.getElementById("discountAmount").textContent = `-${formatMoney(promoResult.discount)}`;
-  }
-
-  const promoMsg = document.getElementById("promoMsg");
-  if (promoMsg) {
-    promoMsg.textContent = code ? promoResult.message : "";
-    promoMsg.style.color = promoResult.ok ? "green" : "crimson";
-  }
-
-  return { cart, subtotal, ecoFee, discount: promoResult.discount, promoCode: code, total };
+  return { cart, subtotal, ecoFee, total };
 }
 
-document.getElementById("applyPromoBtn")?.addEventListener("click", () => {
-  const selectEl = document.getElementById("promoCodeSelect");
-  const code = String(selectEl?.value || "").trim().toUpperCase();
-
-  if (!code) {
-    localStorage.removeItem(COUPON_KEY);
-    updateCheckoutSummary();
-    return;
-  }
-
-  if (PROMOS[code]) localStorage.setItem(COUPON_KEY, code);
-  else {
-    alert("Invalid Code");
-    localStorage.removeItem(COUPON_KEY);
-  }
-
-  updateCheckoutSummary();
-});
 
 //On page load: load promos then compute totals
-await loadPromosFromFirestore();
 updateCheckoutSummary();
 
 // Submit checkout — saves the order to the SQL backend (was Firebase) =====
@@ -814,7 +617,7 @@ submitBtn?.addEventListener("click", async () => {
     // Each POST is single-stall, so it passes the backend's stall validation.
     const createdOrders = [];
     for (const stallId in itemsByStall) {
-      // Build the body BED-20 expects: stall_id + items [{ menu_item_id, quantity }].
+      // Build the body the order API expects: stall_id + items [{ menu_item_id, quantity }].
       const payload = {
         stall_id: Number(stallId),
         items: itemsByStall[stallId].map(i => ({
@@ -850,7 +653,6 @@ submitBtn?.addEventListener("click", async () => {
     // All stall orders saved -> clear the local cart, eco toggle, and promo.
     localStorage.removeItem(CART_KEY);
     localStorage.removeItem(ECO_KEY);
-    localStorage.removeItem(COUPON_KEY);
 
     // Send the customer to the success / awaiting-payment page.
     window.location.href = "PaymentSuccesss.html";
