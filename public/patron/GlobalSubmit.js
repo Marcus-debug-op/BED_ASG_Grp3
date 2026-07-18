@@ -4,8 +4,20 @@ function getParams() {
   const params = new URLSearchParams(window.location.search);
   return {
     stallId: (params.get("id") || params.get("stall") || "").trim(),
-    returnUrl: (params.get("return") || "").trim()
+    returnUrl: (params.get("return") || "").trim(),
+    // BED-92 edit mode: stallFeedback.js's Edit button links here with these
+    // three extra params set. editId's presence is what flips this page from
+    // "post a new review" (POST) to "update my review" (PUT).
+    editId: (params.get("editId") || "").trim(),
+    editRating: (params.get("editRating") || "").trim(),
+    editComment: params.get("editComment") || ""
   };
+}
+
+// See menu.js's isGuestAccount() for why role (not just token) is the check -
+// GuestLogin.js sets role="guest" and never writes a "user" record.
+function isGuestAccount() {
+  return localStorage.getItem("role") === "guest";
 }
 
 // Kept this just in case your UI uses it to show a preview on the screen, 
@@ -47,7 +59,30 @@ document.addEventListener("DOMContentLoaded", () => {
   const commentBox = document.querySelector(".main-complaint");
   const stars = document.querySelectorAll(".star");
 
-  const { stallId, returnUrl } = getParams();
+  const { stallId, returnUrl, editId, editRating, editComment } = getParams();
+
+  // BED-92 edit mode: pre-fill the form with the existing review and relabel
+  // the page so it's clear this updates rather than creates a new one.
+  if (editId) {
+    const heading = document.querySelector(".form-header h2");
+    if (heading) heading.textContent = "Edit Your Review";
+
+    if (commentBox && editComment) commentBox.value = editComment;
+
+    if (ratingHidden && editRating) {
+      ratingHidden.value = editRating;
+      // feedbackrating.js builds the star buttons on its own DOMContentLoaded
+      // listener; since script tags run in order and feedbackrating.js is
+      // loaded before this file, the buttons already exist by the time we
+      // get here, so just paint the correct ones active.
+      const ratingNum = Number(editRating);
+      document.querySelectorAll("#star-container .rating-star").forEach((star, index) => {
+        star.classList.toggle("active", index < ratingNum);
+      });
+    }
+
+    if (submitBtn) submitBtn.textContent = "Update Review";
+  }
 
   // Star Rating UI Logic
   if (stars.length > 0) {
@@ -99,6 +134,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // Guests hold a valid token too, but the backend's blockGuests middleware
+    // rejects them on both POST /feedback and PUT /feedback/:id - catch it
+    // here first so guests get a clear message instead of a failed request.
+    if (isGuestAccount()) {
+      alert("Guests can't submit or edit reviews. Please sign in as a patron.");
+      return;
+    }
+
     // 3. Build exact payload for Joi validation (ignoring Name and Photo)
     const payload = {
       stall_id: parseInt(stallId, 10),
@@ -106,13 +149,19 @@ document.addEventListener("DOMContentLoaded", () => {
       comment: comment
     };
 
+    // BED-92: editing an existing review updates it in place (PUT) instead
+    // of creating a new one (POST).
+    const isEdit = Boolean(editId);
+    const url = isEdit ? `/api/feedback/${editId}` : "/api/feedback";
+    const method = isEdit ? "PUT" : "POST";
+
     try {
       submitBtn.disabled = true;
-      submitBtn.textContent = "Posting...";
+      submitBtn.textContent = isEdit ? "Updating..." : "Posting...";
 
       // 4. Send to your Express API
-      const response = await fetch("/api/feedback", {
-        method: "POST",
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}` 
@@ -123,7 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const responseData = await response.json();
 
       if (response.ok || response.status === 201) {
-        alert("Review posted successfully!");
+        alert(isEdit ? "Review updated successfully!" : "Review posted successfully!");
         if (returnUrl) window.location.href = returnUrl;
         else window.history.back();
       } else {
@@ -136,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Failed to connect to the server.");
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = "Post Review";
+      submitBtn.textContent = isEdit ? "Update Review" : "Post Review";
     }
   });
 });

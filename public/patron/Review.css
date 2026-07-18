@@ -200,6 +200,23 @@
   margin-left:0;
 }
 
+.review-edit-btn{
+  border:1px solid #cce0ff;
+  background:#f5f9ff;
+  color:#0057d9;
+  font-size:13px;
+  padding:4px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  margin-right:6px;
+  transition:background 0.15s ease, transform 0.1s ease;
+}
+
+.review-edit-btn:hover{
+  background:#e0ecff;
+  border-color:#99c2ff;
+}
+
 .review-delete-btn{
   border:1px solid #ffcccc;
   background:#fff5f5;
