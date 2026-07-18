@@ -917,3 +917,47 @@ body {
 .main {
     padding-top: 95px;
 }
+
+/* The empty-state class sets display:flex, so make the HTML hidden attribute
+   win when JavaScript has data to show. */
+[hidden]{
+    display:none !important;
+}
+
+.order-status{
+    display:inline-block;
+    padding:6px 10px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:700;
+}
+
+.status-pending{ background:#fff4d6; color:#9a6700; }
+.status-preparing{ background:#e8f1ff; color:#1d4ed8; }
+.status-ready{ background:#e3f8ed; color:#15803d; }
+.status-completed{ background:#f0f0f0; color:#525252; }
+
+.top-dishes-list{
+    list-style:none;
+    padding:0;
+    margin:0;
+}
+
+.top-dish-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    padding:15px 0;
+    border-bottom:1px solid #f1f1f1;
+    color:#333;
+    font-weight:600;
+}
+
+.top-dish-item:last-child{ border-bottom:none; }
+
+.dish-sales{
+    color:#f97316;
+    font-size:14px;
+    white-space:nowrap;
+}
