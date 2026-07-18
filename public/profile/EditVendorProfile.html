@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Vendor Profile</title>
+
+  <link rel="stylesheet" href="Profile.css">
+  <link rel="stylesheet" href="/shared/topnav.css">
+</head>
+
+<body>
+  <header class="profile-header">
+    <div class="header-content">
+      <h1>Edit Vendor Profile</h1>
+      <p>Update your vendor account details</p>
+    </div>
+  </header>
+
+  <main class="main-body">
+    <div class="content-wrapper">
+      <section class="discount-section">
+        <h2 class="section-title">Account Details</h2>
+
+        <form id="editVendorProfileForm" class="edit-profile-form">
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input id="full_name" type="text" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input id="email" type="email" disabled>
+            </div>
+
+            <div class="form-group">
+                <label for="phone_number">Phone Number</label>
+                <input id="phone_number" type="text" required>
+            </div>
+
+            <button type="submit" class="save-changes-btn">
+                Save Changes
+            </button>
+
+            <button
+                type="button"
+                class="cancel-btn"
+                onclick="window.location.href='/profile/VendorProfile.html'">
+                Cancel
+            </button>
+        </form>
+
+        <p id="message"></p>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="/shared/navbar-init.js"></script>
+  <script src="EditVendorProfile.js"></script>
+</body>
+</html>

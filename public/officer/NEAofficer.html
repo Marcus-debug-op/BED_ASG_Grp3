@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEA Officer Portal - Hawker Hub</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="operatorandofficer.css">
+</head>
+<body>
+
+    <div class="container">
+        
+        <aside class="sidebar">
+            <div class="brand">
+                <img src="/img/Logo.png" alt="Centre Logo" class="brand-logo">
+                <div class="brand-info">
+                    <div class="brand-title">NEA Officer Portal</div>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-item active" onclick="switchPage('overview', this)">
+                    Dashboard
+                </div>
+                
+                <div class="nav-item" onclick="switchPage('stalls', this)">
+                    Stall Directory
+                </div>
+                
+                <div class="nav-item" onclick="switchPage('schedule', this)">
+                    Schedule
+                </div>
+                
+                <div class="nav-item" onclick="switchPage('settings', this)">
+                    Settings
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            
+            <div id="page-overview">
+                <header class="header">
+                    <div>
+                        <h1>Officer Dashboard</h1>
+                        <p class="subtitle">Overview of hygiene standards and inspection progress</p>
+                    </div>
+                </header>
+
+                <div class="stats-grid">
+                    <div class="card stat-card">
+                        <div class="stat-header">
+                            <span>Stalls Inspected</span>
+                        </div>
+                        <div class="stat-value" id="total-stalls">0</div>
+                        <div class="stat-trend positive">
+                            <span>Live Data</span> from Firestore
+                        </div>
+                    </div>
+
+                    <div class="card stat-card">
+                        <div class="stat-header">
+                            <span>Critical Violations</span>
+                        </div>
+                        <div class="stat-value critical-text" id="critical-violations">0</div>
+                        <div class="stat-subtext">Grade C or below</div>
+                    </div>
+
+                    <div class="card stat-card">
+                        <div class="stat-header">
+                            <span>Avg Hygiene Score</span>
+                        </div>
+                        <div class="stat-value" id="avg-zone-score">0.0</div>
+                        <div class="stat-subtext">Zone Average</div>
+                    </div>
+                </div>
+
+                <div class="card dashboard-table-container">
+                    <h3>Recent Inspections</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Stall Name</th>
+                                <th>Date</th>
+                                <th>Grade</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-inspections-body">
+                            <tr><td colspan="4" class="text-muted-center">Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="page-stalls" class="hidden">
+                <header class="header">
+                    <h1>Stall Directory</h1>
+                    <p class="subtitle">List of all registered stalls in this zone</p>
+                </header>
+                <div class="card">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Stall Name</th>
+                                <th>Owner</th>
+                                <th>Last Grade</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stall-directory-body">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="page-schedule" class="hidden">
+                <header class="header">
+                    <h1>Inspection Schedule</h1>
+                    <p class="subtitle">Today's planned visits</p>
+                </header>
+                <div class="schedule-container" id="schedule-list">
+                    <p class="text-muted-center">Loading schedule...</p>
+                </div>
+            </div>
+
+            <div id="page-settings" class="hidden">
+                <div class="card">
+                    <p>Officer Name: <strong id="display-officer-name">Loading...</strong></p>
+                    <p>Badge ID: <strong id="display-badge-id">Loading...</strong></p>
+                    
+                    <button class="btn-secondary" onclick="logoutOfficer()">Log Out</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="modal-schedule" class="hidden modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">Schedule Visit</div>
+            
+            <input type="hidden" id="schedule-stall-id">
+            <input type="hidden" id="schedule-stall-name">
+
+            <input type="hidden" id="input-date">
+
+            <label class="form-label">Date</label>
+            <div class="date-picker-group">
+                <select id="picker-year" class="form-input-box" onchange="updateDayOptions()"></select>
+                <select id="picker-month" class="form-input-box" onchange="updateDayOptions()">
+                    <option value="0">January</option>
+                    <option value="1">February</option>
+                    <option value="2">March</option>
+                    <option value="3">April</option>
+                    <option value="4">May</option>
+                    <option value="5">June</option>
+                    <option value="6">July</option>
+                    <option value="7">August</option>
+                    <option value="8">September</option>
+                    <option value="9">October</option>
+                    <option value="10">November</option>
+                    <option value="11">December</option>
+                </select>
+                <select id="picker-day" class="form-input-box" onchange="updateFinalDate()"></select>
+            </div>
+
+            <label class="form-label">Time</label>
+            <select id="input-time" class="form-input-box" onchange="checkAvailability()">
+                <option value="08:00">08:00 AM</option>
+                <option value="08:30">08:30 AM</option>
+                <option value="09:00">09:00 AM</option>
+                <option value="09:30">09:30 AM</option>
+                <option value="10:00" selected>10:00 AM</option>
+                <option value="10:30">10:30 AM</option>
+                <option value="11:00">11:00 AM</option>
+                <option value="11:30">11:30 AM</option>
+                <option value="12:00">12:00 PM</option>
+                <option value="12:30">12:30 PM</option>
+                <option value="13:00">01:00 PM</option>
+                <option value="13:30">01:30 PM</option>
+                <option value="14:00">02:00 PM</option>
+                <option value="14:30">02:30 PM</option>
+                <option value="15:00">03:00 PM</option>
+                <option value="15:30">03:30 PM</option>
+                <option value="16:00">04:00 PM</option>
+                <option value="16:30">04:30 PM</option>
+                <option value="17:00">05:00 PM</option>
+            </select>
+
+            <label class="form-label">Notes</label>
+            <textarea id="input-note" class="form-input-box" rows="2" placeholder="e.g. Routine check"></textarea>
+
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal('modal-schedule')">Cancel</button>
+                <button class="btn-primary" onclick="confirmSchedule()">Confirm Schedule</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-inspect" class="hidden modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">Complete Inspection</div>
+            
+            <input type="hidden" id="inspect-schedule-id">
+            <input type="hidden" id="inspect-stall-id">
+            <input type="hidden" id="inspect-stall-name">
+
+            <div style="margin-bottom: 15px;">
+                <strong>Stall:</strong> <span id="display-stall-name" style="font-size: 1.1rem;">Loading...</span>
+            </div>
+
+            <label class="form-label">Hygiene Score (0-100)</label>
+            <input type="number" id="input-score" class="form-input-box" placeholder="85" oninput="calculateLiveGrade(this.value)">
+            
+            <div id="grade-preview" class="grade-feedback"></div>
+
+            <label class="form-label">Strengths (Observed Positives)</label>
+            <textarea id="input-strengths" class="form-input-box" rows="2" placeholder="e.g. Clean grill area, staff wears masks"></textarea>
+
+            <label class="form-label">Remarks / Violations</label>
+            <textarea id="input-remarks" class="form-input-box" rows="2" placeholder="e.g. Floor wet, improper storage..."></textarea>
+
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal('modal-inspect')">Cancel</button>
+                <button class="btn-primary" onclick="submitInspection()">Submit Report</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="NEAofficer.js"></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Orders - HawkerHub</title>
+    <link rel="stylesheet" href="/shared/topnav.css">
+    <link rel="stylesheet" href="VendorOrder.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <section class="banner">
+        <div class="container">
+            <div class="banner-text">
+                <h1>Orders</h1>
+                <p>Manage and view customer’s orders</p>
+            </div>
+        </div>
+    </section>
+
+    <main class="container">
+
+        <!--  search + status filters -->
+        <section class="orders-toolbar" aria-label="Order controls">
+            <div class="orders-search">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <input id="order-search" type="search" placeholder="Search by order no. / customer / stall..." autocomplete="off" />
+            </div>
+
+            <div class="orders-filters" role="tablist" aria-label="Order status filters">
+                <button class="filter-chip is-active" type="button" data-filter="all" role="tab" aria-selected="true">All</button>
+                <button class="filter-chip" type="button" data-filter="new" role="tab" aria-selected="false">New</button>
+                <button class="filter-chip" type="button" data-filter="preparing" role="tab" aria-selected="false">Preparing</button>
+                <button class="filter-chip" type="button" data-filter="ready" role="tab" aria-selected="false">Ready</button>
+                <button class="filter-chip" type="button" data-filter="completed" role="tab" aria-selected="false">Completed</button>
+            </div>
+        </section>
+
+        <section id="ordersContainer" class="orders-container">
+            <p>Loading orders...</p>
+        </section>
+
+    </main>
+
+    <div class="footer-spacer"></div>
+    <script type="module" src="/shared/navbar-init.js"></script>
+    <script src="VendorOrder.js"></script>
+</body>
+</html>
