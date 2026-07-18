@@ -82,17 +82,32 @@ async function createPatron(userData) {
 }
 
 
-//".Transaction" is used because this function consist of 2 queries, with this it ensures that multiple SQL actions that must succeed together.
+/* Creates a new vendor account and a related stall record.
+A transaction is used because vendor registration requires two database inserts:
+//
+1. Insert the vendor into the Users table.
+2. Insert the vendor's stall into the Stalls table.
+
+Both inserts must succeed together.
+If the user is created but the stall insert fails, the transaction will roll back
+so the database does not end up with a vendor account that has no linked stall.
+*/
+
 async function createVendor(userData) {
     let connection;
     let transaction;
 
      try {
     connection = await sql.connect(dbConfig);
+
+     // Create a transaction using the current database connection.
     transaction = new sql.Transaction(connection)
 
+    // Start the transaction before running the insert queries.
     await transaction.begin();
 
+    // This request is attached to the transaction.
+    // This means the query will only be permanently saved if the transaction commits.
     const userRequest = new sql.Request(transaction);
 
     const userQuery = `
@@ -101,8 +116,11 @@ async function createVendor(userData) {
 
       SELECT CAST(SCOPE_IDENTITY() AS INT) AS user_id;
     `;
-     const request = await connection.request();
 
+     
+
+    // Insert the vendor account into the Users table.
+    // Parameterized inputs are used to safely pass values into the SQL query.
     const userResult = await userRequest
       .input("full_name", sql.VarChar(100), userData.full_name)
       .input("email", sql.VarChar(100), userData.email)
@@ -110,8 +128,13 @@ async function createVendor(userData) {
       .input("phone_number", sql.VarChar(20), userData.phone_number)
       .query(userQuery);
 
+    
+    // Get the newly created vendor's user_id.
+    // This ID is needed to link the stall to the vendor.
     const userId = userResult.recordset[0].user_id;;
 
+
+    // Create another request under the same transaction for the stall insert.
     const stallRequest = new sql.Request(transaction);
 
     const stallQuery = `
@@ -122,18 +145,22 @@ async function createVendor(userData) {
 
       SELECT CAST(SCOPE_IDENTITY() AS INT) AS stall_id;
     `;
-
+    
+    // Insert the stall record and link it to the vendor using vendor_id.
     const stallResult = await stallRequest
       .input("vendor_id", sql.Int, userId)
       .input("stall_name", sql.VarChar(100), userData.stall_name)
-      .input("cuisine_type", sql.VarChar(50), userData.cuisine_type || null)
-      .input("description", sql.VarChar(255), userData.description|| null)
-      .input("unit_number", sql.VarChar(20), userData.unit_number || null)
+      .input("cuisine_type", sql.VarChar(50), userData.cuisine_type)
+      .input("description", sql.VarChar(255), userData.description)
+      .input("unit_number", sql.VarChar(20), userData.unit_number)
       .input("hawker_centre_id", sql.Int, userData.hawker_centre_id)
       .query(stallQuery);
-
+    
+    // If both inserts succeed, permanently save the changes.
     await transaction.commit();
+    
 
+    // Return both IDs so the controller can send them back in the response.
     return {
       user_id: userId,
       stall_id: stallResult.recordset[0].stall_id,
