@@ -25,15 +25,35 @@ router.put("/vendor/my-orders/:orderId/status", requireRole("vendor"), orderCont
 
 
 // Both order routes are restricted to logged-in patrons.
-router.post("/", requireRole("patron"), validateOrder, orderController.createOrder);
+router.post("/", requireRole("patron"), validateOrder, orderController.createOrder
+/*
+    #swagger.tags = ['Orders']
+    #swagger.description = 'Patron creates a new order (with its items) for one stall'
+    #swagger.security = [{ "bearerAuth": [] }]
+  */);
 // Patron's past orders. Must come BEFORE "/:id/status" so "history" isn't
 // mistaken for an :id value.
-router.get("/history", requireRole("patron"), orderController.getOrderHistory);
-router.get("/:id/status", requireRole("patron"), orderController.getOrderStatus);
+router.get("/history", requireRole("patron"), orderController.getOrderHistory
+/*
+    #swagger.tags = ['Orders']
+    #swagger.description = "Patron retrieves their own past orders, newest first"
+    #swagger.security = [{ "bearerAuth": [] }]
+  */);
+router.get("/:id/status", requireRole("patron"), orderController.getOrderStatus
+/*
+    #swagger.tags = ['Orders']
+    #swagger.description = "Patron retrieves the status of one of their own orders"
+    #swagger.security = [{ "bearerAuth": [] }]
+  */);
 // One of the patron's own orders, WITH its line items.
 // This is ONE segment ("/:id"), so it MUST be placed AFTER "/history" and
 // "/:id/status" — otherwise Express would treat the word "history" as an :id.
-router.get("/:id", requireRole("patron"), orderController.getOrderDetails);
+router.get("/:id", requireRole("patron"), orderController.getOrderDetails
+/*
+    #swagger.tags = ['Orders']
+    #swagger.description = "Patron retrieves one of their own orders with its line items"
+    #swagger.security = [{ "bearerAuth": [] }]
+  */);
 
 
 
