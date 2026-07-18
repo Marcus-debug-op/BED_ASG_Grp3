@@ -46,9 +46,33 @@ async function loadDetails() {
         const cuisineEl = document.getElementById("stall-cuisine");
         if (cuisineEl) cuisineEl.textContent = s.cuisine_type || "General";
 
-        // We leave rating hardcoded for now until you build a Ratings table!
+        // BED-85 stretch goal: fetch the real average instead of hardcoding it.
+        // Separate request from /api/stalls above since that endpoint doesn't
+        // include rating data - a failure here shouldn't break the rest of
+        // the page, so it's wrapped in its own try/catch.
         const ratingEl = document.getElementById("stall-rating");
-        if (ratingEl) ratingEl.textContent = "Not yet rated";
+        if (ratingEl) {
+            try {
+                const reviewsResponse = await fetch(`/api/stalls/${stallId}/reviews/summary`);
+
+                if (reviewsResponse.ok) {
+                    const reviewsData = await reviewsResponse.json();
+
+                    if (reviewsData.avg_rating !== null && reviewsData.total_reviews > 0) {
+                        const avg = Number(reviewsData.avg_rating).toFixed(1);
+                        const reviewWord = reviewsData.total_reviews === 1 ? "review" : "reviews";
+                        ratingEl.textContent = `${avg} (${reviewsData.total_reviews} ${reviewWord})`;
+                    } else {
+                        ratingEl.textContent = "Not yet rated";
+                    }
+                } else {
+                    ratingEl.textContent = "Not yet rated";
+                }
+            } catch (reviewsErr) {
+                console.error("Error fetching reviews summary:", reviewsErr);
+                ratingEl.textContent = "Not yet rated";
+            }
+        }
 
 
         // --- 4. INFO GRID (Now using real SQL data!) ---
