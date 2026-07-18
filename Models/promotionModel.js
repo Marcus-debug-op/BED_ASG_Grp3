@@ -14,17 +14,21 @@ async function stallBelongsToVendor(connection, stallId, vendorId) {
   return result.recordset.length > 0;
 }
 
-// promo_code is globally UNIQUE in the schema (not just per-stall), so this
-// checks across all vendors. excludePromotionId lets an update skip flagging
-// a promotion against its own existing code.
-async function isCodeTaken(connection, promoCode, excludePromotionId) {
+// BED-47: duplicates are only blocked "for their stall" - promo_code is now
+// UNIQUE(stall_id, promo_code) in the schema (see migration 006), so this
+// checks within the given stall only. Two different stalls can both run a
+// "SAVE10" code. excludePromotionId lets an update skip flagging a
+// promotion against its own existing code.
+async function isCodeTaken(connection, stallId, promoCode, excludePromotionId) {
   const request = connection.request();
+  request.input("stall_id", sql.Int, stallId);
   request.input("promo_code", sql.VarChar(50), promoCode);
   request.input("exclude_id", sql.Int, excludePromotionId || null);
 
   const result = await request.query(`
     SELECT promotion_id FROM Promotions
-    WHERE promo_code = @promo_code
+    WHERE stall_id = @stall_id
+      AND promo_code = @promo_code
       AND (@exclude_id IS NULL OR promotion_id <> @exclude_id);
   `);
 
@@ -123,7 +127,7 @@ async function createPromotion(stallId, vendorId, promo) {
     const owns = await stallBelongsToVendor(connection, stallId, vendorId);
     if (!owns) return { outcome: "not_owner" };
 
-    if (await isCodeTaken(connection, promo.promo_code)) {
+    if (await isCodeTaken(connection, stallId, promo.promo_code)) {
       return { outcome: "duplicate_code" };
     }
 
@@ -185,7 +189,7 @@ async function updatePromotion(promotionId, vendorId, promo) {
     const existing = ownershipResult.recordset[0];
     if (!existing) return { outcome: "not_found" };
 
-    if (await isCodeTaken(connection, promo.promo_code, promotionId)) {
+    if (await isCodeTaken(connection, existing.stall_id, promo.promo_code, promotionId)) {
       return { outcome: "duplicate_code" };
     }
 

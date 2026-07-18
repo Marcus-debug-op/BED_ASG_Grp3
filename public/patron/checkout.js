@@ -1,14 +1,13 @@
-//Storage keys
+// Storage keys
 const CART_KEY = "hawkerhub_cart";
 const ECO_KEY = "hawkerhub_eco_packaging";
+const COUPON_KEY = "hawkerhub_coupon";
 const CARD_DETAILS_KEY = "hawkerhub_card_details";
 const ECO_FEE = 0.20;
 
-
 const LAST_ORDER_NO_KEY = "hawkerhub_last_order_no";
 
-
-//Helpers 
+// Helpers
 function readCart() {
   try {
     return JSON.parse(localStorage.getItem(CART_KEY)) || [];
@@ -94,13 +93,10 @@ const phoneInput = document.getElementById("phoneNumber");
 // Live phone validation
 const phoneMsg = document.getElementById("phoneMsg");
 
-// Checks the phone number on every keystroke and shows red/green feedback.
 function validatePhoneLive() {
   const raw = String(phoneInput.value || "");
-  // \D means "any character that is NOT a digit", so this strips spaces, +65, dashes etc.
   const digits = raw.replace(/\D/g, "");
 
-  // Clear any previous red/green state so we start from a clean slate each time.
   phoneInput.classList.remove("input-valid", "input-invalid");
   if (phoneMsg) {
     phoneMsg.textContent = "";
@@ -110,19 +106,15 @@ function validatePhoneLive() {
   // don't show an error until they start typing
   if (raw.trim() === "") return;
 
-  // Work out which rule is broken. Only the first matching error is shown,
-  // so the patron fixes one clear problem at a time.
   let error = "";
   if (/[a-zA-Z]/.test(raw)) {
     error = "Numbers only, no letters.";
   } else if (!/^[689]/.test(digits)) {
-    // Singapore numbers start with 6 (landline), 8 or 9 (mobile).
     error = "Must start with 6, 8 or 9.";
   } else if (digits.length !== 8) {
     error = "Phone number must be 8 digits.";
   }
 
-  // Apply the result: red border + error message, or green border + confirmation.
   if (error) {
     phoneInput.classList.add("input-invalid");
     if (phoneMsg) {
@@ -138,14 +130,11 @@ function validatePhoneLive() {
   }
 }
 
-// The "input" event fires on every keystroke, so feedback appears as they type.
-// ?. means "only add the listener if the field actually exists on this page".
 phoneInput?.addEventListener("input", validatePhoneLive);
 
 // Live full name validation
 const fullNameMsg = document.getElementById("fullNameMsg");
 
-// Checks the full name is filled in and contains no numbers.
 function validateNameLive() {
   const raw = String(fullNameInput.value || "");
 
@@ -159,10 +148,8 @@ function validateNameLive() {
 
   let error = "";
   if (raw.trim() === "") {
-    // trim() removes spaces, so a name of only spaces still counts as empty.
     error = "Full name must be filled.";
   } else if (/\d/.test(raw)) {
-    // \d matches any digit 0-9.
     error = "Name must not contain numbers.";
   }
 
@@ -187,7 +174,6 @@ fullNameInput?.addEventListener("input", validateNameLive);
 const addressMsg = document.getElementById("addressMsg");
 const postalMsg = document.getElementById("postalMsg");
 
-// Helper: resets a field back to neutral (no red, no green, no message).
 function clearFieldState(input, msgEl) {
   input.classList.remove("input-valid", "input-invalid");
   if (msgEl) {
@@ -196,7 +182,6 @@ function clearFieldState(input, msgEl) {
   }
 }
 
-// The delivery address is free text, so the only rule is that it is filled in.
 function validateAddressLive() {
   const raw = String(deliveryAddress.value || "");
   clearFieldState(deliveryAddress, addressMsg);
@@ -223,7 +208,6 @@ function validateAddressLive() {
   }
 }
 
-// Singapore postal codes are exactly 6 digits.
 function validatePostalLive() {
   const raw = String(postalCode.value || "");
   clearFieldState(postalCode, postalMsg);
@@ -357,8 +341,6 @@ const cardCvvMsg = document.getElementById("cardCvvMsg");
 // keeps what was typed so it comes back when switching payment away and back
 const cardDraft = { name: "", number: "", expiry: "", cvv: "" };
 
-// Helper: one shared function that applies the red/green state and message
-// to any card field, so all four fields behave identically.
 function setFieldState(input, msgEl, error) {
   input.classList.remove("input-valid", "input-invalid");
   if (msgEl) {
@@ -383,22 +365,17 @@ function setFieldState(input, msgEl, error) {
   }
 }
 
-// Auto-formats the card number as 1234 5678 9012 3456 while typing,
-// and stops at 16 digits.
 function formatCardNumber(value) {
   const d = value.replace(/\D/g, "").slice(0, 16);
   return d.replace(/(\d{4})(?=\d)/g, "$1 ");
 }
 
-// Auto-inserts the slash, so typing 0623 becomes 06/23.
 function formatExpiry(value) {
   const d = value.replace(/\D/g, "").slice(0, 4);
   if (d.length >= 3) return d.slice(0, 2) + "/" + d.slice(2);
   return d;
 }
 
-// Name on card allows letters, spaces, hyphens and apostrophes
-// (so names like "Anne-Marie O'Brien" are accepted).
 function checkCardName() {
   const raw = String(cardName.value || "");
   let error = "";
@@ -409,7 +386,6 @@ function checkCardName() {
   cardDraft.name = cardName.value;
 }
 
-// Card number must be exactly 16 digits.
 function checkCardNumber() {
   cardNumber.value = formatCardNumber(cardNumber.value);
   const d = cardNumber.value.replace(/\D/g, "");
@@ -421,7 +397,6 @@ function checkCardNumber() {
   cardDraft.number = cardNumber.value;
 }
 
-// Expiry must be MM/YY with the month between 01 and 12.
 function checkCardExpiry() {
   cardExpiry.value = formatExpiry(cardExpiry.value);
   const v = cardExpiry.value;
@@ -436,7 +411,6 @@ function checkCardExpiry() {
   cardDraft.expiry = cardExpiry.value;
 }
 
-// Security code must be exactly 3 digits.
 function checkCardCvv() {
   cardCvv.value = cardCvv.value.replace(/\D/g, "").slice(0, 3);
   let error = "";
@@ -546,13 +520,51 @@ document.getElementById("paynowCloseBtn")?.addEventListener("click", () => {
   setTimeout(closeModals, 1000);
 });
 
-// Promo Logic (Firestore-backed)
+// ---------------------------------------------------------------------
+// Promo code (SQL-backed) — per BED-22, the backend is the only place
+// that validates a code and calculates a discount. There is no "list
+// promotions" endpoint (that's out of scope for BED-22/BED-47), so the
+// frontend just takes a free-text code and lets the order API validate
+// it. No discount is shown until the order is actually submitted.
+// ---------------------------------------------------------------------
+const promoInput = document.getElementById("promoCodeInput");
+const promoMsg = document.getElementById("promoMsg");
+
+function readPromoCode() {
+  return (localStorage.getItem(COUPON_KEY) || "").trim().toUpperCase();
+}
+
+function setPromoMessage(text, isError) {
+  if (!promoMsg) return;
+  promoMsg.textContent = text;
+  promoMsg.style.color = isError ? "crimson" : "green";
+}
+
+// Restore any previously entered code into the input on page load.
+if (promoInput) {
+  promoInput.value = readPromoCode();
+}
+
+document.getElementById("applyPromoBtn")?.addEventListener("click", () => {
+  const code = String(promoInput?.value || "").trim().toUpperCase();
+
+  if (!code) {
+    localStorage.removeItem(COUPON_KEY);
+    setPromoMessage("", false);
+    return;
+  }
+
+  localStorage.setItem(COUPON_KEY, code);
+  setPromoMessage(`"${code}" will be checked when you submit your order.`, false);
+});
 
 function updateCheckoutSummary() {
   const cart = readCart();
   const subtotal = cart.reduce((sum, i) => sum + i.qty * i.price, 0);
   const ecoFee = readEco() ? ECO_FEE : 0;
 
+  // The exact discount is only known once the backend validates the promo
+  // code at submit time, so the pre-submit summary never shows one.
   const total = Math.max(0, subtotal + ecoFee);
 
   document.getElementById("checkoutSubtotal").textContent = formatMoney(subtotal);
@@ -564,14 +576,15 @@ function updateCheckoutSummary() {
     document.getElementById("checkoutEcoFee").textContent = `+${formatMoney(ecoFee)}`;
   }
 
-  return { cart, subtotal, ecoFee, total };
+  const discRow = document.getElementById("discountRow");
+  if (discRow) discRow.style.display = "none";
+
+  return { cart, subtotal, ecoFee, promoCode: readPromoCode(), total };
 }
 
-
-//On page load: load promos then compute totals
 updateCheckoutSummary();
 
-// Submit checkout — saves the order to the SQL backend (was Firebase) =====
+// Submit checkout — saves the order to the SQL backend
 const submitBtn = document.querySelector(".cta");
 
 submitBtn?.addEventListener("click", async () => {
@@ -613,37 +626,76 @@ submitBtn?.addEventListener("click", async () => {
       itemsByStall[sid].push(item);
     }
 
+    // A promo code belongs to exactly one stall (Promotions.stall_id), so it
+    // can only ever be redeemable against that one stall's order. If the cart
+    // spans multiple stalls, we still try the code on each order; a stall the
+    // code doesn't belong to just resends without it rather than failing the
+    // whole checkout.
+    let promoCode = info.promoCode || null;
+    let promoApplied = false;
+    let promoMessageToShow = null;
+
     // Create ONE order per stall by POSTing each group to the order API.
     // Each POST is single-stall, so it passes the backend's stall validation.
     const createdOrders = [];
     for (const stallId in itemsByStall) {
-      // Build the body the order API expects: stall_id + items [{ menu_item_id, quantity }].
-      const payload = {
+      const buildPayload = (withPromo) => ({
         stall_id: Number(stallId),
         items: itemsByStall[stallId].map(i => ({
           menu_item_id: Number(i.id),            // cart item id = SQL menu_item_id
           quantity: i.qty
-        }))
-      };
-
-      // Send this stall's order to the backend, with the patron token for auth.
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
+        })),
+        ...(withPromo && promoCode ? { promo_code: promoCode } : {})
       });
 
-      // If any stall's order fails, stop and surface the error (don't fake success).
+      const postOrder = (withPromo) =>
+        fetch("/api/orders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(buildPayload(withPromo))
+        });
+
+      // First attempt: include the promo code if the patron entered one and
+      // it hasn't already been successfully applied to an earlier stall order.
+      const attemptWithPromo = Boolean(promoCode) && !promoApplied;
+      let response = await postOrder(attemptWithPromo);
+
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+
+        // NOT_FOUND just means this code isn't for this stall — retry that
+        // one order without it instead of failing the whole checkout.
+        if (attemptWithPromo && errBody.reason === "NOT_FOUND") {
+          response = await postOrder(false);
+        } else if (attemptWithPromo) {
+          // Any other reason (inactive, expired, min spend, already used,
+          // limit reached) is a genuine problem with the code itself.
+          throw new Error(errBody.message || "That promo code couldn't be applied.");
+        }
+      }
+
       if (!response.ok) {
         const errBody = await response.json().catch(() => ({}));
         throw new Error(errBody.message || `Order failed for stall ${stallId} (${response.status})`);
       }
 
-      // Keep the created order so we can reference the last order id afterwards.
-      createdOrders.push(await response.json());
+      const created = await response.json();
+      createdOrders.push(created);
+
+      if (attemptWithPromo && created.promotion) {
+        promoApplied = true;
+        promoMessageToShow = `Promo applied: -${formatMoney(created.promotion.discount_amount)}`;
+      }
+    }
+
+    if (promoCode && !promoApplied) {
+      // Code was entered but didn't match any stall in this cart.
+      setPromoMessage("This promo code isn't valid for any stall in your cart.", true);
+    } else if (promoMessageToShow) {
+      setPromoMessage(promoMessageToShow, false);
     }
 
     // Save the most recent order id so the success page can display it.
@@ -653,12 +705,14 @@ submitBtn?.addEventListener("click", async () => {
     // All stall orders saved -> clear the local cart, eco toggle, and promo.
     localStorage.removeItem(CART_KEY);
     localStorage.removeItem(ECO_KEY);
+    localStorage.removeItem(COUPON_KEY);
 
     // Send the customer to the success / awaiting-payment page.
     window.location.href = "PaymentSuccesss.html";
 
   } catch (e) {
-    // Any failure (network, auth, invalid item): show it and re-enable the button.
+    // Any failure (network, auth, invalid item, invalid promo): show it and
+    // re-enable the button so the patron can fix the code/details and retry.
     console.error(e);
     alert("Error processing order: " + e.message);
     submitBtn.textContent = "Submit";
