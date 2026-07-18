@@ -104,10 +104,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     <button type="button" class="promo-action-btn" data-action="edit">
                         Edit
                     </button>
-
-                    <button type="button" class="promo-action-btn" data-action="delete">
-                        Delete
-                    </button>
                 </div>
             </div>
         `;
@@ -260,10 +256,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             if (action === "toggle") {
-                const response = await fetch(`/api/vendor/promotions/${promotionId}/active`, {
-                    method: "PATCH",
+                // There's no dedicated "toggle active" route - PUT /:promotionId is the
+                // one real update route, and it requires the full promotion payload
+                // (matching what the create route validates), not a partial patch.
+                const response = await fetch(`/api/vendor/promotions/${promotionId}`, {
+                    method: "PUT",
                     headers: authHeaders({ "Content-Type": "application/json" }),
-                    body: JSON.stringify({ is_active: !promo.is_active })
+                    body: JSON.stringify({
+                        promo_code: promo.promo_code,
+                        description: promo.description || "",
+                        discount_percent: promo.discount_percent,
+                        start_date: toDateInputValue(promo.start_date),
+                        end_date: toDateInputValue(promo.end_date),
+                        is_active: !promo.is_active
+                    })
                 });
 
                 const data = await response.json();
@@ -284,22 +290,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 cancelEditBtn.hidden = false;
                 form.querySelector(".promo-save-btn").textContent = "Update Promotion";
                 form.scrollIntoView({ behavior: "smooth", block: "start" });
-            }
-
-            if (action === "delete") {
-                const ok = confirm(`Delete promo code "${promo.promo_code}"?`);
-                if (!ok) return;
-
-                const response = await fetch(`/api/vendor/promotions/${promotionId}`, {
-                    method: "DELETE",
-                    headers: authHeaders()
-                });
-
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message || "Failed to delete promo code.");
-
-                showMsg("Promo deleted.");
-                await loadPromotions(currentStallId);
             }
         } catch (error) {
             console.error(error);
