@@ -14,7 +14,7 @@ The project uses a Node.js and Express backend with Microsoft SQL Server as the 
 | Ryan Ng | Login and authentication flow |
 | Damien Tan| To be updated |
 | Ben Goh| To be updated |
-| Ryan Tan | To be updated |
+| Ryan Tan | Order creation and checkout integration, order status, order history (API + page), order details with line items, checkout input validation  |
 
 ---
 

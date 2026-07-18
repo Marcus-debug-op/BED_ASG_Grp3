@@ -618,7 +618,10 @@
     },
     "/api/orders/": {
       "post": {
-        "description": "",
+        "tags": [
+          "Orders"
+        ],
+        "description": "Patron creates a new order (with its items) for one stall",
         "parameters": [
           {
             "name": "body",
@@ -652,12 +655,20 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/orders/history": {
       "get": {
-        "description": "",
+        "tags": [
+          "Orders"
+        ],
+        "description": "Patron retrieves their own past orders, newest first",
         "responses": {
           "200": {
             "description": "OK"
@@ -668,12 +679,20 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/orders/{id}/status": {
       "get": {
-        "description": "",
+        "tags": [
+          "Orders"
+        ],
+        "description": "Patron retrieves the status of one of their own orders",
         "parameters": [
           {
             "name": "id",
@@ -698,12 +717,20 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/orders/{id}": {
       "get": {
-        "description": "",
+        "tags": [
+          "Orders"
+        ],
+        "description": "Patron retrieves one of their own orders with its line items",
         "parameters": [
           {
             "name": "id",
@@ -728,7 +755,12 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/profile/my-profile": {
