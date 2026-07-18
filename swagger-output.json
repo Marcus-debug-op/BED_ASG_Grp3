@@ -425,22 +425,29 @@
     },
     "/api/stalls/": {
       "get": {
-        "description": "",
+        "tags": [
+          "Stalls"
+        ],
+        "description": "BED-61: List all active hawker stalls. Supports optional search and cuisine query params for BED-49 browse/filter.",
         "parameters": [
-          {
-            "name": "search",
-            "in": "query",
-            "type": "string"
-          },
-          {
-            "name": "cuisine",
-            "in": "query",
-            "type": "string"
-          },
           {
             "name": "hawker_centre_id",
             "in": "query",
             "type": "string"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Keyword to match against stall name / description"
+          },
+          {
+            "name": "cuisine",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Filter by cuisine type"
           }
         ],
         "responses": {
@@ -455,7 +462,10 @@
     },
     "/api/stalls/{stallId}/menu": {
       "get": {
-        "description": "",
+        "tags": [
+          "Stalls"
+        ],
+        "description": "BED-62: Get a specific stall\\'s menu items (dishes, prices, descriptions).",
         "parameters": [
           {
             "name": "stallId",
@@ -482,7 +492,10 @@
     },
     "/api/stalls/{stallId}/reviews/summary": {
       "get": {
-        "description": "",
+        "tags": [
+          "Stalls"
+        ],
+        "description": "BED-85: Get the aggregated average rating, total review count, and most recent reviews for a stall.",
         "parameters": [
           {
             "name": "stallId",
@@ -854,7 +867,34 @@
     },
     "/api/feedback": {
       "post": {
-        "description": "",
+        "tags": [
+          "Feedback"
+        ],
+        "description": "BED-2: Submit a rating and comment for a stall. Registered patrons only - guests are rejected.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "stall_id": {
+                  "type": "number",
+                  "example": 5
+                },
+                "rating": {
+                  "type": "number",
+                  "example": 4
+                },
+                "comment": {
+                  "type": "string",
+                  "example": "Great food, friendly service!"
+                }
+              }
+            }
+          }
+        ],
         "responses": {
           "201": {
             "description": "Created"
@@ -862,18 +902,26 @@
           "400": {
             "description": "Bad Request"
           },
-          "401": {
-            "description": "Unauthorized"
+          "403": {
+            "description": "Forbidden"
           },
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/vendor/feedback": {
       "get": {
-        "description": "",
+        "tags": [
+          "Feedback"
+        ],
+        "description": "BED-2: Vendor retrieves feedback left for their own stall(s) only.",
         "responses": {
           "200": {
             "description": "OK"
@@ -884,18 +932,48 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/feedback/{feedbackId}": {
       "put": {
-        "description": "",
+        "tags": [
+          "Feedback"
+        ],
+        "description": "BED-92: Edit your own feedback. Returns 403 if the feedback belongs to a different patron.",
         "parameters": [
           {
             "name": "feedbackId",
             "in": "path",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "stall_id": {
+                  "type": "number",
+                  "example": 5
+                },
+                "rating": {
+                  "type": "number",
+                  "example": 3
+                },
+                "comment": {
+                  "type": "string",
+                  "example": "Updated my review after a second visit."
+                }
+              }
+            }
           }
         ],
         "responses": {
@@ -905,9 +983,6 @@
           "400": {
             "description": "Bad Request"
           },
-          "401": {
-            "description": "Unauthorized"
-          },
           "403": {
             "description": "Forbidden"
           },
@@ -917,10 +992,18 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       },
       "delete": {
-        "description": "",
+        "tags": [
+          "Feedback"
+        ],
+        "description": "BED-92: Delete your own feedback. Returns 403 if the feedback belongs to a different patron.",
         "parameters": [
           {
             "name": "feedbackId",
@@ -933,9 +1016,6 @@
           "200": {
             "description": "OK"
           },
-          "401": {
-            "description": "Unauthorized"
-          },
           "403": {
             "description": "Forbidden"
           },
@@ -945,7 +1025,12 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/complaints/": {
@@ -1275,7 +1360,10 @@
     },
     "/api/menu-items/{id}/likes": {
       "post": {
-        "description": "",
+        "tags": [
+          "Likes"
+        ],
+        "description": "BED-26: Like a menu item. Registered patrons only - guests are rejected.",
         "parameters": [
           {
             "name": "id",
@@ -1291,8 +1379,8 @@
           "201": {
             "description": "Created"
           },
-          "401": {
-            "description": "Unauthorized"
+          "403": {
+            "description": "Forbidden"
           },
           "404": {
             "description": "Not Found"
@@ -1300,10 +1388,18 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       },
       "delete": {
-        "description": "",
+        "tags": [
+          "Likes"
+        ],
+        "description": "BED-26: Remove your like from a menu item.",
         "parameters": [
           {
             "name": "id",
@@ -1316,8 +1412,8 @@
           "200": {
             "description": "OK"
           },
-          "401": {
-            "description": "Unauthorized"
+          "403": {
+            "description": "Forbidden"
           },
           "404": {
             "description": "Not Found"
@@ -1325,12 +1421,20 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/menu-items/{id}/likes/count": {
       "get": {
-        "description": "",
+        "tags": [
+          "Likes"
+        ],
+        "description": "BED-26: Get the total like count for a menu item. Public - no auth required.",
         "parameters": [
           {
             "name": "id",
