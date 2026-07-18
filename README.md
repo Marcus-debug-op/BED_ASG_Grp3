@@ -11,7 +11,7 @@ The project uses a Node.js and Express backend with Microsoft SQL Server as the 
 | Member | Features |
 
 | Marcus Ng| Registration, profile view/edit, vendor profile business details, vendor order management |
-| Ryan Ng | Login and authentication flow |
+| Ryan Ng | Login Authentication (Patron & Vendor), Google Sign In, Guest Login, Session Management and Role Based Access Control |
 | Damien Tan| To be updated |
 | Ben Goh| To be updated |
 | Ryan Tan | Order creation and checkout integration, order status, order history (API + page), order details with line items, checkout input validation  |
