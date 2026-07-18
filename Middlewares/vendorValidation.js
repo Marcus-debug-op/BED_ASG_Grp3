@@ -44,20 +44,20 @@ const Joi = require("joi");
       "any.required": "Stall name is required."
     }),
 
-    cuisine_type: Joi.string().max(50).allow("", null)
+    cuisine_type: Joi.string().max(50).required()
     .messages({
       "string.empty": "Cuisine type is required.",
       "any.required": "Cuisine type is required."
     }),
 
-    description: Joi.string().max(255).allow("", null)
+    description: Joi.string().max(255).required()
     .messages({
       "string.empty": "Stall description is required.",
       "string.min": "Stall description must be at least 5 characters long.",
       "any.required": "Stall description is required."
     }),
 
-    unit_number: Joi.string().max(20).allow("", null)
+    unit_number: Joi.string().max(20).required()
      .messages({
       "string.empty": "Unit number is required.",
       "any.required": "Unit number is required."

@@ -126,14 +126,14 @@ form.addEventListener("submit", async (event) => {
     hawker_centre_id: document.getElementById("hawker_centre_id").value,
   };
 
-  const validationError = validateVendorForm(newVendor);
+  // const validationError = validateVendorForm(newVendor);
 
-  if (validationError) {
-    messageDiv.textContent = validationError;
-    messageDiv.style.color = "red";
-    submitButton.disabled = false;
-    return;
-  }
+  // if (validationError) {
+  //   messageDiv.textContent = validationError;
+  //   messageDiv.style.color = "red";
+  //   submitButton.disabled = false;
+  //   return;
+  // }
     
   try {
     const response = await fetch(`${apiBaseUrl}/vendor`, {

@@ -77,14 +77,14 @@ form.addEventListener("submit", async (event) => {
   }
 
 
-  const validationError = validatePatronForm(newPatron);
+  // const validationError = validatePatronForm(newPatron);
 
-  if (validationError) {
-    messageDiv.textContent = validationError;
-    messageDiv.style.color = "red";
-    submitButton.disabled = false;
-    return;
-  }
+  // if (validationError) {
+  //   messageDiv.textContent = validationError;
+  //   messageDiv.style.color = "red";
+  //   submitButton.disabled = false;
+  //   return;
+  // }
     
 
 
