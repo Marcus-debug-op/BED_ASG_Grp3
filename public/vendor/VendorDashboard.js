@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!token || role !== "vendor") {
         alert("Please sign in as a vendor.");
-        window.location.href = "/auth/SignInVendor.html";
+        window.location.href = "SignInVendor.html";
         return;
     }
 
@@ -126,38 +126,24 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ===========================
-    // Future API
+    // Dashboard summary cards
     // ===========================
 
-    /*
-    fetch("http://localhost:3000/api/vendor/dashboard", {
-
+    fetch("/api/vendor/dashboard", {
         headers: {
-
-            Authorization:`Bearer ${token}`
-
+            Authorization: `Bearer ${token}`
         }
-
     })
-
-    .then(res=>res.json())
-
-    .then(data=>{
-
-        document.getElementById("todayRevenue").textContent =
-        `$${data.todayRevenue}`;
-
-        document.getElementById("todayOrders").textContent =
-        data.todayOrders;
-
-        document.getElementById("pendingOrders").textContent =
-        data.pendingOrders;
-
-        document.getElementById("averageRating").textContent =
-        data.averageRating;
-
-    });
-    */
+        .then((res) => res.json())
+        .then((data) => {
+            document.getElementById("todayRevenue").textContent = `$${data.todayRevenue}`;
+            document.getElementById("todayOrders").textContent = data.todayOrders;
+            document.getElementById("pendingOrders").textContent = data.pendingOrders;
+            document.getElementById("averageRating").textContent = data.averageRating;
+        })
+        .catch((error) => {
+            console.error("Error loading dashboard metrics:", error);
+        });
 
     // ===========================
     // Logout
@@ -169,7 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             localStorage.clear();
 
-            window.location.href = "/auth/signup.html";
+            window.location.href = "signup.html";
 
         });
 
