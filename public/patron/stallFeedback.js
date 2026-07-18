@@ -85,7 +85,10 @@ function renderReviews(reviews) {
 
         <div class="post-meta-right">
           <span class="post-date">${fmtDate(reviewDate)}</span>
-          ${isOwnReview ? `<button type="button" class="review-delete-btn" data-feedback-id="${r.feedback_id}">Delete</button>` : ""}
+          ${isOwnReview ? `
+            <button type="button" class="review-edit-btn" data-feedback-id="${r.feedback_id}" data-rating="${reviewRating}" data-comment="${encodeURIComponent(reviewComment)}">Edit</button>
+            <button type="button" class="review-delete-btn" data-feedback-id="${r.feedback_id}">Delete</button>
+          ` : ""}
         </div>
       </div>
 
@@ -115,6 +118,29 @@ function renderReviews(reviews) {
       };
     }
   }
+}
+
+// BED-92 frontend: edit own feedback. Sends the patron to feedback.html
+// (the same form BED-2 uses to create a review) with editId/editRating/
+// editComment set - GlobalSubmit.js reads those to pre-fill the form and
+// switch its request from POST to PUT.
+function handleEditClick(e) {
+  const btn = e.target.closest(".review-edit-btn");
+  if (!btn) return;
+
+  const feedbackId = btn.dataset.feedbackId;
+  const rating = btn.dataset.rating;
+  const comment = btn.dataset.comment; // already encodeURIComponent'd when rendered
+
+  const stallId = getStallId();
+  const returnUrl = `stallFeedback.html?id=${encodeURIComponent(stallId)}`;
+
+  window.location.href =
+    `feedback.html?id=${encodeURIComponent(stallId)}` +
+    `&return=${encodeURIComponent(returnUrl)}` +
+    `&editId=${encodeURIComponent(feedbackId)}` +
+    `&editRating=${encodeURIComponent(rating)}` +
+    `&editComment=${comment}`;
 }
 
 // BED-92 frontend: delete own feedback. Delegated on the list container since
@@ -211,7 +237,7 @@ async function loadStallInfo(stallId) {
     if (nameEl) nameEl.textContent = stallDisplayName;
 
     const imgEl = document.getElementById("stallHeroImg");
-    if (imgEl) imgEl.src = s.image_url || "/img/placeholder.jpg"; // Adjust for DB columns
+    if (imgEl) imgEl.src = normalizeImageUrl(s.image_url); // Adjust for DB columns
 
     const closeBtn = document.querySelector(".btn-close-modal");
     if (closeBtn) closeBtn.addEventListener("click", () => window.history.back());
@@ -284,10 +310,41 @@ async function init() {
   }
 
   const list = document.getElementById("reviewsList");
-  if (list) list.addEventListener("click", handleDeleteClick);
+  if (list) {
+    list.addEventListener("click", handleEditClick);
+    list.addEventListener("click", handleDeleteClick);
+  }
 
   await loadStallInfo(stallId);
   await loadFeedback(stallId);
 }
 
 init().catch(console.error);
+
+// Same fix already applied in menu.js/stalldetails.js/browsestalls.js: the
+// database stores stall images as relative paths like "img/Foo.jpg" with no
+// leading slash. Since this page is served from /patron/stallFeedback.html,
+// a bare relative path resolves against /patron/ instead of the site root,
+// producing a 404. Prepending "/" (and defaulting to the placeholder when
+// there's no image at all) fixes that without touching the stored data.
+function normalizeImageUrl(imageUrl) {
+  if (!imageUrl) {
+    return "/img/placeholder.jpg";
+  }
+
+  const cleaned = String(imageUrl).trim();
+
+  if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
+    return cleaned;
+  }
+
+  if (cleaned.startsWith("/img/") || cleaned.startsWith("/uploads/")) {
+    return cleaned;
+  }
+
+  if (cleaned.startsWith("img/")) {
+    return `/${cleaned}`;
+  }
+
+  return `/img/${cleaned}`;
+}

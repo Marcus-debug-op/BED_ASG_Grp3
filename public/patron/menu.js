@@ -140,6 +140,16 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
+            // Guests (GuestLogin.js) hold a valid token too, but only role="guest",
+            // no "user" record - the backend rejects them with blockGuests, so
+            // catch it here first for a clearer message instead of a failed request.
+            if (isGuestAccount()) {
+                alert("Guests can't like menu items. Please sign in as a patron.");
+                applyLikeState(btn, heartEl, countEl, wasLiked, previousCount);
+                btn.dataset.busy = "false";
+                return;
+            }
+
             try {
                 const response = await fetch(`/api/menu-items/${menuItemId}/likes`, {
                     method: nextLiked ? "POST" : "DELETE",
@@ -199,6 +209,13 @@ function normalizeImageUrl(imageUrl) {
 }   
 
 // Helper functions
+// GuestLogin.js sets role="guest" and never writes a "user" record, so
+// checking role is the reliable way to tell a guest session apart from a
+// registered patron/vendor session (both of which always have "user" set).
+function isGuestAccount() {
+    return localStorage.getItem("role") === "guest";
+}
+
 function applyLikeState(btn, heartEl, countEl, liked, count) {
     btn.dataset.liked = String(liked);
     btn.dataset.count = String(count);

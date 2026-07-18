@@ -1,16 +1,60 @@
 const express = require("express");
 const feedbackController = require("../Controllers/feedbackController");
-const { requireAuth, requireRole } = require("../Middlewares/authMiddleware");
+const { requireRole, blockGuests } = require("../Middlewares/authMiddleware");
 const { validateFeedback } = require("../Middlewares/feedbackValidation");
 
 const router = express.Router();
 
-// BED-2
-router.post("/feedback", requireAuth, validateFeedback, feedbackController.submitFeedback);
-router.get("/vendor/feedback", requireRole("vendor"), feedbackController.getVendorFeedback);
+// BED-2: blockGuests instead of requireAuth - guests hold a valid token too,
+// so requireAuth alone would let them submit feedback. Only registered
+// patrons (non-guest) may rate/comment on a stall.
+router.post("/feedback", blockGuests, validateFeedback, feedbackController.submitFeedback
+  /*
+    #swagger.tags = ['Feedback']
+    #swagger.description = 'BED-2: Submit a rating and comment for a stall. Registered patrons only - guests are rejected.'
+    #swagger.security = [{ "bearerAuth": [] }]
+    #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+        stall_id: 5,
+        rating: 4,
+        comment: 'Great food, friendly service!'
+      }
+    }
+  */
+);
+router.get("/vendor/feedback", requireRole("vendor"), feedbackController.getVendorFeedback
+  /*
+    #swagger.tags = ['Feedback']
+    #swagger.description = 'BED-2: Vendor retrieves feedback left for their own stall(s) only.'
+    #swagger.security = [{ "bearerAuth": [] }]
+  */
+);
 
-// BED-92
-router.put("/feedback/:feedbackId", requireAuth, validateFeedback, feedbackController.updateFeedback);
-router.delete("/feedback/:feedbackId", requireAuth, feedbackController.deleteFeedback);
+// BED-92: same reasoning - only a registered patron can edit/delete their own feedback.
+router.put("/feedback/:feedbackId", blockGuests, validateFeedback, feedbackController.updateFeedback
+  /*
+    #swagger.tags = ['Feedback']
+    #swagger.description = 'BED-92: Edit your own feedback. Returns 403 if the feedback belongs to a different patron.'
+    #swagger.security = [{ "bearerAuth": [] }]
+    #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+        stall_id: 5,
+        rating: 3,
+        comment: 'Updated my review after a second visit.'
+      }
+    }
+  */
+);
+router.delete("/feedback/:feedbackId", blockGuests, feedbackController.deleteFeedback
+  /*
+    #swagger.tags = ['Feedback']
+    #swagger.description = 'BED-92: Delete your own feedback. Returns 403 if the feedback belongs to a different patron.'
+    #swagger.security = [{ "bearerAuth": [] }]
+  */
+);
 
 module.exports = router;
