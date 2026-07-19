@@ -285,8 +285,14 @@ async function deletePromotion(promotionId, vendorId) {
 //   { valid: true, promotionId, discountAmount, discountedTotal }
 // subtotal is the pre-discount order total, calculated server-side by the
 // caller from real menu item prices - never trust a client-supplied total.
-async function validateAndApplyPromotion(transaction, stallId, patronId, promoCode, subtotal) {
-  const promoRequest = new sql.Request(transaction);
+//
+// `holder` is whatever a sql.Request can be built from - either an active
+// Transaction (checkout, BED-22/BED-46) or a plain ConnectionPool (preview).
+// This is a pure read: it never writes anything, so it's safe to reuse for
+// a checkout-page "Apply" preview that must NOT record a redemption before
+// the order is actually submitted.
+async function checkPromotionEligibility(holder, stallId, patronId, promoCode, subtotal) {
+  const promoRequest = new sql.Request(holder);
   promoRequest.input("promo_code", sql.VarChar(50), promoCode);
   promoRequest.input("stall_id", sql.Int, stallId);
 
@@ -332,7 +338,7 @@ async function validateAndApplyPromotion(transaction, stallId, patronId, promoCo
     };
   }
 
-  const patronRequest = new sql.Request(transaction);
+  const patronRequest = new sql.Request(holder);
   patronRequest.input("promotion_id", sql.Int, promo.promotion_id);
   patronRequest.input("patron_id", sql.Int, patronId);
 
@@ -346,7 +352,7 @@ async function validateAndApplyPromotion(transaction, stallId, patronId, promoCo
   }
 
   if (promo.max_redemptions !== null) {
-    const countRequest = new sql.Request(transaction);
+    const countRequest = new sql.Request(holder);
     countRequest.input("promotion_id", sql.Int, promo.promotion_id);
 
     const countResult = await countRequest.query(`
@@ -364,6 +370,22 @@ async function validateAndApplyPromotion(transaction, stallId, patronId, promoCo
   const discountedTotal = Math.round((subtotal - discountAmount) * 100) / 100;
 
   return { valid: true, promotionId: promo.promotion_id, discountAmount, discountedTotal };
+}
+
+// Used by Models/orderModel.js while actually creating an order (BED-22 /
+// BED-46) - runs on the SAME transaction the order is being created in, so
+// an order and its promo redemption always succeed or fail together.
+async function validateAndApplyPromotion(transaction, stallId, patronId, promoCode, subtotal) {
+  return checkPromotionEligibility(transaction, stallId, patronId, promoCode, subtotal);
+}
+
+// Checkout-page "Apply" preview (BED-92) - runs the exact same checks as a
+// real checkout (so the number shown never lies), but on its own plain
+// connection instead of the order's transaction. Nothing is written, so a
+// patron can preview a code as many times as they like without it ever
+// being marked as redeemed until they actually submit the order.
+async function previewPromotion(connection, stallId, patronId, promoCode, subtotal) {
+  return checkPromotionEligibility(connection, stallId, patronId, promoCode, subtotal);
 }
 
 // Logs a redemption row on the same transaction as the order that used it.
@@ -388,5 +410,6 @@ module.exports = {
   updatePromotion,
   deletePromotion,
   validateAndApplyPromotion,
+  previewPromotion,
   recordRedemption
 };

@@ -51,11 +51,33 @@ function renderPromoPageFixture() {
   `;
 }
 
+let lastDomContentLoadedHandler = null;
+
 function loadVendorPromotionsScript() {
   renderPromoPageFixture();
   jest.resetModules();
   global.fetch = jest.fn();
+
+  // VendorPromotions.js registers its init logic via
+  // document.addEventListener("DOMContentLoaded", ...) at require time.
+  // Since jsdom's `document` persists across tests in this file, requiring
+  // the script again leaves the PREVIOUS test's listener still attached -
+  // dispatching DOMContentLoaded later fires every accumulated listener,
+  // which double-fetches and drains later tests' mockResolvedValueOnce
+  // queues out of order. Capture and remove the previous handler first.
+  if (lastDomContentLoadedHandler) {
+    document.removeEventListener("DOMContentLoaded", lastDomContentLoadedHandler);
+  }
+
+  const originalAddEventListener = document.addEventListener.bind(document);
+  const spy = jest.spyOn(document, "addEventListener").mockImplementation((event, handler, options) => {
+    if (event === "DOMContentLoaded") lastDomContentLoadedHandler = handler;
+    return originalAddEventListener(event, handler, options);
+  });
+
   require("../public/vendor/VendorPromotions.js");
+
+  spy.mockRestore();
 }
 
 async function initAsSignedInVendor({ stalls, promotions }) {

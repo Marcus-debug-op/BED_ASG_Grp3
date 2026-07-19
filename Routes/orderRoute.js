@@ -1,7 +1,7 @@
 const express = require("express");
 const orderController = require("../Controllers/orderController");
 const { requireRole } = require("../Middlewares/authMiddleware");
-const { validateOrder } = require("../Middlewares/orderValidation");
+const { validateOrder, validatePromoPreview } = require("../Middlewares/orderValidation");
 
 const router = express.Router();
 
@@ -29,6 +29,18 @@ router.post("/", requireRole("patron"), validateOrder, orderController.createOrd
 /*
   #swagger.tags = ['Orders']
   #swagger.description = 'Patron creates an order for a single stall. If a promo_code is supplied, the backend validates its active status, expiry date and minimum spend, calculates the exact discount server-side, applies it to the order total, and records a redemption linked to this order - preventing the same code from being reused. Invalid/expired/ineligible codes return a clear error reason instead of failing the order.'
+  #swagger.security = [{ "bearerAuth": [] }]
+*/);
+
+// Patron previews a promo code against their current cart BEFORE submitting
+// the order, so the checkout page can show the discount as soon as they
+// click "Apply" instead of only after the order goes through. Runs the same
+// validation/discount math as the real checkout, but never creates an order
+// or records a redemption.
+router.post("/preview-promo", requireRole("patron"), validatePromoPreview, orderController.previewPromoCode
+/*
+  #swagger.tags = ['Orders']
+  #swagger.description = 'Patron previews what a promo code would do to their current cart (for one stall) without submitting an order. Returns the same validation reasons as order creation (NOT_FOUND, INACTIVE, EXPIRED, MIN_SPEND_NOT_MET, ALREADY_REDEEMED, LIMIT_REACHED) if invalid, or the calculated discount if valid. No order is created and no redemption is recorded.'
   #swagger.security = [{ "bearerAuth": [] }]
 */);
 

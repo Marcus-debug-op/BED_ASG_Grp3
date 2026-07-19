@@ -47,7 +47,9 @@ function loadComplaintScript(stallIdQuery = "?id=1") {
   renderComplaintPageFixture();
 
   jest.resetModules();
-  global.fetch = jest.fn();
+  if (!jest.isMockFunction(global.fetch)) {
+    global.fetch = jest.fn();
+  }
   window.alert = jest.fn();
   window.history.back = jest.fn();
 

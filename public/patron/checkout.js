@@ -521,14 +521,23 @@ document.getElementById("paynowCloseBtn")?.addEventListener("click", () => {
 });
 
 // ---------------------------------------------------------------------
-// Promo code (SQL-backed) — per BED-22, the backend is the only place
-// that validates a code and calculates a discount. There is no "list
-// promotions" endpoint (that's out of scope for BED-22/BED-47), so the
-// frontend just takes a free-text code and lets the order API validate
-// it. No discount is shown until the order is actually submitted.
+// Promo code (SQL-backed) — per BED-22/BED-47, the backend is the only
+// place that validates a code and calculates a discount, so the frontend
+// never invents a number. BED-92: clicking "Apply" now calls a preview
+// endpoint (POST /api/orders/preview-promo) that runs those same checks
+// against the real cart and returns the exact discount, WITHOUT creating
+// an order or recording a redemption — so the discount shows immediately
+// on the checkout page instead of only after the order is submitted. The
+// final, authoritative validation still happens again at submit time.
 // ---------------------------------------------------------------------
 const promoInput = document.getElementById("promoCodeInput");
 const promoMsg = document.getElementById("promoMsg");
+const applyPromoBtn = document.getElementById("applyPromoBtn");
+
+// Holds the result of the last successful preview, so the summary can keep
+// showing it without re-fetching on every render. Cleared whenever the code
+// text changes, so a stale discount can never be shown for a different code.
+let appliedPromo = null; // { code, stallId, subtotal, discountAmount, discountedTotal }
 
 function readPromoCode() {
   return (localStorage.getItem(COUPON_KEY) || "").trim().toUpperCase();
@@ -540,32 +549,126 @@ function setPromoMessage(text, isError) {
   promoMsg.style.color = isError ? "crimson" : "green";
 }
 
-// Restore any previously entered code into the input on page load.
+// Restore any previously entered code into the input on page load. The
+// discount itself isn't restored (it wasn't persisted), so it'll show again
+// as soon as updateCheckoutSummary() runs the preview below.
 if (promoInput) {
   promoInput.value = readPromoCode();
 }
 
-document.getElementById("applyPromoBtn")?.addEventListener("click", () => {
+// Typing a new code invalidates whatever discount is currently shown —
+// they have to click Apply again to preview the new code.
+promoInput?.addEventListener("input", () => {
+  if (appliedPromo && appliedPromo.code !== promoInput.value.trim().toUpperCase()) {
+    appliedPromo = null;
+    updateCheckoutSummary();
+  }
+});
+
+applyPromoBtn?.addEventListener("click", async () => {
   const code = String(promoInput?.value || "").trim().toUpperCase();
 
   if (!code) {
     localStorage.removeItem(COUPON_KEY);
+    appliedPromo = null;
     setPromoMessage("", false);
+    updateCheckoutSummary();
     return;
   }
 
   localStorage.setItem(COUPON_KEY, code);
-  setPromoMessage(`"${code}" will be checked when you submit your order.`, false);
+  await applyPromoCode(code);
 });
+
+// Calls the preview endpoint for whichever stall(s) are in the cart, and
+// stops at the first stall the code is actually valid for (a promo code
+// only ever belongs to one stall — see checkout submit logic below).
+async function applyPromoCode(code) {
+  const cart = readCart();
+  if (!cart.length) {
+    setPromoMessage("Your cart is empty.", true);
+    return;
+  }
+
+  const itemsByStall = {};
+  for (const item of cart) {
+    const sid = Number(item.stallId);
+    if (!itemsByStall[sid]) itemsByStall[sid] = [];
+    itemsByStall[sid].push(item);
+  }
+
+  applyPromoBtn.disabled = true;
+  applyPromoBtn.textContent = "Applying...";
+  setPromoMessage("Checking code...", false);
+
+  const token = localStorage.getItem("token");
+  let lastError = null;
+  let matched = null;
+
+  try {
+    for (const stallId in itemsByStall) {
+      const response = await fetch("/api/orders/preview-promo", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          stall_id: Number(stallId),
+          items: itemsByStall[stallId].map(i => ({ menu_item_id: Number(i.id), quantity: i.qty })),
+          promo_code: code
+        })
+      });
+
+      const body = await response.json().catch(() => ({}));
+
+      if (response.ok && body.valid) {
+        matched = {
+          code,
+          stallId: Number(stallId),
+          subtotal: body.subtotal,
+          discountAmount: body.discount_amount,
+          discountedTotal: body.discounted_total
+        };
+        break;
+      }
+
+      // NOT_FOUND just means this code isn't for this particular stall —
+      // keep trying the cart's other stalls before giving up.
+      lastError = body.message || "That promo code couldn't be applied.";
+    }
+  } catch (e) {
+    console.error(e);
+    lastError = "Couldn't reach the server. Please try again.";
+  }
+
+  applyPromoBtn.disabled = false;
+  applyPromoBtn.textContent = "Apply";
+
+  if (matched) {
+    appliedPromo = matched;
+    setPromoMessage(`"${code}" applied: -${formatMoney(matched.discountAmount)}`, false);
+  } else {
+    appliedPromo = null;
+    setPromoMessage(lastError || "This promo code isn't valid for any stall in your cart.", true);
+  }
+
+  updateCheckoutSummary();
+}
 
 function updateCheckoutSummary() {
   const cart = readCart();
   const subtotal = cart.reduce((sum, i) => sum + i.qty * i.price, 0);
   const ecoFee = readEco() ? ECO_FEE : 0;
 
-  // The exact discount is only known once the backend validates the promo
-  // code at submit time, so the pre-submit summary never shows one.
-  const total = Math.max(0, subtotal + ecoFee);
+  const currentCode = readPromoCode();
+  // Only trust the cached discount if it still matches the code currently
+  // in the box and the cart total it was calculated against — if either
+  // changed, the number is stale and shouldn't be shown as applied.
+  const discountValid = appliedPromo && appliedPromo.code === currentCode && appliedPromo.subtotal === subtotal;
+  const discountAmount = discountValid ? appliedPromo.discountAmount : 0;
+
+  const total = Math.max(0, subtotal + ecoFee - discountAmount);
 
   document.getElementById("checkoutSubtotal").textContent = formatMoney(subtotal);
   document.getElementById("checkoutTotal").textContent = formatMoney(total);
@@ -577,9 +680,14 @@ function updateCheckoutSummary() {
   }
 
   const discRow = document.getElementById("discountRow");
-  if (discRow) discRow.style.display = "none";
+  if (discRow) {
+    discRow.style.display = discountValid ? "flex" : "none";
+    if (discountValid) {
+      document.getElementById("discountAmount").textContent = `-${formatMoney(discountAmount)}`;
+    }
+  }
 
-  return { cart, subtotal, ecoFee, promoCode: readPromoCode(), total };
+  return { cart, subtotal, ecoFee, promoCode: currentCode, discountAmount, total };
 }
 
 updateCheckoutSummary();

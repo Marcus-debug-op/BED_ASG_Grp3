@@ -1,5 +1,5 @@
 function flushPromises() {
-  return new Promise((resolve) => setImmediate(resolve));
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 function jsonResponse(status, body) {

@@ -137,6 +137,54 @@ async function createOrder(patronId, stallId, items, promoCode) {
   }
 }
 
+// Checkout-page "Apply" preview (BED-92) - answers "what would this code
+// do to my cart right now?" WITHOUT creating an order or recording a
+// redemption. Mirrors createOrder's own subtotal calculation (real prices
+// from MenuItems, never the client's numbers) so the preview number is
+// exactly what checkout would actually charge if submitted immediately
+// afterwards, then reuses the same eligibility checks as a real checkout
+// via promotionModel.previewPromotion.
+async function previewPromo(patronId, stallId, items, promoCode) {
+  let connection;
+
+  try {
+    connection = await sql.connect(dbConfig);
+
+    // Price the cart the same way createOrder does - server-side, from the
+    // DB, one item at a time - so an invalid/unavailable item is caught
+    // here too instead of surfacing only at real checkout.
+    let subtotal = 0;
+    for (const item of items) {
+      const priceRequest = connection.request();
+      priceRequest.input("menu_item_id", sql.Int, item.menu_item_id);
+      priceRequest.input("stall_id", sql.Int, stallId);
+
+      const priceResult = await priceRequest.query(`
+        SELECT price
+        FROM MenuItems
+        WHERE menu_item_id = @menu_item_id
+          AND stall_id = @stall_id
+          AND is_available = 1;
+      `);
+
+      if (priceResult.recordset.length === 0) {
+        return { error: "INVALID_ITEM", menuItemId: item.menu_item_id };
+      }
+
+      subtotal += priceResult.recordset[0].price * item.quantity;
+    }
+
+    const promoResult = await promotionModel.previewPromotion(connection, stallId, patronId, promoCode, subtotal);
+    return { subtotal, ...promoResult };
+
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) await connection.close();
+  }
+}
+
 // Fetches one order's status. Also returns patron_id so the controller
 // can confirm the requester actually owns this order.
 async function getOrderStatus(orderId) {
@@ -385,6 +433,7 @@ async function getOrderDetails(orderId) {
 module.exports = {
   getOrderDetails,
   createOrder,
+  previewPromo,
   getOrderStatus,
   getOrderHistory,
   getOrdersForVendor,
