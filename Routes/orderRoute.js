@@ -14,14 +14,58 @@ router.get("/vendor/my-orders", requireRole("vendor"), orderController.getVendor
     #swagger.tags = ['Orders']
     #swagger.description = 'Vendor retrieves orders from stalls they own'
     #swagger.security = [{ "bearerAuth": [] }]
-  */);
+  */
+ );
 
 /* READ one vendor order details. Vendor uses this route to view the items inside a specific order.
   This also checks that the order belongs to the vendor's stall. */
-router.get("/vendor/my-orders/:orderId", requireRole("vendor"), orderController.getVendorOrderDetails);
+router.get("/vendor/my-orders/:orderId", requireRole("vendor"), orderController.getVendorOrderDetails
+  /*
+    #swagger.tags = ['Orders']
+    #swagger.description = 'Vendor retrieves details of one order from their own stall'
+    #swagger.security = [{ "bearerAuth": [] }]
+    #swagger.parameters['orderId'] = {
+      in: 'path',
+      required: true,
+      type: 'integer',
+      description: 'Order ID'
+    }
+  */
+);
 
 /*UPDATE order status. Vendor uses this route to update the order status.*/
-router.put("/vendor/my-orders/:orderId/status", requireRole("vendor"), orderController.updateVendorOrderStatus);
+router.put("/vendor/my-orders/:orderId/status", requireRole("vendor"), orderController.updateVendorOrderStatus
+ /*
+    #swagger.tags = ['Orders']
+    #swagger.description = 'Vendor updates the status of an order from their own stall'
+    #swagger.security = [{ "bearerAuth": [] }]
+    #swagger.parameters['orderId'] = {
+      in: 'path',
+      required: true,
+      type: 'integer',
+      description: 'Order ID'
+    }
+    #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+        order_status: 'Preparing'
+      }
+    }
+    #swagger.responses[200] = {
+      description: 'Order status updated successfully'
+    }
+    #swagger.responses[400] = {
+      description: 'Invalid order ID or invalid order status'
+    }
+    #swagger.responses[403] = {
+      description: 'Vendor does not have permission'
+    }
+    #swagger.responses[404] = {
+      description: 'Order not found or vendor does not own this stall'
+    }
+  */
+);
 
 
 // Both order routes are restricted to logged-in patrons.

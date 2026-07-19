@@ -1,4 +1,4 @@
-import { auth, fs } from "../shared/firebase-init.js";
+/*import { auth, fs } from "../shared/firebase-init.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { collection, query, where, getDocs, addDoc, doc, getDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
@@ -296,3 +296,4 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 });
+*/

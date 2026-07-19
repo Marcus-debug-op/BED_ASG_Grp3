@@ -79,6 +79,10 @@ async function getOrderHistory(req, res) {
 }
 
 
+
+// GET /api/orders/vendor/my-orders
+// This function retrieves all orders that belong to stalls owned by the logged-in vendor.
+// The route should be protected by JWT authentication and vendor role authorization.
 async function getVendorOrders(req, res) {
   try {
     //req.user.sub comes from the JWT token, sub stores the logged-in user's user_id.
@@ -89,12 +93,17 @@ async function getVendorOrders(req, res) {
     const orders = await orderModel.getOrdersForVendor(vendorId);
 
     res.status(200).json(orders);
+
   } catch (error) {
     console.error("Error getting vendor orders:", error);
     res.status(500).json({ message: "Unable to load vendor orders." });
   }
 }
 
+
+// GET /api/orders/vendor/my-orders/:orderId
+// This function retrieves the details of one specific order for the logged-in vendor.
+// It checks the order ID from the URL and uses the vendor ID from the JWT token.
 async function getVendorOrderDetails(req, res) {
   try {
     const vendorId = req.user.sub; //  Get logged-in vendor ID from token.
@@ -117,6 +126,9 @@ async function getVendorOrderDetails(req, res) {
   }
 }
 
+// PUT /api/orders/vendor/my-orders/:orderId/status
+// This function allows a vendor to update the preparation/order status of an order.
+// The vendor can only update orders that belong to stalls they own.
 async function updateVendorOrderStatus(req, res) {
   try {
 
@@ -126,7 +138,7 @@ async function updateVendorOrderStatus(req, res) {
 
     const allowedStatuses = ["Pending", "Preparing", "Ready", "Completed", "Cancelled"]; //only statuses vendors are allowed to set.
 
-    // /Validate order ID & status.
+    // Validate order ID & status.
 
     if (Number.isNaN(orderId)) {
       return res.status(400).json({ message: "Invalid order ID." });
