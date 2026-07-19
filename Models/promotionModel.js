@@ -14,41 +14,22 @@ async function stallBelongsToVendor(connection, stallId, vendorId) {
   return result.recordset.length > 0;
 }
 
-// promo_code is globally UNIQUE in the schema (not just per-stall), so this
-// checks across all vendors. excludePromotionId lets an update skip flagging
-// a promotion against its own existing code.
-async function isCodeTaken(connection, promoCode, excludePromotionId) {
+// BED-47: duplicates are only blocked "for their stall" - promo_code is now
+// UNIQUE(stall_id, promo_code) in the schema (see migration 006), so this
+// checks within the given stall only. Two different stalls can both run a
+// "SAVE10" code. excludePromotionId lets an update skip flagging a
+// promotion against its own existing code.
+async function isCodeTaken(connection, stallId, promoCode, excludePromotionId) {
   const request = connection.request();
+  request.input("stall_id", sql.Int, stallId);
   request.input("promo_code", sql.VarChar(50), promoCode);
   request.input("exclude_id", sql.Int, excludePromotionId || null);
 
   const result = await request.query(`
     SELECT promotion_id FROM Promotions
-    WHERE promo_code = @promo_code
-      AND (@exclude_id IS NULL OR promotion_id <> @exclude_id);
-  `);
-
-  return result.recordset.length > 0;
-}
-
-// A stall shouldn't run two active, overlapping promotions at once (confusing
-// for patrons at checkout - which discount applies?). Two date ranges overlap
-// when start_a <= end_b AND end_a >= start_b. excludePromotionId lets an
-// update skip comparing a promotion against itself.
-async function hasOverlappingActivePromotion(connection, stallId, startDate, endDate, excludePromotionId) {
-  const request = connection.request();
-  request.input("stall_id", sql.Int, stallId);
-  request.input("start_date", sql.Date, startDate);
-  request.input("end_date", sql.Date, endDate);
-  request.input("exclude_id", sql.Int, excludePromotionId || null);
-
-  const result = await request.query(`
-    SELECT promotion_id FROM Promotions
     WHERE stall_id = @stall_id
-      AND is_active = 1
-      AND (@exclude_id IS NULL OR promotion_id <> @exclude_id)
-      AND start_date <= @end_date
-      AND end_date >= @start_date;
+      AND promo_code = @promo_code
+      AND (@exclude_id IS NULL OR promotion_id <> @exclude_id);
   `);
 
   return result.recordset.length > 0;
@@ -69,7 +50,7 @@ async function getPromotionsByStall(stallId, vendorId) {
 
     const result = await request.query(`
       SELECT promotion_id, stall_id, promo_code, description, discount_percent,
-             start_date, end_date, is_active, created_at
+             start_date, end_date, is_active, min_spend_amount, max_redemptions, created_at
       FROM Promotions
       WHERE stall_id = @stall_id
       ORDER BY start_date DESC;
@@ -97,7 +78,7 @@ async function getPromotionByIdForVendor(promotionId, vendorId) {
 
     const result = await request.query(`
       SELECT p.promotion_id, p.stall_id, p.promo_code, p.description, p.discount_percent,
-             p.start_date, p.end_date, p.is_active, p.created_at
+             p.start_date, p.end_date, p.is_active, p.min_spend_amount, p.max_redemptions, p.created_at
       FROM Promotions p
       INNER JOIN Stalls s ON p.stall_id = s.stall_id
       WHERE p.promotion_id = @promotion_id AND s.vendor_id = @vendor_id;
@@ -113,7 +94,7 @@ async function getPromotionByIdForVendor(promotionId, vendorId) {
 }
 
 // Returns a discriminated outcome so the controller can pick the right status
-// code: "not_owner", "duplicate_code", "date_overlap", or "created" with the new row.
+// code: "not_owner", "duplicate_code", or "created" with the new row.
 async function createPromotion(stallId, vendorId, promo) {
   let connection;
 
@@ -123,12 +104,8 @@ async function createPromotion(stallId, vendorId, promo) {
     const owns = await stallBelongsToVendor(connection, stallId, vendorId);
     if (!owns) return { outcome: "not_owner" };
 
-    if (await isCodeTaken(connection, promo.promo_code)) {
+    if (await isCodeTaken(connection, stallId, promo.promo_code)) {
       return { outcome: "duplicate_code" };
-    }
-
-    if (await hasOverlappingActivePromotion(connection, stallId, promo.start_date, promo.end_date)) {
-      return { outcome: "date_overlap" };
     }
 
     const request = connection.request();
@@ -139,12 +116,18 @@ async function createPromotion(stallId, vendorId, promo) {
     request.input("start_date", sql.Date, promo.start_date);
     request.input("end_date", sql.Date, promo.end_date);
     request.input("is_active", sql.Bit, promo.is_active === undefined ? 1 : promo.is_active);
+    // "" and undefined both mean "no minimum" / "unlimited" - store as NULL.
+    request.input("min_spend_amount", sql.Decimal(10, 2), promo.min_spend_amount || null);
+    request.input("max_redemptions", sql.Int, promo.max_redemptions || null);
 
     const result = await request.query(`
-      INSERT INTO Promotions (stall_id, promo_code, description, discount_percent, start_date, end_date, is_active)
+      INSERT INTO Promotions
+        (stall_id, promo_code, description, discount_percent, start_date, end_date, is_active, min_spend_amount, max_redemptions)
       OUTPUT INSERTED.promotion_id, INSERTED.stall_id, INSERTED.promo_code, INSERTED.description,
-             INSERTED.discount_percent, INSERTED.start_date, INSERTED.end_date, INSERTED.is_active, INSERTED.created_at
-      VALUES (@stall_id, @promo_code, @description, @discount_percent, @start_date, @end_date, @is_active);
+             INSERTED.discount_percent, INSERTED.start_date, INSERTED.end_date, INSERTED.is_active,
+             INSERTED.min_spend_amount, INSERTED.max_redemptions, INSERTED.created_at
+      VALUES
+        (@stall_id, @promo_code, @description, @discount_percent, @start_date, @end_date, @is_active, @min_spend_amount, @max_redemptions);
     `);
 
     return { outcome: "created", promotion: result.recordset[0] };
@@ -163,8 +146,8 @@ async function createPromotion(stallId, vendorId, promo) {
 // Full update (including the "toggle it off" case via is_active) - never
 // deletes the row, so historical promotion data (and any past orders that
 // used it) stays intact.
-// Returns a discriminated outcome: "not_found", "duplicate_code",
-// "date_overlap", or "updated" with the new row.
+// Returns a discriminated outcome: "not_found", "duplicate_code", or
+// "updated" with the new row.
 async function updatePromotion(promotionId, vendorId, promo) {
   let connection;
 
@@ -185,12 +168,8 @@ async function updatePromotion(promotionId, vendorId, promo) {
     const existing = ownershipResult.recordset[0];
     if (!existing) return { outcome: "not_found" };
 
-    if (await isCodeTaken(connection, promo.promo_code, promotionId)) {
+    if (await isCodeTaken(connection, existing.stall_id, promo.promo_code, promotionId)) {
       return { outcome: "duplicate_code" };
-    }
-
-    if (await hasOverlappingActivePromotion(connection, existing.stall_id, promo.start_date, promo.end_date, promotionId)) {
-      return { outcome: "date_overlap" };
     }
 
     const updateRequest = connection.request();
@@ -201,6 +180,8 @@ async function updatePromotion(promotionId, vendorId, promo) {
     updateRequest.input("start_date", sql.Date, promo.start_date);
     updateRequest.input("end_date", sql.Date, promo.end_date);
     updateRequest.input("is_active", sql.Bit, promo.is_active === undefined ? 1 : promo.is_active);
+    updateRequest.input("min_spend_amount", sql.Decimal(10, 2), promo.min_spend_amount || null);
+    updateRequest.input("max_redemptions", sql.Int, promo.max_redemptions || null);
 
     const updateResult = await updateRequest.query(`
       UPDATE Promotions
@@ -209,9 +190,12 @@ async function updatePromotion(promotionId, vendorId, promo) {
           discount_percent = @discount_percent,
           start_date = @start_date,
           end_date = @end_date,
-          is_active = @is_active
+          is_active = @is_active,
+          min_spend_amount = @min_spend_amount,
+          max_redemptions = @max_redemptions
       OUTPUT INSERTED.promotion_id, INSERTED.stall_id, INSERTED.promo_code, INSERTED.description,
-             INSERTED.discount_percent, INSERTED.start_date, INSERTED.end_date, INSERTED.is_active, INSERTED.created_at
+             INSERTED.discount_percent, INSERTED.start_date, INSERTED.end_date, INSERTED.is_active,
+             INSERTED.min_spend_amount, INSERTED.max_redemptions, INSERTED.created_at
       WHERE promotion_id = @promotion_id;
     `);
 
@@ -219,6 +203,69 @@ async function updatePromotion(promotionId, vendorId, promo) {
   } catch (error) {
     if (error.number === 2627 || error.number === 2601) {
       return { outcome: "duplicate_code" };
+    }
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) await connection.close();
+  }
+}
+
+// Deletes a promotion, but ONLY if it was never actually used - i.e. no
+// order was ever placed with it and no redemption was ever recorded.
+// This keeps BED-47's "never delete historical data" requirement intact:
+// a promo a vendor created by mistake and never used can be removed
+// outright, but the moment a patron has redeemed it, it can only be
+// deactivated (via updatePromotion), never deleted - deleting it would
+// also violate the FK from Orders/PromotionRedemptions -> Promotions.
+// Returns a discriminated outcome: "not_found", "not_owner", "in_use", or "deleted".
+async function deletePromotion(promotionId, vendorId) {
+  let connection;
+
+  try {
+    connection = await sql.connect(dbConfig);
+
+    const ownershipRequest = connection.request();
+    ownershipRequest.input("promotion_id", sql.Int, promotionId);
+
+    const ownershipResult = await ownershipRequest.query(`
+      SELECT p.stall_id, s.vendor_id
+      FROM Promotions p
+      INNER JOIN Stalls s ON p.stall_id = s.stall_id
+      WHERE p.promotion_id = @promotion_id;
+    `);
+
+    const existing = ownershipResult.recordset[0];
+    if (!existing) return { outcome: "not_found" };
+    if (existing.vendor_id !== vendorId) return { outcome: "not_owner" };
+
+    const usageRequest = connection.request();
+    usageRequest.input("promotion_id", sql.Int, promotionId);
+
+    const usageResult = await usageRequest.query(`
+      SELECT
+        (SELECT COUNT(*) FROM Orders WHERE promotion_id = @promotion_id) +
+        (SELECT COUNT(*) FROM PromotionRedemptions WHERE promotion_id = @promotion_id)
+        AS usage_count;
+    `);
+
+    if (usageResult.recordset[0].usage_count > 0) {
+      return { outcome: "in_use" };
+    }
+
+    const deleteRequest = connection.request();
+    deleteRequest.input("promotion_id", sql.Int, promotionId);
+
+    await deleteRequest.query(`
+      DELETE FROM Promotions WHERE promotion_id = @promotion_id;
+    `);
+
+    return { outcome: "deleted" };
+  } catch (error) {
+    // Safety net: a race where an order/redemption lands between the usage
+    // check above and the DELETE itself - the FK constraint blocks it.
+    if (error.number === 547) {
+      return { outcome: "in_use" };
     }
     console.error("Database error:", error);
     throw error;
@@ -238,8 +285,14 @@ async function updatePromotion(promotionId, vendorId, promo) {
 //   { valid: true, promotionId, discountAmount, discountedTotal }
 // subtotal is the pre-discount order total, calculated server-side by the
 // caller from real menu item prices - never trust a client-supplied total.
-async function validateAndApplyPromotion(transaction, stallId, patronId, promoCode, subtotal) {
-  const promoRequest = new sql.Request(transaction);
+//
+// `holder` is whatever a sql.Request can be built from - either an active
+// Transaction (checkout, BED-22/BED-46) or a plain ConnectionPool (preview).
+// This is a pure read: it never writes anything, so it's safe to reuse for
+// a checkout-page "Apply" preview that must NOT record a redemption before
+// the order is actually submitted.
+async function checkPromotionEligibility(holder, stallId, patronId, promoCode, subtotal) {
+  const promoRequest = new sql.Request(holder);
   promoRequest.input("promo_code", sql.VarChar(50), promoCode);
   promoRequest.input("stall_id", sql.Int, stallId);
 
@@ -262,8 +315,17 @@ async function validateAndApplyPromotion(transaction, stallId, patronId, promoCo
     return { valid: false, reason: "INACTIVE", message: "This promo code is no longer active." };
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Promotions.start_date/end_date are SQL Server DATE columns, which the
+  // driver returns as UTC-midnight JS Dates (e.g. "2026-07-19" ->
+  // 2026-07-19T00:00:00.000Z), with no timezone attached. Building "today"
+  // from setHours(0,0,0,0) instead produces LOCAL midnight - for any
+  // timezone ahead of UTC (e.g. Singapore, UTC+8), that's several hours
+  // BEFORE UTC midnight of the same calendar date, so a promo starting
+  // "today" would incorrectly compare as not-yet-started. Using today's
+  // local calendar date but building it as a UTC-midnight Date keeps this
+  // an apples-to-apples DATE comparison against the DB values.
+  const now = new Date();
+  const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
   if (today < new Date(promo.start_date) || today > new Date(promo.end_date)) {
     return { valid: false, reason: "EXPIRED", message: "This promo code isn't valid today - check its date range." };
   }
@@ -276,7 +338,7 @@ async function validateAndApplyPromotion(transaction, stallId, patronId, promoCo
     };
   }
 
-  const patronRequest = new sql.Request(transaction);
+  const patronRequest = new sql.Request(holder);
   patronRequest.input("promotion_id", sql.Int, promo.promotion_id);
   patronRequest.input("patron_id", sql.Int, patronId);
 
@@ -290,7 +352,7 @@ async function validateAndApplyPromotion(transaction, stallId, patronId, promoCo
   }
 
   if (promo.max_redemptions !== null) {
-    const countRequest = new sql.Request(transaction);
+    const countRequest = new sql.Request(holder);
     countRequest.input("promotion_id", sql.Int, promo.promotion_id);
 
     const countResult = await countRequest.query(`
@@ -308,6 +370,22 @@ async function validateAndApplyPromotion(transaction, stallId, patronId, promoCo
   const discountedTotal = Math.round((subtotal - discountAmount) * 100) / 100;
 
   return { valid: true, promotionId: promo.promotion_id, discountAmount, discountedTotal };
+}
+
+// Used by Models/orderModel.js while actually creating an order (BED-22 /
+// BED-46) - runs on the SAME transaction the order is being created in, so
+// an order and its promo redemption always succeed or fail together.
+async function validateAndApplyPromotion(transaction, stallId, patronId, promoCode, subtotal) {
+  return checkPromotionEligibility(transaction, stallId, patronId, promoCode, subtotal);
+}
+
+// Checkout-page "Apply" preview (BED-92) - runs the exact same checks as a
+// real checkout (so the number shown never lies), but on its own plain
+// connection instead of the order's transaction. Nothing is written, so a
+// patron can preview a code as many times as they like without it ever
+// being marked as redeemed until they actually submit the order.
+async function previewPromotion(connection, stallId, patronId, promoCode, subtotal) {
+  return checkPromotionEligibility(connection, stallId, patronId, promoCode, subtotal);
 }
 
 // Logs a redemption row on the same transaction as the order that used it.
@@ -330,6 +408,8 @@ module.exports = {
   getPromotionByIdForVendor,
   createPromotion,
   updatePromotion,
+  deletePromotion,
   validateAndApplyPromotion,
+  previewPromotion,
   recordRedemption
 };

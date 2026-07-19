@@ -64,12 +64,6 @@ async function createPromotion(req, res) {
       return res.status(400).json({ message: `Promo code "${req.body.promo_code}" is already in use.` });
     }
 
-    if (result.outcome === "date_overlap") {
-      return res.status(409).json({
-        message: "This stall already has an active promotion during that date range. Deactivate it first or choose different dates."
-      });
-    }
-
     res.status(201).json(result.promotion);
   } catch (error) {
     console.error("Error creating promotion:", error);
@@ -97,12 +91,6 @@ async function updatePromotion(req, res) {
       return res.status(400).json({ message: `Promo code "${req.body.promo_code}" is already in use.` });
     }
 
-    if (result.outcome === "date_overlap") {
-      return res.status(409).json({
-        message: "This stall already has another active promotion during that date range. Deactivate it first or choose different dates."
-      });
-    }
-
     res.status(200).json(result.promotion);
   } catch (error) {
     console.error("Error updating promotion:", error);
@@ -113,9 +101,45 @@ async function updatePromotion(req, res) {
   }
 }
 
+// DELETE /api/vendor/promotions/:promotionId - only allowed if the promo
+// was never actually used by a patron (no order/redemption references
+// it). Once it's been used, it can only be deactivated via PUT, never
+// deleted - that's what keeps historical order/redemption data intact.
+async function deletePromotion(req, res) {
+  try {
+    const vendorId = req.user.sub;
+    const promotionId = Number(req.params.promotionId);
+
+    const result = await promotionModel.deletePromotion(promotionId, vendorId);
+
+    if (result.outcome === "not_found") {
+      return res.status(404).json({ message: "Promotion not found." });
+    }
+
+    if (result.outcome === "not_owner") {
+      return res.status(403).json({ message: "You do not own this stall." });
+    }
+
+    if (result.outcome === "in_use") {
+      return res.status(409).json({
+        message: "This promo code has already been used by a patron, so it can't be deleted. Deactivate it instead."
+      });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    console.error("Error deleting promotion:", error);
+
+    res.status(500).json({
+      message: "Unable to delete promotion."
+    });
+  }
+}
+
 module.exports = {
   getPromotionsByStall,
   getPromotion,
   createPromotion,
-  updatePromotion
+  updatePromotion,
+  deletePromotion
 };

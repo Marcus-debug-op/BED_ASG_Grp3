@@ -1,11 +1,11 @@
 const express = require("express");
 const orderController = require("../Controllers/orderController");
 const { requireRole } = require("../Middlewares/authMiddleware");
-const { validateOrder } = require("../Middlewares/orderValidation");
+const { validateOrder, validatePromoPreview } = require("../Middlewares/orderValidation");
 
 const router = express.Router();
 
-//vendor routes
+// vendor routes
 
 /* READ vendor orders. Vendor uses this route to retrieve all orders from stalls they own.
   The backend uses req.user.sub from the JWT token to know which vendor is logged in.*/
@@ -71,10 +71,23 @@ router.put("/vendor/my-orders/:orderId/status", requireRole("vendor"), orderCont
 // Both order routes are restricted to logged-in patrons.
 router.post("/", requireRole("patron"), validateOrder, orderController.createOrder
 /*
-    #swagger.tags = ['Orders']
-    #swagger.description = 'Patron creates a new order (with its items) for one stall'
-    #swagger.security = [{ "bearerAuth": [] }]
-  */);
+  #swagger.tags = ['Orders']
+  #swagger.description = 'Patron creates an order for a single stall. If a promo_code is supplied, the backend validates its active status, expiry date and minimum spend, calculates the exact discount server-side, applies it to the order total, and records a redemption linked to this order - preventing the same code from being reused. Invalid/expired/ineligible codes return a clear error reason instead of failing the order.'
+  #swagger.security = [{ "bearerAuth": [] }]
+*/);
+
+// Patron previews a promo code against their current cart BEFORE submitting
+// the order, so the checkout page can show the discount as soon as they
+// click "Apply" instead of only after the order goes through. Runs the same
+// validation/discount math as the real checkout, but never creates an order
+// or records a redemption.
+router.post("/preview-promo", requireRole("patron"), validatePromoPreview, orderController.previewPromoCode
+/*
+  #swagger.tags = ['Orders']
+  #swagger.description = 'Patron previews what a promo code would do to their current cart (for one stall) without submitting an order. Returns the same validation reasons as order creation (NOT_FOUND, INACTIVE, EXPIRED, MIN_SPEND_NOT_MET, ALREADY_REDEEMED, LIMIT_REACHED) if invalid, or the calculated discount if valid. No order is created and no redemption is recorded.'
+  #swagger.security = [{ "bearerAuth": [] }]
+*/);
+
 // Patron's past orders. Must come BEFORE "/:id/status" so "history" isn't
 // mistaken for an :id value.
 router.get("/history", requireRole("patron"), orderController.getOrderHistory
@@ -83,12 +96,14 @@ router.get("/history", requireRole("patron"), orderController.getOrderHistory
     #swagger.description = "Patron retrieves their own past orders, newest first"
     #swagger.security = [{ "bearerAuth": [] }]
   */);
+
 router.get("/:id/status", requireRole("patron"), orderController.getOrderStatus
 /*
     #swagger.tags = ['Orders']
     #swagger.description = "Patron retrieves the status of one of their own orders"
     #swagger.security = [{ "bearerAuth": [] }]
   */);
+
 // One of the patron's own orders, WITH its line items.
 // This is ONE segment ("/:id"), so it MUST be placed AFTER "/history" and
 // "/:id/status" — otherwise Express would treat the word "history" as an :id.
@@ -98,7 +113,5 @@ router.get("/:id", requireRole("patron"), orderController.getOrderDetails
     #swagger.description = "Patron retrieves one of their own orders with its line items"
     #swagger.security = [{ "bearerAuth": [] }]
   */);
-
-
 
 module.exports = router;
