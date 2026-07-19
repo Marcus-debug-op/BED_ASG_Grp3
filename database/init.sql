@@ -20,7 +20,8 @@ CREATE TABLE Users (
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('patron', 'vendor', 'officer', 'operator')),
     phone_number VARCHAR(20),
-    created_at DATETIME DEFAULT GETDATE()
+    created_at DATETIME DEFAULT GETDATE(),
+    profile_image_url VARCHAR(255) NULL /* merged from migration/003_Marcus_Add_profilepic_attrribute.sql */
 );
 
 
@@ -34,7 +35,12 @@ CREATE TABLE Stalls (
     unit_number VARCHAR(20) UNIQUE,
     is_active BIT DEFAULT 1,
     hawker_centre_id INT NOT NULL,
-    
+    /* merged from migration/001_Ben_alter_stalls.sql */
+    operating_hours VARCHAR(50),
+    price_range VARCHAR(20),
+    phone_number VARCHAR(20),
+    image_url VARCHAR(255),
+
     CONSTRAINT FK_Stalls_Vendor FOREIGN KEY (vendor_id) REFERENCES Users(user_id),
     CONSTRAINT FK_Stalls_HawkerCentre FOREIGN KEY (hawker_centre_id) REFERENCES HawkerCentres(hawker_centre_id)
 );
@@ -44,14 +50,21 @@ CREATE TABLE Stalls (
 CREATE TABLE Promotions (
     promotion_id INT IDENTITY(1,1) PRIMARY KEY,
     stall_id INT NOT NULL,
-    promo_code VARCHAR(50) NOT NULL UNIQUE,
+    promo_code VARCHAR(50) NOT NULL, /* no longer inline UNIQUE - see UQ_Promotions_Stall_PromoCode below (migration/006_damien_promo_code_unique_per_stall.sql) */
     description VARCHAR(255),
     discount_percent DECIMAL(5,2) NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     is_active BIT DEFAULT 1,
     created_at DATETIME DEFAULT GETDATE(),
-    FOREIGN KEY (stall_id) REFERENCES Stalls(stall_id)
+    /* merged from migration/005_damien_promotion_redemption.sql */
+    min_spend_amount DECIMAL(10,2) NULL,
+    max_redemptions INT NULL,
+
+    FOREIGN KEY (stall_id) REFERENCES Stalls(stall_id),
+    /* merged from migration/006_damien_promo_code_unique_per_stall.sql
+       promo_code only needs to be unique per stall, not across the whole platform */
+    CONSTRAINT UQ_Promotions_Stall_PromoCode UNIQUE (stall_id, promo_code)
 );
 
 
@@ -78,6 +91,7 @@ CREATE TABLE MenuItems (
     image_url VARCHAR(255) NULL,
     is_available BIT NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    likes INT DEFAULT 0, /* merged from migration/002_Ben_alter_menuitems.sql */
 
     CONSTRAINT FK_MenuItems_Stalls FOREIGN KEY (stall_id) REFERENCES Stalls(stall_id)
 );
@@ -136,10 +150,14 @@ CREATE TABLE Complaints (
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
     resolved_at DATETIME NULL,
 
-    CONSTRAINT CK_Complaints_Status CHECK (complaint_status IN ('Open', 'In Progress', 'Resolved', 'Closed')),
+    /* 'Acknowledged' added by migration/004_damien_migration_menu_cuisines_and_complaint_notes.sql
+       (Open -> Acknowledged is the vendor's action; officers then move it through In Progress -> Resolved/Closed) */
+    CONSTRAINT CK_Complaints_Status CHECK (complaint_status IN ('Open', 'Acknowledged', 'In Progress', 'Resolved', 'Closed')),
     CONSTRAINT FK_Complaints_Patron FOREIGN KEY (patron_id) REFERENCES Users(user_id),
     CONSTRAINT FK_Complaints_Stall FOREIGN KEY (stall_id) REFERENCES Stalls(stall_id),
-    CONSTRAINT FK_Complaints_Officer FOREIGN KEY (handled_by_officer_id) REFERENCES Users(user_id)
+    CONSTRAINT FK_Complaints_Officer FOREIGN KEY (handled_by_officer_id) REFERENCES Users(user_id),
+    /* merged from migration/004_damien_migration_menu_cuisines_and_complaint_notes.sql */
+    CONSTRAINT CK_Complaints_Type CHECK (complaint_type IN ('Hygiene', 'Service', 'Food Quality', 'Overcharging', 'Other'))
 );
 
 CREATE TABLE Inspections (
@@ -155,3 +173,77 @@ CREATE TABLE Inspections (
     CONSTRAINT FK_Inspections_Stall FOREIGN KEY (stall_id) REFERENCES Stalls(stall_id),
     CONSTRAINT FK_Inspections_Officer FOREIGN KEY (officer_id) REFERENCES Users(user_id)
 );
+
+-- =====================================================================
+-- BED-26: Menu item likes
+-- merged from migration/004_Ben_create_userlikesmenuitem.sql
+-- =====================================================================
+CREATE TABLE UserLikesMenuItem (
+    user_id INT NOT NULL,
+    menu_item_id INT NOT NULL,
+    liked_at DATETIME NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT PK_UserLikesMenuItem PRIMARY KEY (user_id, menu_item_id),
+    CONSTRAINT FK_ULMI_User FOREIGN KEY (user_id) REFERENCES Users(user_id),
+    CONSTRAINT FK_ULMI_MenuItem FOREIGN KEY (menu_item_id) REFERENCES MenuItems(menu_item_id)
+);
+GO
+
+-- =====================================================================
+-- Cuisines + MenuItemCuisines (many-to-many: a dish can belong to
+-- more than one cuisine, e.g. "Nasi Lemak" = Malay + Halal)
+-- merged from migration/004_damien_migration_menu_cuisines_and_complaint_notes.sql
+-- =====================================================================
+CREATE TABLE Cuisines (
+    cuisine_id INT IDENTITY(1,1) PRIMARY KEY,
+    cuisine_name VARCHAR(50) NOT NULL UNIQUE
+);
+GO
+
+CREATE TABLE MenuItemCuisines (
+    menu_item_id INT NOT NULL,
+    cuisine_id INT NOT NULL,
+
+    PRIMARY KEY (menu_item_id, cuisine_id),
+    CONSTRAINT FK_MIC_MenuItems FOREIGN KEY (menu_item_id) REFERENCES MenuItems(menu_item_id) ON DELETE CASCADE,
+    CONSTRAINT FK_MIC_Cuisines FOREIGN KEY (cuisine_id) REFERENCES Cuisines(cuisine_id)
+);
+GO
+
+-- =====================================================================
+-- ComplaintNotes (one-to-many: every status change / resolution
+-- comment an officer makes is logged as its own row - an audit trail
+-- that accumulates, instead of a single field being overwritten)
+-- merged from migration/004_damien_migration_menu_cuisines_and_complaint_notes.sql
+-- =====================================================================
+CREATE TABLE ComplaintNotes (
+    complaint_note_id INT IDENTITY(1,1) PRIMARY KEY,
+    complaint_id INT NOT NULL,
+    officer_id INT NOT NULL,
+    note VARCHAR(500) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_ComplaintNotes_Complaint FOREIGN KEY (complaint_id) REFERENCES Complaints(complaint_id) ON DELETE CASCADE,
+    CONSTRAINT FK_ComplaintNotes_Officer FOREIGN KEY (officer_id) REFERENCES Users(user_id)
+);
+GO
+
+-- =====================================================================
+-- PromotionRedemptions
+-- merged from migration/005_damien_promotion_redemption.sql
+-- =====================================================================
+CREATE TABLE PromotionRedemptions (
+    redemption_id INT IDENTITY(1,1) PRIMARY KEY,
+    promotion_id INT NOT NULL,
+    order_id INT NOT NULL,
+    patron_id INT NOT NULL,
+    discount_amount DECIMAL(10,2) NOT NULL,
+    redeemed_at DATETIME NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_Redemptions_Promotion FOREIGN KEY (promotion_id) REFERENCES Promotions(promotion_id),
+    CONSTRAINT FK_Redemptions_Order FOREIGN KEY (order_id) REFERENCES Orders(order_id),
+    CONSTRAINT FK_Redemptions_Patron FOREIGN KEY (patron_id) REFERENCES Users(user_id),
+    CONSTRAINT UQ_Redemptions_Order UNIQUE (order_id),
+    CONSTRAINT UQ_Redemptions_PromotionPatron UNIQUE (promotion_id, patron_id)
+);
+GO
