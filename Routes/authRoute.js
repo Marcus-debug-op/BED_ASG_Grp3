@@ -7,10 +7,83 @@ const { requireAuth, blockGuests } = require("../Middlewares/authMiddleware");
 
 const router = express.Router();
 
-router.post("/login/patron", validateLogin, authController.loginPatron);
-router.post("/login/vendor", validateLogin, authController.loginVendor);
-router.post("/login/officer", validateLogin, authController.loginOfficer);
-router.post("/login/operator", validateLogin, authController.loginOperator);
+router.post("/login/patron", validateLogin, authController.loginPatron
+/*
+    #swagger.tags = ['Auth']
+    #swagger.description = 'Login as a patron account'
+    #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+        email: 'marcusisapatron@gmail.com',
+        password: 'Password123!'
+      }
+    }
+    #swagger.responses[200] = {
+      description: 'Login successful'
+    }
+    #swagger.responses[400] = {
+      description: 'Validation failed'
+    }
+    #swagger.responses[401] = {
+      description: 'Invalid email or password'
+    }
+  */
+);
+
+router.post("/login/vendor", validateLogin, authController.loginVendor
+    /*
+    #swagger.tags = ['Auth']
+    #swagger.description = 'Login as a vendor account'
+    #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+        email: 'marcusisavendor@gmail.com',
+        password: 'Password123!'
+      }
+    }
+    #swagger.responses[200] = {
+      description: 'Login successful'
+    }
+    #swagger.responses[400] = {
+      description: 'Validation failed'
+    }
+    #swagger.responses[401] = {
+      description: 'Invalid email or password'
+    }
+  */
+);
+
+router.post("/login/officer", validateLogin, authController.loginOfficer
+     /*
+    #swagger.tags = ['Auth']
+    #swagger.description = 'Login as an officer account'
+    #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+        email: 'officer@example.com',
+        password: 'Password123!'
+      }
+    }
+  */
+);
+
+router.post("/login/operator", validateLogin, authController.loginOperator
+      /*
+    #swagger.tags = ['Auth']
+    #swagger.description = 'Login as an operator account'
+    #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+        email: 'operator@example.com',
+        password: 'Password123!'
+      }
+    }
+  */
+);
 
 // Google OAuth 2.0 sign-in/sign-up for patrons (BED-144), via Passport's Google strategy.
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"], session: false }));

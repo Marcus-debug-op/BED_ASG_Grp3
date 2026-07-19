@@ -343,7 +343,6 @@ async function updateOrderStatusForVendor(orderId, vendorId, orderStatus) {
     request.input("vendor_id", sql.Int, vendorId);
     request.input("order_status", sql.VarChar(30), orderStatus);
 
-
     /*
       Update the order status only if:
       1. The order_id matches

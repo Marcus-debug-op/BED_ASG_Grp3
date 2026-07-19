@@ -1,4 +1,4 @@
-
+/*
 import { auth, fs } from "../shared/firebase-init.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import {
@@ -370,3 +370,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }[c]));
   }
 });
+
+*/

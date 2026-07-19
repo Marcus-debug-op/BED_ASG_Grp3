@@ -85,40 +85,57 @@
     },
     "/api/auth/register/vendor": {
       "post": {
-        "description": "",
+        "tags": [
+          "Auth"
+        ],
+        "description": "Register a new vendor account and linked stall",
         "parameters": [
           {
             "name": "body",
             "in": "body",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
-                "email": {
-                  "example": "any"
-                },
-                "password": {
-                  "example": "any"
-                },
                 "full_name": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "Swagger Test Vendor"
+                },
+                "email": {
+                  "type": "string",
+                  "example": "swaggervendor123@gmail.com"
                 },
                 "phone_number": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "91234567"
+                },
+                "password": {
+                  "type": "string",
+                  "example": "Testvendor123!"
+                },
+                "confirm_password": {
+                  "type": "string",
+                  "example": "Testvendor123!"
                 },
                 "stall_name": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "Swagger Chicken Rice"
                 },
                 "cuisine_type": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "Chinese"
                 },
                 "description": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "Test stall created from Swagger"
                 },
                 "unit_number": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "#01-99"
                 },
                 "hawker_centre_id": {
-                  "example": "any"
+                  "type": "number",
+                  "example": 1
                 }
               }
             }
@@ -126,13 +143,13 @@
         ],
         "responses": {
           "201": {
-            "description": "Created"
+            "description": "Vendor account and stall created successfully"
           },
           "400": {
-            "description": "Bad Request"
+            "description": "Validation failed"
           },
           "409": {
-            "description": "Conflict"
+            "description": "Email is already registered"
           },
           "500": {
             "description": "Internal Server Error"
@@ -142,27 +159,108 @@
     },
     "/api/auth/login/patron": {
       "post": {
-        "description": "",
+        "tags": [
+          "Auth"
+        ],
+        "description": "Login as a patron account",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "example": "marcusisapatron@gmail.com"
+                },
+                "password": {
+                  "type": "string",
+                  "example": "Password123!"
+                }
+              }
+            }
+          }
+        ],
         "responses": {
+          "200": {
+            "description": "Login successful"
+          },
           "400": {
-            "description": "Bad Request"
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Invalid email or password"
           }
         }
       }
     },
     "/api/auth/login/vendor": {
       "post": {
-        "description": "",
+        "tags": [
+          "Auth"
+        ],
+        "description": "Login as a vendor account",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "example": "marcusisavendor@gmail.com"
+                },
+                "password": {
+                  "type": "string",
+                  "example": "Password123!"
+                }
+              }
+            }
+          }
+        ],
         "responses": {
+          "200": {
+            "description": "Login successful"
+          },
           "400": {
-            "description": "Bad Request"
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Invalid email or password"
           }
         }
       }
     },
     "/api/auth/login/officer": {
       "post": {
-        "description": "",
+        "tags": [
+          "Auth"
+        ],
+        "description": "Login as an officer account",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "example": "officer@example.com"
+                },
+                "password": {
+                  "type": "string",
+                  "example": "Password123!"
+                }
+              }
+            }
+          }
+        ],
         "responses": {
           "400": {
             "description": "Bad Request"
@@ -172,7 +270,30 @@
     },
     "/api/auth/login/operator": {
       "post": {
-        "description": "",
+        "tags": [
+          "Auth"
+        ],
+        "description": "Login as an operator account",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "example": "operator@example.com"
+                },
+                "password": {
+                  "type": "string",
+                  "example": "Password123!"
+                }
+              }
+            }
+          }
+        ],
         "responses": {
           "400": {
             "description": "Bad Request"
@@ -546,13 +667,17 @@
     },
     "/api/orders/vendor/my-orders/{orderId}": {
       "get": {
-        "description": "",
+        "tags": [
+          "Orders"
+        ],
+        "description": "Vendor retrieves details of one order from their own stall",
         "parameters": [
           {
             "name": "orderId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "integer",
+            "description": "Order ID"
           }
         ],
         "responses": {
@@ -571,27 +696,38 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/orders/vendor/my-orders/{orderId}/status": {
       "put": {
-        "description": "",
+        "tags": [
+          "Orders"
+        ],
+        "description": "Vendor updates the status of an order from their own stall",
         "parameters": [
           {
             "name": "orderId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "integer",
+            "description": "Order ID"
           },
           {
             "name": "body",
             "in": "body",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
                 "order_status": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "Preparing"
                 }
               }
             }
@@ -599,21 +735,26 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Order status updated successfully"
           },
           "400": {
-            "description": "Bad Request"
+            "description": "Invalid order ID or invalid order status"
           },
           "403": {
-            "description": "Forbidden"
+            "description": "Vendor does not have permission"
           },
           "404": {
-            "description": "Not Found"
+            "description": "Order not found or vendor does not own this stall"
           },
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/orders/": {
@@ -1383,6 +1524,22 @@
           },
           "409": {
             "description": "Conflict"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/vendor/dashboard/": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
           },
           "500": {
             "description": "Internal Server Error"
