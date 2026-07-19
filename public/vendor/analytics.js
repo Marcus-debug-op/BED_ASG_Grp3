@@ -1,12 +1,12 @@
-import { fs } from "../firebase-init.js";
+/* import { fs } from "../firebase-init.js";
 import {
   collection,
   getDocs
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-/* ---------------------------
+---------------------------
    Safe DOM helper
---------------------------- */
+--------------------------- 
 function setText(id, value) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -30,15 +30,15 @@ function pctChange(cur, prev) {
   return ((c - p) / p) * 100;
 }
 
-/* ---------------------------
+---------------------------
    Chart instances
---------------------------- */
+---------------------------
 let salesChart;
 let categoryChart;
 
-/* ---------------------------
+ ---------------------------
     Find current vendor stallId
---------------------------- */
+--------------------------- 
 function getCurrentStallId() {
   const keys = ["stallId", "vendorStallId", "selectedStallId", "currentStallId"];
   for (const k of keys) {
@@ -55,9 +55,9 @@ function getCurrentStallId() {
   return null;
 }
 
-/* ---------------------------
+ ---------------------------
   date + buckets
---------------------------- */
+--------------------------- 
 function monthKey(dateObj) {
   const y = dateObj.getFullYear();
   const m = String(dateObj.getMonth() + 1).padStart(2, "0");
@@ -82,10 +82,10 @@ function prevMonthKey(curMonthKey) {
   return monthKey(p);
 }
 
-/* ---------------------------
+--------------------------
    Render Monthly Trend (LINE)
    shows REVENUE
---------------------------- */
+--------------------------- 
 function renderSalesTrendFromMap(dataMap) {
   const canvas = document.getElementById("salesLineChart");
   if (!canvas) return;
@@ -140,9 +140,9 @@ function renderSalesTrendFromMap(dataMap) {
   });
 }
 
-/* ---------------------------
+---------------------------
    Render Pie + Legend
---------------------------- */
+---------------------------
 function renderPie(labels, values) {
   const canvas = document.getElementById("categoryPieChart");
   if (!canvas) return;
@@ -202,10 +202,9 @@ function renderLegend(labels, values) {
     legend.appendChild(row);
   });
 }
-
-/* ---------------------------
+ ---------------------------
    Revenue + customer helpers
---------------------------- */
+--------------------------- 
 function calcStallRevenueFromOrder(orderObj, stallId) {
   const items = Array.isArray(orderObj?.items) ? orderObj.items : [];
   let total = 0;
@@ -238,9 +237,9 @@ function getCustomerKey(orderObj, docId) {
   );
 }
 
-/* ---------------------------
+---------------------------
    Load analytics from orders
---------------------------- */
+---------------------------
 async function loadAnalyticsFromOrders() {
   // Get stallId first and show error if missing
   const stallId = getCurrentStallId();
@@ -422,10 +421,12 @@ async function loadAnalyticsFromOrders() {
   renderPie(["Pickup", "Delivery", "Other"], [pickupCount, deliveryCount, otherCount]);
 }
 
-/* ---------------------------
+ ---------------------------
    Start
---------------------------- */
+--------------------------- 
 loadAnalyticsFromOrders().catch(err => {
   console.error(err);
   setText("stallSubtitle", "Failed to load analytics from orders.");
 });
+
+*/

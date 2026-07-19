@@ -1,4 +1,5 @@
 
+/*
 import { auth, db } from "../firebase-init.js";
 import { signInWithEmailAndPassword } from
   "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
@@ -46,3 +47,4 @@ function prettyFirebaseError(err) {
   if (code.includes("user-not-found")) return "No account found for this email.";
   return err?.message || "Sign in failed.";
 }
+*/

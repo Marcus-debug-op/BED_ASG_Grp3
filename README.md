@@ -9,11 +9,15 @@ The project uses a Node.js and Express backend with Microsoft SQL Server as the 
 ## Team Feature Ownership
 
 | Member | Features |
-
+|---|---|
 | Marcus Ng| Registration, profile view/edit, vendor profile business details, vendor order management |
+
 | Ryan Ng | Login Authentication (Patron & Vendor), Google Sign In, Guest Login, Session Management and Role Based Access Control |
+
 | Damien Tan| To be updated |
+
 | Ben Goh| Stall listing and browsing, Patron menu item feedback and ratings, Stall menu item likes |
+
 | Ryan Tan | Order creation and checkout integration, order status, order history (API + page), order details with line items, checkout input validation  |
 
 ---
