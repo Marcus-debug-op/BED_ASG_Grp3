@@ -34,4 +34,11 @@ router.put("/:promotionId", requireRole("vendor"), validatePromotion, promotionC
   #swagger.security = [{ "bearerAuth": [] }]
 */);
 
+router.delete("/:promotionId", requireRole("vendor"), promotionController.deletePromotion
+/*
+  #swagger.tags = ['Vendor Promotions']
+  #swagger.description = 'Vendor deletes one of their own promotion codes, but ONLY if it was never actually redeemed by a patron. Once a promo has real order/redemption history attached, it can only be deactivated via the update route, never deleted.'
+  #swagger.security = [{ "bearerAuth": [] }]
+*/);
+
 module.exports = router;

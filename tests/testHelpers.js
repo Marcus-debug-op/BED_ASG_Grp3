@@ -425,6 +425,48 @@ async function insertTestStall(vendorEmail = "marcusisavendor@gmail.com") {
 
 const SECOND_VENDOR_EMAIL = "matthewisavendor@example.com";
 
+/*
+  Inserts a minimal completed Order that references the given promotion,
+  so promotionModel.deletePromotion()'s "never used" check has something
+  real to find. Doesn't touch PromotionRedemptions - a bare Orders
+  reference alone is enough to mark a promotion as used.
+
+  Used by:
+  - promotionManagement.test.js (the delete-blocked-if-used test)
+*/
+async function markPromotionAsUsed(promotionId, stallId, patronEmail = "marcusisapatron@gmail.com") {
+  let connection;
+
+  try {
+    connection = await sql.connect(dbConfig);
+
+    const patronRequest = connection.request();
+    patronRequest.input("email", sql.VarChar(100), patronEmail);
+    const patronResult = await patronRequest.query(`
+      SELECT user_id FROM Users WHERE email = @email;
+    `);
+
+    if (patronResult.recordset.length === 0) {
+      throw new Error(`Seed patron account not found (${patronEmail}). Run seed.sql first.`);
+    }
+
+    const patronId = patronResult.recordset[0].user_id;
+
+    const insertRequest = connection.request();
+    insertRequest.input("patron_id", sql.Int, patronId);
+    insertRequest.input("stall_id", sql.Int, stallId);
+    insertRequest.input("promotion_id", sql.Int, promotionId);
+
+    await insertRequest.query(`
+      INSERT INTO Orders (patron_id, stall_id, promotion_id, order_status, total_amount)
+      VALUES (@patron_id, @stall_id, @promotion_id, 'Completed', 9.99);
+    `);
+
+  } finally {
+    if (connection) await connection.close();
+  }
+}
+
 module.exports = {
   getPatronToken,
   getVendorToken,
@@ -434,5 +476,6 @@ module.exports = {
   getOfficerToken,
   getOperatorToken,
   insertTestPromotion,
+  markPromotionAsUsed,
   SECOND_VENDOR_EMAIL
 };

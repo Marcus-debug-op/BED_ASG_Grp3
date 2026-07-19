@@ -4,6 +4,7 @@ const {
   getVendorToken,
   getPatronToken,
   insertTestStall,
+  markPromotionAsUsed,
   SECOND_VENDOR_EMAIL
 } = require("./testHelpers");
 
@@ -87,6 +88,61 @@ describe("Vendor Promotion Management API Tests", () => {
     expect(response.body.stall_id).toBe(stallId);
 
     createdPromotionId = response.body.promotion_id;
+  });
+
+  /*
+    Test case 1b:
+    A vendor should be able to set a minimum spend and a usage limit when
+    creating a promotion - these are checked at checkout (BED-22) but were
+    previously not accepted anywhere in the create/update API at all.
+
+    Expected result:
+    - HTTP status 201.
+    - Response echoes back min_spend_amount and max_redemptions.
+    - GET-ing the promotion back afterwards also includes them (proves the
+      SELECT queries return these columns too, not just the INSERT).
+  */
+  test("should allow setting a minimum spend and usage limit on creation", async () => {
+    const response = await request(app)
+      .post(`/api/vendor/promotions/stall/${stallId}`)
+      .set("Authorization", `Bearer ${vendorToken}`)
+      .send(validPromoPayload({
+        promo_code: `MINSPEND${Date.now()}`,
+        min_spend_amount: 15.5,
+        max_redemptions: 20
+      }));
+
+    expect(response.statusCode).toBe(201);
+    expect(Number(response.body.min_spend_amount)).toBe(15.5);
+    expect(response.body.max_redemptions).toBe(20);
+
+    const getResponse = await request(app)
+      .get(`/api/vendor/promotions/${response.body.promotion_id}`)
+      .set("Authorization", `Bearer ${vendorToken}`);
+
+    expect(getResponse.statusCode).toBe(200);
+    expect(Number(getResponse.body.min_spend_amount)).toBe(15.5);
+    expect(getResponse.body.max_redemptions).toBe(20);
+  });
+
+  /*
+    Test case 1c:
+    Leaving minimum spend / usage limit blank should still work (they're
+    optional) and should not be coerced into 0 or rejected.
+
+    Expected result:
+    - HTTP status 201.
+    - min_spend_amount and max_redemptions are null.
+  */
+  test("should allow creating a promotion with no minimum spend or usage limit", async () => {
+    const response = await request(app)
+      .post(`/api/vendor/promotions/stall/${stallId}`)
+      .set("Authorization", `Bearer ${vendorToken}`)
+      .send(validPromoPayload({ promo_code: `NOMIN${Date.now()}` }));
+
+    expect(response.statusCode).toBe(201);
+    expect(response.body.min_spend_amount).toBeNull();
+    expect(response.body.max_redemptions).toBeNull();
   });
 
   /*
@@ -196,20 +252,21 @@ describe("Vendor Promotion Management API Tests", () => {
 
   /*
     Test case 8:
-    Creating a second ACTIVE promotion on the same stall with overlapping
-    dates should be rejected - a stall shouldn't run two active promotions
-    that a patron could apply at the same time.
+    A stall can now run multiple ACTIVE promotions with overlapping dates
+    at the same time - only a duplicate promo_code is blocked, per BED-47's
+    actual acceptance criteria (there's no requirement limiting a stall to
+    one active promotion at a time).
 
     Expected result:
-    - HTTP status 409.
+    - HTTP status 201.
   */
-  test("should reject an overlapping active promotion on the same stall", async () => {
+  test("should allow a second active promotion with overlapping dates on the same stall", async () => {
     const response = await request(app)
       .post(`/api/vendor/promotions/stall/${stallId}`)
       .set("Authorization", `Bearer ${vendorToken}`)
       .send(validPromoPayload({ promo_code: `OVERLAP${Date.now()}` }));
 
-    expect(response.statusCode).toBe(409);
+    expect(response.statusCode).toBe(201);
   });
 
   /*
@@ -257,5 +314,108 @@ describe("Vendor Promotion Management API Tests", () => {
     expect(response.statusCode).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
     expect(response.body.some((p) => p.promotion_id === createdPromotionId)).toBe(true);
+  });
+
+  /*
+    Test case 11:
+    A promotion that has never been used by any patron should be
+    deletable outright.
+
+    Expected result:
+    - DELETE returns 204.
+    - A subsequent GET for that promotion returns 404 (it's really gone).
+  */
+  test("should delete a promotion that has never been used", async () => {
+    const createResponse = await request(app)
+      .post(`/api/vendor/promotions/stall/${stallId}`)
+      .set("Authorization", `Bearer ${vendorToken}`)
+      .send(validPromoPayload({ promo_code: `DELETEME${Date.now()}` }));
+
+    expect(createResponse.statusCode).toBe(201);
+    const promotionId = createResponse.body.promotion_id;
+
+    const deleteResponse = await request(app)
+      .delete(`/api/vendor/promotions/${promotionId}`)
+      .set("Authorization", `Bearer ${vendorToken}`);
+
+    expect(deleteResponse.statusCode).toBe(204);
+
+    const getResponse = await request(app)
+      .get(`/api/vendor/promotions/${promotionId}`)
+      .set("Authorization", `Bearer ${vendorToken}`);
+
+    expect(getResponse.statusCode).toBe(404);
+  });
+
+  /*
+    Test case 12:
+    A promotion that a patron has actually used (an order references it)
+    must NOT be deletable - only deactivatable. This is what keeps
+    BED-47's "never delete historical data" requirement intact.
+
+    Expected result:
+    - DELETE returns 409.
+    - The promotion still exists afterwards (GET still succeeds).
+  */
+  test("should reject deleting a promotion that has already been used", async () => {
+    const createResponse = await request(app)
+      .post(`/api/vendor/promotions/stall/${stallId}`)
+      .set("Authorization", `Bearer ${vendorToken}`)
+      .send(validPromoPayload({ promo_code: `USEDPROMO${Date.now()}` }));
+
+    const promotionId = createResponse.body.promotion_id;
+    await markPromotionAsUsed(promotionId, stallId);
+
+    const deleteResponse = await request(app)
+      .delete(`/api/vendor/promotions/${promotionId}`)
+      .set("Authorization", `Bearer ${vendorToken}`);
+
+    expect(deleteResponse.statusCode).toBe(409);
+
+    const getResponse = await request(app)
+      .get(`/api/vendor/promotions/${promotionId}`)
+      .set("Authorization", `Bearer ${vendorToken}`);
+
+    expect(getResponse.statusCode).toBe(200);
+  });
+
+  /*
+    Test case 13:
+    A vendor should never be able to delete another vendor's promotion.
+
+    Expected result:
+    - HTTP status 403.
+  */
+  test("should reject deleting another vendor's promotion", async () => {
+    const createResponse = await request(app)
+      .post(`/api/vendor/promotions/stall/${secondStallId}`)
+      .set("Authorization", `Bearer ${secondVendorToken}`)
+      .send(validPromoPayload({ promo_code: `NOTYOURS${Date.now()}` }));
+
+    const promotionId = createResponse.body.promotion_id;
+
+    const deleteResponse = await request(app)
+      .delete(`/api/vendor/promotions/${promotionId}`)
+      .set("Authorization", `Bearer ${vendorToken}`);
+
+    expect(deleteResponse.statusCode).toBe(403);
+  });
+
+  /*
+    Test case 14:
+    Unauthenticated requests should be rejected, and deleting a
+    non-existent promotion should 404.
+  */
+  test("should reject deletion without a token", async () => {
+    const response = await request(app).delete(`/api/vendor/promotions/${createdPromotionId}`);
+    expect(response.statusCode).toBe(401);
+  });
+
+  test("should return 404 deleting a non-existent promotion", async () => {
+    const response = await request(app)
+      .delete("/api/vendor/promotions/999999999")
+      .set("Authorization", `Bearer ${vendorToken}`);
+
+    expect(response.statusCode).toBe(404);
   });
 });
