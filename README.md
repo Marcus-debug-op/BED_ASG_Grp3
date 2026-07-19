@@ -16,7 +16,7 @@ The project uses a Node.js and Express backend with Microsoft SQL Server as the 
 
 | Damien Tan| To be updated |
 
-| Ben Goh| Stall listing and browsing, Patron menu item feedback and ratings, Stall menu item likes |
+| Ben Goh| Stall Listing and Browsing, Feedback and Ratings, Menu Item likes |
 
 | Ryan Tan | Order creation and checkout integration, order status, order history (API + page), order details with line items, checkout input validation  |
 

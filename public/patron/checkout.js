@@ -650,9 +650,10 @@ submitBtn?.addEventListener("click", async () => {
     const lastOrder = createdOrders[createdOrders.length - 1];
     localStorage.setItem(LAST_ORDER_NO_KEY, String(lastOrder.order.order_id));
 
-    // All stall orders saved -> clear the local cart, eco toggle, and promo.
+    // All stall orders saved -> clear the local cart, eco toggle and card details.
     localStorage.removeItem(CART_KEY);
     localStorage.removeItem(ECO_KEY);
+    localStorage.removeItem(CARD_DETAILS_KEY);
 
     // Send the customer to the success / awaiting-payment page.
     window.location.href = "PaymentSuccesss.html";
