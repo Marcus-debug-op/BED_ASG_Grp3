@@ -27,6 +27,42 @@ async function createOrder(req, res) {
   }
 }
 
+// POST /api/orders/preview-promo -> BED-92. Lets the checkout page show the
+// discount as soon as the patron clicks "Apply", instead of only after the
+// whole order is submitted. Runs the exact same validation/discount math as
+// a real checkout, but never creates an order or records a redemption, so
+// it can be called freely (including re-clicking Apply, or trying a code
+// against more than one stall in a multi-stall cart).
+async function previewPromoCode(req, res) {
+  try {
+    const patronId = req.user.sub;
+    const { stall_id, items, promo_code } = req.body;
+
+    const result = await orderModel.previewPromo(patronId, stall_id, items, promo_code);
+
+    if (result.error === "INVALID_ITEM") {
+      return res.status(400).json({ message: `Invalid or unavailable menu item: ${result.menuItemId}` });
+    }
+
+    if (!result.valid) {
+      // Same specific reasons as real checkout (NOT_FOUND, INACTIVE,
+      // EXPIRED, MIN_SPEND_NOT_MET, ALREADY_REDEEMED, LIMIT_REACHED).
+      return res.status(400).json({ message: result.message, reason: result.reason, subtotal: result.subtotal });
+    }
+
+    res.status(200).json({
+      valid: true,
+      subtotal: result.subtotal,
+      discount_amount: result.discountAmount,
+      discounted_total: result.discountedTotal,
+      promotion_id: result.promotionId
+    });
+  } catch (error) {
+    console.error("Error previewing promo code:", error);
+    res.status(500).json({ message: "Unable to preview promo code." });
+  }
+}
+
 // GET /api/orders/:id/status -> return the status of the patron's own order.
 async function getOrderStatus(req, res) {
   try {
@@ -218,6 +254,7 @@ async function getOrderDetails(req, res) {
 module.exports = {
   getOrderDetails,
   createOrder,
+  previewPromoCode,
   getOrderStatus,
   getOrderHistory,
   getVendorOrders,

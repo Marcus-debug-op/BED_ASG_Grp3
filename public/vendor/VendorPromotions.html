@@ -62,6 +62,18 @@
           </div>
         </div>
 
+        <div class="promo-grid-2">
+          <div class="promo-row">
+            <label for="minSpend">Minimum Spend ($, optional)</label>
+            <input id="minSpend" type="number" min="0.01" step="0.01" placeholder="Leave blank for no minimum" />
+          </div>
+
+          <div class="promo-row">
+            <label for="maxRedemptions">Usage Limit (optional)</label>
+            <input id="maxRedemptions" type="number" min="1" step="1" placeholder="Leave blank for unlimited" />
+          </div>
+        </div>
+
         <div class="promo-actions-row">
           <button class="btn-primary promo-save-btn" type="submit">Save Promotion</button>
           <button type="button" id="cancelEditBtn" class="promo-cancel-btn" hidden>Cancel Edit</button>
@@ -73,7 +85,7 @@
     <section class="card promo-card">
       <div class="promo-list-head">
         <h2 class="promo-heading">Your Promotions</h2>
-        <span class="promo-hint">Tip: You can Edit, Toggle Active, or Delete.</span>
+        <span class="promo-hint">Tip: You can Edit or Toggle Active anytime. Delete only works if the code has never been used by a patron.</span>
       </div>
 
       <div id="promoList" class="promo-list"></div>

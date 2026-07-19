@@ -20,6 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const activeEl = document.getElementById("active");
     const startDateEl = document.getElementById("startDate");
     const endDateEl = document.getElementById("endDate");
+    const minSpendEl = document.getElementById("minSpend");
+    const maxRedemptionsEl = document.getElementById("maxRedemptions");
 
     if (!token || role !== "vendor") {
         showMsg("Please sign in as a vendor to manage promotions.", true);
@@ -74,6 +76,8 @@ document.addEventListener("DOMContentLoaded", () => {
         form.reset();
         promoIdEl.value = "";
         activeEl.checked = true;
+        if (minSpendEl) minSpendEl.value = "";
+        if (maxRedemptionsEl) maxRedemptionsEl.value = "";
         cancelEditBtn.hidden = true;
         form.querySelector(".promo-save-btn").textContent = "Save Promotion";
     }
@@ -85,6 +89,14 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderPromotionItem(promo) {
         const status = promo.is_active ? "Active" : "Inactive";
 
+        const conditions = [];
+        if (promo.min_spend_amount) {
+            conditions.push(`Min spend $${Number(promo.min_spend_amount).toFixed(2)}`);
+        }
+        if (promo.max_redemptions) {
+            conditions.push(`Limit ${promo.max_redemptions} uses`);
+        }
+
         return `
             <div class="promo-item" data-id="${promo.promotion_id}">
                 <div class="promo-item-top">
@@ -95,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="promo-title">${promo.discount_percent}% off</div>
                 <div>${escapeHtml(promo.description || "")}</div>
                 <div class="promo-expiry">${formatDate(promo.start_date)} – ${formatDate(promo.end_date)}</div>
+                ${conditions.length ? `<div class="promo-conditions">${conditions.join(" · ")}</div>` : ""}
 
                 <div class="promo-actions">
                     <button type="button" class="promo-action-btn" data-action="toggle">
@@ -197,13 +210,19 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
         showMsg("");
 
+        const minSpendRaw = minSpendEl ? minSpendEl.value.trim() : "";
+        const maxRedemptionsRaw = maxRedemptionsEl ? maxRedemptionsEl.value.trim() : "";
+
         const payload = {
             promo_code: codeEl.value.trim(),
             description: descriptionEl.value.trim(),
             discount_percent: Number(valueEl.value),
             start_date: startDateEl.value,
             end_date: endDateEl.value,
-            is_active: activeEl.checked
+            is_active: activeEl.checked,
+            // Blank means "no minimum" / "unlimited" - send null, not 0 or NaN.
+            min_spend_amount: minSpendRaw === "" ? null : Number(minSpendRaw),
+            max_redemptions: maxRedemptionsRaw === "" ? null : Number(maxRedemptionsRaw)
         };
 
         if (!payload.promo_code) return showMsg("Promo code cannot be empty.", true);
@@ -212,6 +231,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (!payload.start_date || !payload.end_date) return showMsg("Start and end dates are required.", true);
         if (payload.end_date < payload.start_date) return showMsg("End date must be on or after the start date.", true);
+        if (payload.min_spend_amount !== null && (!Number.isFinite(payload.min_spend_amount) || payload.min_spend_amount <= 0)) {
+            return showMsg("Minimum spend must be a positive number, or left blank.", true);
+        }
+        if (payload.max_redemptions !== null && (!Number.isInteger(payload.max_redemptions) || payload.max_redemptions <= 0)) {
+            return showMsg("Usage limit must be a whole number, or left blank.", true);
+        }
 
         const editingId = promoIdEl.value;
 
@@ -260,10 +285,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             if (action === "toggle") {
-                const response = await fetch(`/api/vendor/promotions/${promotionId}/active`, {
-                    method: "PATCH",
+                // There's no dedicated "toggle active" route - PUT /:promotionId is the
+                // one real update route, and it requires the full promotion payload
+                // (matching what the create route validates), not a partial patch.
+                const response = await fetch(`/api/vendor/promotions/${promotionId}`, {
+                    method: "PUT",
                     headers: authHeaders({ "Content-Type": "application/json" }),
-                    body: JSON.stringify({ is_active: !promo.is_active })
+                    body: JSON.stringify({
+                        promo_code: promo.promo_code,
+                        description: promo.description || "",
+                        discount_percent: promo.discount_percent,
+                        start_date: toDateInputValue(promo.start_date),
+                        end_date: toDateInputValue(promo.end_date),
+                        is_active: !promo.is_active,
+                        min_spend_amount: promo.min_spend_amount ?? null,
+                        max_redemptions: promo.max_redemptions ?? null
+                    })
                 });
 
                 const data = await response.json();
@@ -281,24 +318,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 activeEl.checked = !!promo.is_active;
                 startDateEl.value = toDateInputValue(promo.start_date);
                 endDateEl.value = toDateInputValue(promo.end_date);
+                if (minSpendEl) minSpendEl.value = promo.min_spend_amount ?? "";
+                if (maxRedemptionsEl) maxRedemptionsEl.value = promo.max_redemptions ?? "";
                 cancelEditBtn.hidden = false;
                 form.querySelector(".promo-save-btn").textContent = "Update Promotion";
                 form.scrollIntoView({ behavior: "smooth", block: "start" });
             }
 
             if (action === "delete") {
-                const ok = confirm(`Delete promo code "${promo.promo_code}"?`);
-                if (!ok) return;
+                const confirmed = confirm(`Delete promo code "${promo.promo_code}"? This can't be undone.`);
+                if (!confirmed) return;
 
                 const response = await fetch(`/api/vendor/promotions/${promotionId}`, {
                     method: "DELETE",
                     headers: authHeaders()
                 });
 
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message || "Failed to delete promo code.");
+                // A successful delete is 204 No Content - there's no body to parse,
+                // so only read the response as JSON on the error path.
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    throw new Error(data.message || "Failed to delete promo code.");
+                }
 
-                showMsg("Promo deleted.");
+                if (promoIdEl.value === promotionId) resetForm();
+                showMsg("Promo code deleted.");
                 await loadPromotions(currentStallId);
             }
         } catch (error) {

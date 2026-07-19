@@ -193,6 +193,12 @@
   font-size: 14px;
 }
 
+.promo-conditions {
+  opacity: 0.75;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
 /* Actions row */
 .promo-actions {
   display: flex;
