@@ -762,7 +762,7 @@
         "tags": [
           "Orders"
         ],
-        "description": "Patron creates a new order (with its items) for one stall",
+        "description": "Patron creates an order for a single stall. If a promo_code is supplied, the backend validates its active status, expiry date and minimum spend, calculates the exact discount server-side, applies it to the order total, and records a redemption linked to this order - preventing the same code from being reused. Invalid/expired/ineligible codes return a clear error reason instead of failing the order.",
         "parameters": [
           {
             "name": "body",
@@ -786,6 +786,53 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/orders/preview-promo": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "description": "Patron previews what a promo code would do to their current cart (for one stall) without submitting an order. Returns the same validation reasons as order creation (NOT_FOUND, INACTIVE, EXPIRED, MIN_SPEND_NOT_MET, ALREADY_REDEEMED, LIMIT_REACHED) if invalid, or the calculated discount if valid. No order is created and no redemption is recorded.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "stall_id": {
+                  "example": "any"
+                },
+                "items": {
+                  "example": "any"
+                },
+                "promo_code": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
           },
           "400": {
             "description": "Bad Request"
@@ -1208,7 +1255,10 @@
     },
     "/api/complaints/": {
       "post": {
-        "description": "",
+        "tags": [
+          "Complaints"
+        ],
+        "description": "A registered user submits a complaint against a stall (details, date, complaint text). On success, a unique tracking id is generated and the complaint is created with a default \"Open\" status, so the user knows their complaint was officially received.",
         "parameters": [
           {
             "name": "body",
@@ -1242,10 +1292,18 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       },
       "get": {
-        "description": "",
+        "tags": [
+          "Complaint Management"
+        ],
+        "description": "Officer/operator retrieves the list of complaints they are responsible for (officers see Hygiene complaints, operators see every other type), with optional filtering by status or stall.",
         "parameters": [
           {
             "name": "status",
@@ -1268,12 +1326,20 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/complaints/{complaintId}": {
       "get": {
-        "description": "",
+        "tags": [
+          "Complaint Management"
+        ],
+        "description": "Officer/operator retrieves the full detail of a single complaint they are responsible for, including its resolution notes.",
         "parameters": [
           {
             "name": "complaintId",
@@ -1295,10 +1361,18 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       },
       "patch": {
-        "description": "",
+        "tags": [
+          "Complaint Management"
+        ],
+        "description": "Officer/operator updates a complaint they are responsible for - moving its status (e.g. Open -> In Progress -> Resolved) and appending a resolution note - closing the loop from initial submission to final resolution.",
         "parameters": [
           {
             "name": "complaintId",
@@ -1338,12 +1412,20 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/vendor/complaints/": {
       "get": {
-        "description": "",
+        "tags": [
+          "Vendor Complaints"
+        ],
+        "description": "Vendor lists complaints that have been filed against their own stalls, so they can stay aware of open issues.",
         "parameters": [
           {
             "name": "status",
@@ -1361,12 +1443,20 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/vendor/complaints/{complaintId}": {
       "get": {
-        "description": "",
+        "tags": [
+          "Vendor Complaints"
+        ],
+        "description": "Vendor retrieves the detail of one complaint filed against their own stall.",
         "parameters": [
           {
             "name": "complaintId",
@@ -1388,12 +1478,20 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/vendor/complaints/{complaintId}/acknowledge": {
       "patch": {
-        "description": "",
+        "tags": [
+          "Vendor Complaints"
+        ],
+        "description": "Vendor acknowledges a complaint filed against their own stall, confirming they have seen it. This does not change the complaint status or resolution, which remain under officer/operator control.",
         "parameters": [
           {
             "name": "complaintId",
@@ -1418,12 +1516,20 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/vendor/promotions/stall/{stallId}": {
       "get": {
-        "description": "",
+        "tags": [
+          "Vendor Promotions"
+        ],
+        "description": "Vendor lists all promotion codes for one of their own stalls, so they can review what is currently running before creating or editing a code.",
         "parameters": [
           {
             "name": "stallId",
@@ -1442,10 +1548,18 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       },
       "post": {
-        "description": "",
+        "tags": [
+          "Vendor Promotions"
+        ],
+        "description": "Vendor creates a new promotion code for their own stall (code, discount percentage, validity dates). The code only needs to be unique within that stall - a duplicate code is rejected with a validation error, but two different stalls may use the same code.",
         "parameters": [
           {
             "name": "stallId",
@@ -1464,18 +1578,23 @@
           "403": {
             "description": "Forbidden"
           },
-          "409": {
-            "description": "Conflict"
-          },
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/vendor/promotions/{promotionId}": {
       "get": {
-        "description": "",
+        "tags": [
+          "Vendor Promotions"
+        ],
+        "description": "Vendor retrieves a single promotion code belonging to them, including its current active status and validity dates.",
         "parameters": [
           {
             "name": "promotionId",
@@ -1497,10 +1616,18 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       },
       "put": {
-        "description": "",
+        "tags": [
+          "Vendor Promotions"
+        ],
+        "description": "Vendor updates one of their own promotion codes, e.g. toggling it active/inactive. This never deletes the promotion record - historical promotion data is always preserved.",
         "parameters": [
           {
             "name": "promotionId",
@@ -1522,13 +1649,51 @@
           "404": {
             "description": "Not Found"
           },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Vendor Promotions"
+        ],
+        "description": "Vendor deletes one of their own promotion codes, but ONLY if it was never actually redeemed by a patron. Once a promo has real order/redemption history attached, it can only be deactivated via the update route, never deleted.",
+        "parameters": [
+          {
+            "name": "promotionId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
           "409": {
             "description": "Conflict"
           },
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/vendor/dashboard/": {
@@ -1545,6 +1710,171 @@
             "description": "Internal Server Error"
           }
         }
+      }
+    },
+    "/api/inspections/": {
+      "post": {
+        "tags": [
+          "Inspections"
+        ],
+        "description": "NEA officer schedules an inspection for a valid stall",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "stall_id": {
+                  "type": "number",
+                  "example": 1
+                },
+                "inspection_date": {
+                  "type": "string",
+                  "example": "2026-08-01T10:00:00"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/inspections/scheduled": {
+      "get": {
+        "tags": [
+          "Inspections"
+        ],
+        "description": "NEA officer views upcoming scheduled inspections",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/inspections/{inspectionId}": {
+      "put": {
+        "tags": [
+          "Inspections"
+        ],
+        "description": "NEA officer reschedules an existing scheduled inspection",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "stall_id": {
+                  "type": "number",
+                  "example": 1
+                },
+                "inspection_date": {
+                  "type": "string",
+                  "example": "2026-08-02T14:00:00"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/inspections/{inspectionId}/cancel": {
+      "patch": {
+        "tags": [
+          "Inspections"
+        ],
+        "description": "NEA officer cancels a scheduled inspection",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/menu-items/{id}/likes": {
