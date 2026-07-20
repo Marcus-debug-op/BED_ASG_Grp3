@@ -25,19 +25,45 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   const searchInput = document.querySelector(".search-input");
-  const filterSelect = document.querySelector(".filter-select");
+  const cuisineSelect = document.getElementById("cuisineSelect");
+  const hawkerCentreSelect = document.getElementById("hawkerCentreSelect");
   const halalCheck = document.getElementById("halalCheck");
   const vegCheck = document.getElementById("vegCheck");
   const countText = document.querySelector(".count-text");
 
-  // 1) Load stalls from the backend (initial load = no filters)
+  // 1) Load hawker & stalls from the backend (initial load = no filters)
+  await loadHawkerCentres();
   await refreshStalls();
 
   // 2) Hook filters - search/cuisine re-query the server, halal/veg filter client-side
   searchInput?.addEventListener("input", debounce(refreshStalls, 300));
-  filterSelect?.addEventListener("change", refreshStalls);
+  cuisineSelect?.addEventListener("change", refreshStalls);
+  hawkerCentreSelect?.addEventListener("change", refreshStalls);
   halalCheck?.addEventListener("change", applyClientOnlyFilters);
   vegCheck?.addEventListener("change", applyClientOnlyFilters);
+
+  async function loadHawkerCentres() {
+  try {
+    const res = await fetch("/api/hawkercentres");
+
+    if (!res.ok) {
+      throw new Error(`Request failed: ${res.status}`);
+    }
+
+    const centres = await res.json();
+
+    centres.forEach((centre) => {
+      const option = document.createElement("option");
+
+      option.value = centre.hawker_centre_id;
+      option.textContent = centre.centre_name;
+
+      hawkerCentreSelect.appendChild(option);
+    });
+  } catch (err) {
+    console.error("Failed to load hawker centres:", err);
+  }
+}
 
   async function refreshStalls() {
     const params = {};
@@ -45,8 +71,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     const search = (searchInput?.value || "").trim();
     if (search) params.search = search;
 
-    const cuisine = filterSelect?.value || CUISINE_ALL;
-    if (cuisine !== CUISINE_ALL) params.cuisine = cuisine;
+    const cuisine = cuisineSelect?.value || CUISINE_ALL;
+    if (cuisine !== CUISINE_ALL) {
+      params.cuisine = cuisine;
+    }
+
+    const hawkerCentreId = hawkerCentreSelect?.value || "All";
+    if (hawkerCentreId !== "All") {
+      params.hawker_centre_id = hawkerCentreId;
+    }
 
     try {
       const stalls = await loadStalls(params);
