@@ -523,6 +523,28 @@ padding: 24px 24px 24px 32px;
     display: none;
 }
 
+
+.staff-login-btn {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+
+  padding: 10px 18px;
+  border: 2px solid #d66b28;
+  border-radius: 25px;
+
+  background: white;
+  color: #b9531d;
+  font-weight: 600;
+  text-decoration: none;
+  transition: 0.2s ease;
+}
+
+.staff-login-btn:hover {
+  background: #d66b28;
+  color: white;
+  transform: translateY(-2px);
+}
 /* ----------------------------------------
    CONTINUE AS GUEST BUTTON (same orange style)
    ---------------------------------------- */

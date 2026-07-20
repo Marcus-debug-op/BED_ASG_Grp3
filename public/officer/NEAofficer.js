@@ -1,416 +1,530 @@
+const token = localStorage.getItem("token");
+const role = localStorage.getItem("role");
+const savedUser = localStorage.getItem("user");
+
+const scheduleList = document.getElementById("schedule-list");
+const stallDirectoryBody = document.getElementById("stall-directory-body");
+const messageDiv = document.getElementById("message");
+
+const recentInspectionsBody = document.getElementById("recent-inspections-body");
+const totalStalls = document.getElementById("total-stalls");
+const criticalViolations = document.getElementById("critical-violations");
+const avgZoneScore = document.getElementById("avg-zone-score");
+const displayOfficerName = document.getElementById("display-officer-name");
+const displayBadgeId = document.getElementById("display-badge-id");
+
 /*
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { getFirestore, collection, getDocs, getDoc, addDoc, deleteDoc, updateDoc, doc, query, orderBy, limit, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyDo8B0OLtAj-Upfz7yNFeGz4cx3KWLZLuQ",
-    authDomain: "hawkerhub-64e2d.firebaseapp.com",
-    databaseURL: "https://hawkerhub-64e2d-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "hawkerhub-64e2d",
-    storageBucket: "hawkerhub-64e2d.firebasestorage.app",
-    messagingSenderId: "722888051277",
-    appId: "1:722888051277:web:59926d0a54ae0e4fe36a04"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-let currentOfficerId = null;
-
-// ==========================================
-// 1. DATE PICKER HELPERS
-// ==========================================
-
-function initializeDatePicker() {
-    const yearSelect = document.getElementById('picker-year');
-    const currentYear = new Date().getFullYear();
-    yearSelect.innerHTML = "";
-    
-    for (let i = 0; i < 5; i++) {
-        let option = document.createElement("option");
-        option.value = currentYear + i;
-        option.text = currentYear + i;
-        yearSelect.appendChild(option);
-    }
-}
-
-window.updateDayOptions = function() {
-    const year = parseInt(document.getElementById('picker-year').value);
-    const monthIndex = parseInt(document.getElementById('picker-month').value); 
-    const daySelect = document.getElementById('picker-day');
-    
-    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-    const currentSelection = daySelect.value;
-    
-    daySelect.innerHTML = "";
-    
-    for (let i = 1; i <= daysInMonth; i++) {
-        let option = document.createElement("option");
-        option.value = i < 10 ? `0${i}` : i; 
-        option.text = i;
-        daySelect.appendChild(option);
-    }
-
-    if (currentSelection && currentSelection <= daysInMonth) {
-        daySelect.value = currentSelection;
-    } else {
-        daySelect.value = "01";
-    }
-
-    updateFinalDate();
-};
-
-window.updateFinalDate = function() {
-    const year = document.getElementById('picker-year').value;
-    const month = (parseInt(document.getElementById('picker-month').value) + 1).toString().padStart(2, '0');
-    const day = document.getElementById('picker-day').value; 
-
-    const finalDateString = `${year}-${month}-${day}`;
-    document.getElementById('input-date').value = finalDateString;
-    
-    checkAvailability();
-};
-
-// ==========================================
-// 2. MODAL FUNCTIONS
-// ==========================================
-
-window.openScheduleModal = function(stallId, stallName) {
-    document.getElementById('schedule-stall-id').value = stallId;
-    document.getElementById('schedule-stall-name').value = stallName;
-    
-    initializeDatePicker();
-    const today = new Date();
-    document.getElementById('picker-year').value = today.getFullYear();
-    document.getElementById('picker-month').value = today.getMonth();
-    
-    updateDayOptions();
-    document.getElementById('picker-day').value = today.getDate().toString().padStart(2, '0');
-    updateFinalDate();
-
-    const select = document.getElementById('input-time');
-    for (let i = 0; i < select.options.length; i++) {
-        select.options[i].disabled = false;
-        select.options[i].innerText = select.options[i].value;
-    }
-    select.value = "10:00"; 
-
-    document.getElementById('modal-schedule').classList.remove('hidden');
-    checkAvailability();
-};
-
-window.openInspectionModal = function(scheduleId, stallId, stallName) {
-    document.getElementById('inspect-schedule-id').value = scheduleId;
-    document.getElementById('inspect-stall-id').value = stallId;
-    document.getElementById('inspect-stall-name').value = stallName;
-    document.getElementById('display-stall-name').innerText = stallName;
-    
-    document.getElementById('input-score').value = "";
-    document.getElementById('grade-preview').innerText = ""; 
-    document.getElementById('input-strengths').value = "";
-    document.getElementById('input-remarks').value = "";
-    
-    document.getElementById('modal-inspect').classList.remove('hidden');
-};
-
-window.closeModal = function(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-};
-
-// ==========================================
-// 3. FIREBASE ACTIONS
-// ==========================================
-
-window.checkAvailability = async function() {
-    const dateVal = document.getElementById('input-date').value;
-    const timeSelect = document.getElementById('input-time');
-    
-    if (!dateVal) return;
-
-    for (let i = 0; i < timeSelect.options.length; i++) {
-        timeSelect.options[i].disabled = false;
-        timeSelect.options[i].innerText = timeSelect.options[i].value; 
-    }
-
-    try {
-        const q = query(collection(db, "schedules"), where("date", "==", dateVal));
-        const snapshot = await getDocs(q);
-
-        snapshot.forEach(doc => {
-            const bookedTime = doc.data().time;
-            for (let i = 0; i < timeSelect.options.length; i++) {
-                if (timeSelect.options[i].value === bookedTime) {
-                    timeSelect.options[i].disabled = true;
-                    timeSelect.options[i].innerText = `${bookedTime} (Booked)`;
-                }
-            }
-        });
-
-    } catch (error) { console.error("Error checking availability:", error); }
-};
-
-window.calculateLiveGrade = function(val) {
-    const previewEl = document.getElementById('grade-preview');
-    if (!val) { previewEl.innerText = ""; return; }
-    const score = parseInt(val);
-    let grade = 'D (Risk)';
-    let colorClass = 'text-grade-d';
-    if (score >= 85) { grade = 'A (Excellent)'; colorClass = 'text-grade-a'; } 
-    else if (score >= 70) { grade = 'B (Good)'; colorClass = 'text-grade-b'; } 
-    else if (score >= 50) { grade = 'C (Satisfactory)'; colorClass = 'text-grade-c'; }
-    previewEl.className = `grade-feedback ${colorClass}`;
-    previewEl.innerText = `Projected Grade: ${grade}`;
-};
-
-window.confirmSchedule = async function() {
-    const stallId = document.getElementById('schedule-stall-id').value;
-    const stallName = document.getElementById('schedule-stall-name').value;
-    const dateVal = document.getElementById('input-date').value; 
-    const timeVal = document.getElementById('input-time').value;
-    const note = document.getElementById('input-note').value;
-
-    if (!dateVal || !timeVal) { alert("Select Date & Time"); return; }
-
-    try {
-        await addDoc(collection(db, "schedules"), {
-            stallId, stallName, date: dateVal, time: timeVal, note: note || "Routine Check",
-            createdAt: serverTimestamp()
-        });
-        window.closeModal('modal-schedule');
-        alert("Scheduled!");
-        loadSchedule(); 
-    } catch (error) { console.error(error); alert("Failed."); }
-};
-
-window.deleteSchedule = async function(scheduleId) {
-    if (!confirm("Delete this scheduled visit?")) return;
-    try {
-        await deleteDoc(doc(db, "schedules", scheduleId));
-        alert("Schedule deleted!");
-        loadSchedule();
-    } catch (error) { console.error(error); alert("Error deleting."); }
-};
-
-window.submitInspection = async function() {
-    const scheduleId = document.getElementById('inspect-schedule-id').value;
-    const stallId = document.getElementById('inspect-stall-id').value;
-    const stallName = document.getElementById('inspect-stall-name').value;
-    const score = parseInt(document.getElementById('input-score').value);
-    const strengthsText = document.getElementById('input-strengths').value.trim();
-    const remarksText = document.getElementById('input-remarks').value.trim();
-    if (!score || score < 0 || score > 100) { alert("Enter a valid score."); return; }
-    let grade = 'D', status = 'Risk';
-    if (score >= 85) { grade = 'A'; status = 'Pass'; }
-    else if (score >= 70) { grade = 'B'; status = 'Warning'; }
-    else if (score >= 50) { grade = 'C'; status = 'Warning'; }
-
-    const strengthsArray = strengthsText.split('\n').filter(line => line.trim() !== "");
-    const remarksArray = remarksText.split('\n').filter(line => line.trim() !== "");
-    const todayStr = new Date().toLocaleDateString("en-SG", { day: 'numeric', month: 'short', year: 'numeric' });
-    const nextDate = new Date(); nextDate.setMonth(nextDate.getMonth() + 1);
-    const nextDateStr = nextDate.toLocaleDateString("en-SG", { day: 'numeric', month: 'short', year: 'numeric' });
-
-    try {
-        await addDoc(collection(db, "inspections"), {
-            stallId, stallName, score, grade, status, remarks: remarksText, strengths: strengthsText, date: serverTimestamp()
-        });
-        const stallRef = doc(db, "stalls", stallId);
-        await updateDoc(stallRef, {
-            hygiene: grade, inspectionScore: score, lastInspectionDate: todayStr,
-            nextInspectionDate: nextDateStr, strengths: strengthsArray, remarks: remarksArray
-        });
-        if (scheduleId) await deleteDoc(doc(db, "schedules", scheduleId));
-        window.closeModal('modal-inspect');
-        alert(`Report Submitted! Next Inspection: ${nextDateStr}`);
-        loadSchedule(); loadDashboard(); loadStallDirectory(); window.switchPage('overview');
-    } catch (error) { console.error(error); alert("Error saving."); }
-};
-
-// ==========================================
-// 4. LOADERS
-// ==========================================
-
-async function loadStallDirectory() {
-    const tbody = document.getElementById('stall-directory-body');
-    if (!tbody) return;
-    const snapshot = await getDocs(collection(db, "stalls"));
-    let html = "";
-    snapshot.forEach(doc => {
-        // --- KEY FIX: SKIP _CONFIG FILE ---
-        if (doc.id === "_config") return;
-
-        const data = doc.data();
-        let displayName = data.name || data.stallName || doc.id.charAt(0).toUpperCase() + doc.id.slice(1);
-        const safeName = displayName.replace(/'/g, "\\'");
-        let grade = data.hygiene || (data.rating >= 4.5 ? 'A' : 'B');
-        let badgeClass = grade === 'A' ? 'badge-success' : (grade === 'B' ? 'badge-pending' : 'badge-danger');
-        html += `<tr>
-            <td>#${doc.id.substring(0,5)}</td><td>${displayName}</td><td>${data.vendorId ? "Registered" : "Unknown"}</td>
-            <td><span class="badge ${badgeClass}">${grade}</span></td>
-            <td><button class="btn-primary" style="padding:6px 12px; font-size:0.8rem;" onclick="openScheduleModal('${doc.id}', '${safeName}')">Inspect</button></td>
-        </tr>`;
-    });
-    tbody.innerHTML = html;
-}
-
-async function loadSchedule() {
-    const container = document.getElementById('schedule-list');
-    if (!container) return;
-    const q = query(collection(db, "schedules"), orderBy("createdAt", "asc"));
-    const querySnapshot = await getDocs(q);
-    let html = "";
-    if (querySnapshot.empty) {
-        container.innerHTML = '<div class="card"><p class="text-muted-center">No scheduled visits. Add one from the Directory!</p></div>';
-        return;
-    }
-    querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const safeName = (data.stallName || '').replace(/'/g, "\\'");
-        html += `
-            <div class="schedule-card-item">
-                <div class="schedule-time-box">
-                    <span class="time-big">${data.time}</span>
-                    <span class="date-small">${data.date}</span>
-                </div>
-                <div class="schedule-info">
-                    <div class="schedule-title">${data.stallName}</div>
-                    <div class="schedule-note">${data.note}</div>
-                </div>
-                <div class="schedule-actions-area">
-                    <button class="btn-danger" onclick="deleteSchedule('${doc.id}')">Delete</button>
-                    <button class="btn-primary" style="padding: 12px 24px; font-size: 1rem;" 
-                        onclick="openInspectionModal('${doc.id}', '${data.stallId}', '${safeName}')">
-                        Start Inspection
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-    container.innerHTML = html;
-}
-
-async function loadDashboard() {
-    const recentTable = document.getElementById('recent-inspections-body');
-    const totalEl = document.getElementById('total-stalls');
-    const criticalEl = document.getElementById('critical-violations');
-    const avgEl = document.getElementById('avg-zone-score');
-    try {
-        const q = query(collection(db, "inspections"), orderBy("date", "desc"), limit(5));
-        const snapshot = await getDocs(q);
-        let html = "", count = 0, scoreSum = 0, critical = 0;
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            count++; scoreSum += data.score;
-            if(data.grade === 'D' || data.grade === 'C') critical++;
-            let dateStr = data.date ? new Date(data.date.seconds * 1000).toLocaleDateString() : 'Pending';
-            let badge = data.grade === 'A' ? 'badge-success' : (data.grade === 'B' ? 'badge-pending' : 'badge-danger');
-            html += `<tr><td>${data.stallName}</td><td>${dateStr}</td><td><span class="badge ${badge}">${data.grade} (${data.score})</span></td><td>${data.status}</td></tr>`;
-        });
-        if(recentTable) recentTable.innerHTML = html || '<tr><td colspan="4" class="text-muted-center">No data</td></tr>';
-        if(totalEl) totalEl.innerText = count;
-        if(criticalEl) criticalEl.innerText = critical;
-        if(avgEl) avgEl.innerText = count ? (scoreSum/count).toFixed(1) : "0.0";
-    } catch (e) { console.error(e); }
-}
-
-window.switchPage = function(pageId, element) {
-    document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
-    const target = document.getElementById('page-' + pageId);
-    if(target) target.classList.remove('hidden');
-    if(element) {
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        element.classList.add('active');
-    }
-    if(pageId === 'schedule') loadSchedule();
-    if(pageId === 'overview') loadDashboard();
-};
-
-// ==========================================
-// 5. LOGOUT LOGIC
-// ==========================================
-
-window.logoutOfficer = async function() {
-    if (!confirm("Are you sure you want to log out?")) return;
-
-    if (currentOfficerId) {
-        try {
-            const officerRef = doc(db, "officers", currentOfficerId);
-            await updateDoc(officerRef, {
-                isActive: false,  
-                lastLogout: serverTimestamp()
-            });
-            console.log("Officer status set to inactive.");
-        } catch (error) {
-            console.error("Error updating logout status:", error);
-        }
-    }
-
-    await signOut(auth);
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = "SignInOfficer.html"; 
-};
-
-// ==========================================
-// 6. LOAD OFFICER PROFILE
-// ==========================================
-
-async function loadOfficerProfile() {
-    if (!currentOfficerId) {
-        console.warn("No officer ID available.");
-        return;
-    }
-
-    try {
-        const officerRef = doc(db, "officers", currentOfficerId);
-        const officerSnap = await getDoc(officerRef);
-
-        if (officerSnap.exists()) {
-            const data = officerSnap.data();
-            
-            const nameEl = document.getElementById('display-officer-name');
-            const badgeEl = document.getElementById('display-badge-id');
-
-            if(nameEl) nameEl.innerText = data.officerName || data.email || "Officer";
-            if(badgeEl) badgeEl.innerText = data.badgeId || "N/A";
-        }
-    } catch (error) {
-        console.error("Error fetching profile:", error);
-    }
-}
-
-// ==========================================
-// 7. AUTH STATE HANDLER
-// ==========================================
-
-onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-        window.location.href = "SignInOfficer.html";
-        return;
-    }
-
-    currentOfficerId = user.uid;
-
-    try {
-        const officerDoc = await getDoc(doc(db, "officers", user.uid));
-        if (!officerDoc.exists()) {
-            await signOut(auth);
-            alert("Access denied. This account is not registered as an officer.");
-            window.location.href = "SignInOfficer.html";
-            return;
-        }
-
-        loadOfficerProfile();
-        loadDashboard();
-        loadStallDirectory();
-        loadSchedule();
-    } catch (error) {
-        console.error("Error verifying officer status:", error);
-        await signOut(auth);
-        window.location.href = "SignInOfficer.html";
-    }
-});
-
+  This page should only be accessed by officer users.
+  The token is needed because the inspection APIs are protected.
 */
+if (!token) {
+  window.location.href = "/auth/SigninOfficer.html";
+} else if (role !== "officer") {
+  document.body.innerHTML = "<h2>You do not have permission to access this page.</h2>";
+} else {
+  setupOfficerInfo();
+  setupDatePickers();
+  loadStalls();
+  loadScheduledInspections();
+}
+
+/*
+  Show officer information from localStorage.
+*/
+function setupOfficerInfo() {
+  try {
+    const user = savedUser ? JSON.parse(savedUser) : null;
+
+    if (displayOfficerName) {
+      displayOfficerName.textContent = user?.full_name || "NEA Officer";
+    }
+
+    if (displayBadgeId) {
+      displayBadgeId.textContent = user?.user_id || "-";
+    }
+  } catch (error) {
+    console.error("Unable to read saved user:", error);
+  }
+}
+
+/*
+  Switch between sidebar pages.
+*/
+function switchPage(page, clickedItem) {
+  document.querySelectorAll(".main-content > div").forEach((section) => {
+    section.classList.add("hidden");
+  });
+
+  const selectedPage = document.getElementById(`page-${page}`);
+  if (selectedPage) {
+    selectedPage.classList.remove("hidden");
+  }
+
+  document.querySelectorAll(".nav-item").forEach((item) => {
+    item.classList.remove("active");
+  });
+
+  if (clickedItem) {
+    clickedItem.classList.add("active");
+  }
+
+  if (page === "schedule") {
+    loadScheduledInspections();
+  }
+
+  if (page === "stalls") {
+    loadStalls();
+  }
+}
+
+/*
+  Load stalls so officer can choose which stall to schedule inspection for.
+*/
+async function loadStalls() {
+  try {
+    const response = await fetch("/api/stalls", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      if (stallDirectoryBody) {
+        stallDirectoryBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="text-muted-center">
+              ${data.message || "Unable to load stalls."}
+            </td>
+          </tr>
+        `;
+      }
+      return;
+    }
+
+    renderStalls(data);
+
+    if (totalStalls) {
+      totalStalls.textContent = data.length;
+    }
+  } catch (error) {
+    console.error("Load stalls error:", error);
+
+    if (stallDirectoryBody) {
+      stallDirectoryBody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-muted-center">
+            Unable to connect to server.
+          </td>
+        </tr>
+      `;
+    }
+  }
+}
+
+/*
+  Display stalls in the Stall Directory page.
+  Each stall has a Schedule button that opens the schedule modal.
+*/
+function renderStalls(stalls) {
+  if (!stallDirectoryBody) return;
+
+  if (!stalls || stalls.length === 0) {
+    stallDirectoryBody.innerHTML = `
+      <tr>
+        <td colspan="5" class="text-muted-center">No stalls found.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  stallDirectoryBody.innerHTML = stalls.map((stall) => {
+    return `
+      <tr>
+        <td>${stall.stall_id}</td>
+        <td>${stall.stall_name}</td>
+        <td>${stall.vendor_name || "-"}</td>
+        <td>${stall.last_grade || "Not inspected"}</td>
+        <td>
+          <button 
+            class="btn-primary" 
+            onclick="openScheduleModal(${stall.stall_id}, '${escapeHtml(stall.stall_name)}')">
+            Schedule
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+/*
+  Open the schedule modal and store selected stall info.
+*/
+function openScheduleModal(stallId, stallName) {
+  document.getElementById("schedule-stall-id").value = stallId;
+  document.getElementById("schedule-stall-name").value = stallName;
+
+  const modal = document.getElementById("modal-schedule");
+  modal.classList.remove("hidden");
+
+  updateFinalDate();
+}
+
+/*
+  Close modal by ID.
+*/
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+/*
+  Setup custom date picker.
+*/
+function setupDatePickers() {
+  const yearSelect = document.getElementById("picker-year");
+  const monthSelect = document.getElementById("picker-month");
+
+  if (!yearSelect || !monthSelect) return;
+
+  const currentYear = new Date().getFullYear();
+
+  yearSelect.innerHTML = "";
+
+  for (let year = currentYear; year <= currentYear + 2; year++) {
+    const option = document.createElement("option");
+    option.value = year;
+    option.textContent = year;
+    yearSelect.appendChild(option);
+  }
+
+  monthSelect.value = new Date().getMonth();
+
+  updateDayOptions();
+}
+
+/*
+  Update day dropdown based on selected month/year.
+*/
+function updateDayOptions() {
+  const year = Number(document.getElementById("picker-year").value);
+  const month = Number(document.getElementById("picker-month").value);
+  const daySelect = document.getElementById("picker-day");
+
+  if (!daySelect) return;
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  daySelect.innerHTML = "";
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const option = document.createElement("option");
+    option.value = String(day).padStart(2, "0");
+    option.textContent = day;
+    daySelect.appendChild(option);
+  }
+
+  updateFinalDate();
+}
+
+/*
+  Convert selected year/month/day into YYYY-MM-DD.
+*/
+function updateFinalDate() {
+  const year = document.getElementById("picker-year")?.value;
+  const month = document.getElementById("picker-month")?.value;
+  const day = document.getElementById("picker-day")?.value;
+  const inputDate = document.getElementById("input-date");
+
+  if (!year || month === undefined || !day || !inputDate) return;
+
+  const realMonth = String(Number(month) + 1).padStart(2, "0");
+
+  inputDate.value = `${year}-${realMonth}-${day}`;
+}
+
+/*
+  Optional placeholder because your HTML calls checkAvailability().
+*/
+function checkAvailability() {
+  updateFinalDate();
+}
+
+/*
+  Schedule inspection.
+  This calls POST /api/inspections.
+*/
+async function confirmSchedule() {
+  const stallId = document.getElementById("schedule-stall-id").value;
+  const selectedDate = document.getElementById("input-date").value;
+  const selectedTime = document.getElementById("input-time").value;
+
+  if (!stallId) {
+    alert("No stall selected.");
+    return;
+  }
+
+  if (!selectedDate) {
+    alert("Please select an inspection date.");
+    return;
+  }
+
+  const inspectionDate = `${selectedDate}T${selectedTime}:00`;
+
+  try {
+    const response = await fetch("/api/inspections", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        stall_id: Number(stallId),
+        inspection_date: inspectionDate
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Unable to schedule inspection.");
+      return;
+    }
+
+    alert("Inspection scheduled successfully.");
+
+    closeModal("modal-schedule");
+    loadScheduledInspections();
+    switchPage("schedule", document.querySelector(".nav-item:nth-child(3)"));
+  } catch (error) {
+    console.error("Schedule inspection error:", error);
+    alert("Unable to connect to server.");
+  }
+}
+
+/*
+  Load upcoming scheduled inspections.
+  This calls GET /api/inspections/scheduled.
+*/
+async function loadScheduledInspections() {
+  try {
+    const response = await fetch("/api/inspections/scheduled", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      scheduleList.innerHTML = `
+        <p class="text-muted-center">
+          ${data.message || "Unable to load inspections."}
+        </p>
+      `;
+      return;
+    }
+
+    renderScheduledInspections(data);
+    renderRecentInspections(data);
+  } catch (error) {
+    console.error("Load inspections error:", error);
+
+    scheduleList.innerHTML = `
+      <p class="text-muted-center">Unable to connect to server.</p>
+    `;
+  }
+}
+
+/*
+  Display scheduled inspections.
+*/
+function renderScheduledInspections(inspections) {
+  if (!scheduleList) return;
+
+  if (!inspections || inspections.length === 0) {
+    scheduleList.innerHTML = `
+      <p class="text-muted-center">No scheduled inspections found.</p>
+    `;
+    return;
+  }
+
+  scheduleList.innerHTML = inspections.map((inspection) => {
+    return `
+      <div class="card inspection-card">
+        <h3>${inspection.stall_name}</h3>
+        <p><strong>Hawker Centre:</strong> ${inspection.centre_name || "-"}</p>
+        <p><strong>Date:</strong> ${new Date(inspection.inspection_date).toLocaleString()}</p>
+        <p><strong>Status:</strong> ${inspection.inspection_status}</p>
+
+        <label class="form-label">New Date/Time</label>
+        <input 
+          type="datetime-local" 
+          id="reschedule-${inspection.inspection_id}"
+          class="form-input-box"
+        />
+
+        <div class="modal-actions">
+          <button class="btn-primary" onclick="rescheduleInspection(${inspection.inspection_id})">
+            Reschedule
+          </button>
+
+          <button class="btn-secondary" onclick="cancelInspection(${inspection.inspection_id})">
+            Cancel
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+/*
+  Show same scheduled data on dashboard recent table.
+*/
+function renderRecentInspections(inspections) {
+  if (!recentInspectionsBody) return;
+
+  if (!inspections || inspections.length === 0) {
+    recentInspectionsBody.innerHTML = `
+      <tr>
+        <td colspan="4" class="text-muted-center">No scheduled inspections found.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  recentInspectionsBody.innerHTML = inspections.slice(0, 5).map((inspection) => {
+    return `
+      <tr>
+        <td>${inspection.stall_name}</td>
+        <td>${new Date(inspection.inspection_date).toLocaleString()}</td>
+        <td>Pending</td>
+        <td>${inspection.inspection_status}</td>
+      </tr>
+    `;
+  }).join("");
+
+  if (criticalViolations) {
+    criticalViolations.textContent = "0";
+  }
+
+  if (avgZoneScore) {
+    avgZoneScore.textContent = "0.0";
+  }
+}
+
+/*
+  Reschedule inspection.
+  This calls PUT /api/inspections/:inspectionId.
+*/
+async function rescheduleInspection(inspectionId) {
+  const newDate = document.getElementById(`reschedule-${inspectionId}`).value;
+
+  if (!newDate) {
+    alert("Please select a new inspection date.");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/inspections/${inspectionId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        inspection_date: newDate
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Unable to reschedule inspection.");
+      return;
+    }
+
+    alert("Inspection rescheduled successfully.");
+    loadScheduledInspections();
+  } catch (error) {
+    console.error("Reschedule inspection error:", error);
+    alert("Unable to connect to server.");
+  }
+}
+
+/*
+  Cancel inspection.
+  This calls PATCH /api/inspections/:inspectionId/cancel.
+*/
+async function cancelInspection(inspectionId) {
+  const confirmCancel = confirm("Are you sure you want to cancel this inspection?");
+
+  if (!confirmCancel) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/inspections/${inspectionId}/cancel`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Unable to cancel inspection.");
+      return;
+    }
+
+    alert("Inspection cancelled successfully.");
+    loadScheduledInspections();
+  } catch (error) {
+    console.error("Cancel inspection error:", error);
+    alert("Unable to connect to server.");
+  }
+}
+
+/*
+  Logout officer.
+*/
+function logoutOfficer() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  localStorage.removeItem("user");
+
+  window.location.href = "/auth/SigninOfficer.html";
+}
+
+/*
+  Prevent HTML injection when inserting stall names into onclick.
+*/
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "\\'");
+}
+
+/*
+  Because this script is type="module", onclick functions must be attached to window.
+*/
+window.switchPage = switchPage;
+window.openScheduleModal = openScheduleModal;
+window.closeModal = closeModal;
+window.updateDayOptions = updateDayOptions;
+window.updateFinalDate = updateFinalDate;
+window.checkAvailability = checkAvailability;
+window.confirmSchedule = confirmSchedule;
+window.rescheduleInspection = rescheduleInspection;
+window.cancelInspection = cancelInspection;
+window.logoutOfficer = logoutOfficer;

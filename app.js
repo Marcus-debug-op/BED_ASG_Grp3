@@ -23,6 +23,7 @@ const vendorComplaintRoute = require("./Routes/vendorComplaintRoute");
 const menuItemLikeRoute = require("./Routes/menuItemLikeRoute");
 const promotionRoute = require("./Routes/promotionRoute");
 const vendorDashboardRoute = require("./Routes/vendorDashboardRoute");
+const inspectionRoute = require("./Routes/inspectionRoute");
 const { prototype } = require("module");
 
 const app = express();
@@ -50,6 +51,7 @@ app.use("/api/complaints", complaintRoute); // Officer-only complaint review and
 app.use("/api/vendor/complaints", vendorComplaintRoute); // Vendor: view + acknowledge complaints against their own stalls
 app.use("/api/vendor/promotions", promotionRoute); // Vendor: manage their own stall's promotion codes
 app.use("/api/vendor/dashboard", vendorDashboardRoute); // Vendor: dashboard summary metrics
+app.use("/api/inspections", inspectionRoute);// Officer: scehdule inspections
 
 app.use("/api/menu-items", menuItemLikeRoute); // Menu item likes (BED-26)
 
