@@ -1,7 +1,7 @@
 const express = require("express");
 const inspectionController = require("../Controllers/inspectionController");
 const { requireRole } = require("../Middlewares/authMiddleware");
-const { validateScheduleInspection } = require("../Middlewares/inspectionValidation");
+const {   validateScheduleInspection,validateRescheduleInspection,validateCompleteInspection } = require("../Middlewares/inspectionValidation");
 
 const router = express.Router();
 
@@ -59,6 +59,44 @@ router.patch("/:inspectionId/cancel", requireRole("officer"), inspectionControll
       in: 'path',
       required: true,
       type: 'integer'
+    }
+  */
+);
+
+
+router.get("/", requireRole("officer"), inspectionController.getInspectionRecords
+  /*
+    #swagger.tags = ['Inspections']
+    #swagger.description = 'NEA officer views inspection records, optionally filtered by stall ID'
+    #swagger.security = [{ "bearerAuth": [] }]
+    #swagger.parameters['stall_id'] = {
+      in: 'query',
+      required: false,
+      type: 'integer',
+      description: 'Optional stall ID filter'
+    }
+  */
+);
+
+router.patch("/:inspectionId/result",requireRole("officer"),validateCompleteInspection,inspectionController.completeInspectionResult
+  /*
+    #swagger.tags = ['Inspections']
+    #swagger.description = 'NEA officer records inspection result and hygiene grade'
+    #swagger.security = [{ "bearerAuth": [] }]
+    #swagger.parameters['inspectionId'] = {
+      in: 'path',
+      required: true,
+      type: 'integer'
+    }
+    #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+        score: 85,
+        hygiene_grade: 'A',
+        remarks: 'Stall is clean and food preparation area is well maintained.',
+        result: 'Pass'
+      }
     }
   */
 );

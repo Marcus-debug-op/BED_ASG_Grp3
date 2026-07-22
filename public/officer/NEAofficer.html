@@ -219,6 +219,22 @@
             <label class="form-label">Hygiene Score (0-100)</label>
             <input type="number" id="input-score" class="form-input-box" placeholder="85" oninput="calculateLiveGrade(this.value)">
             
+            <label class="form-label">Hygiene Grade</label>
+            <select id="input-hygiene-grade" class="form-input-box">
+                <option value="">Select grade</option>
+                <option value="A">A - Excellent</option>
+                <option value="B">B - Good</option>
+                <option value="C">C - Needs Improvement</option>
+                <option value="D">D - Poor</option>
+            </select>
+
+            <label class="form-label">Result</label>
+            <select id="input-result" class="form-input-box">
+                <option value="Pass">Pass</option>
+                <option value="Fail">Fail</option>
+                <option value="Needs Follow-up">Needs Follow-up</option>
+            </select>
+
             <div id="grade-preview" class="grade-feedback"></div>
 
             <label class="form-label">Strengths (Observed Positives)</label>

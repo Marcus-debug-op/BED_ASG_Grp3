@@ -164,10 +164,149 @@ async function cancelInspection(inspectionId, officerId) {
   }
 }
 
+
+async function completeInspectionResult(inspectionId,officerId,score,hygieneGrade,remarks,resultStatus) {
+  let connection;
+  let transaction;
+
+  try {
+    connection = await sql.connect(dbConfig);
+    transaction = new sql.Transaction(connection);
+
+    await transaction.begin();
+
+    /*
+      Step 1:
+      Update the scheduled inspection with result details.
+      Only the officer who scheduled the inspection can complete it.
+      Only Scheduled inspections can be completed.
+    */
+    const inspectionRequest = new sql.Request(transaction);
+
+    inspectionRequest.input("inspection_id", sql.Int, inspectionId);
+    inspectionRequest.input("officer_id", sql.Int, officerId);
+    inspectionRequest.input("score", sql.Int, score);
+    inspectionRequest.input("hygiene_grade", sql.VarChar(5), hygieneGrade);
+    inspectionRequest.input("remarks", sql.VarChar(500), remarks || null);
+    inspectionRequest.input("result", sql.VarChar(50), resultStatus);
+
+    const inspectionResult = await inspectionRequest.query(`
+      UPDATE Inspections
+      SET score = @score, hygiene_grade = @hygiene_grade, remarks = @remarks, result = @result, inspection_status = 'Completed', completed_at = GETDATE()
+      OUTPUT
+        INSERTED.inspection_id,
+        INSERTED.stall_id,
+        INSERTED.officer_id,
+        INSERTED.inspection_date,
+        INSERTED.inspection_status,
+        INSERTED.score,
+        INSERTED.hygiene_grade,
+        INSERTED.remarks,
+        INSERTED.result,
+        INSERTED.completed_at
+      WHERE inspection_id = @inspection_id
+        AND officer_id = @officer_id
+        AND inspection_status = 'Scheduled';
+    `);
+
+    const completedInspection = inspectionResult.recordset[0];
+
+    if (!completedInspection) {
+      await transaction.rollback();
+      return null;
+    }
+
+    /*
+      Step 2:
+      Update the stall's latest hygiene grade.
+      This keeps the stall record updated after inspection completion.
+    */
+    const stallRequest = new sql.Request(transaction);
+
+    stallRequest.input("stall_id", sql.Int, completedInspection.stall_id);
+    stallRequest.input("hygiene_grade", sql.VarChar(5), hygieneGrade);
+
+    await stallRequest.query(`
+      UPDATE Stalls
+      SET current_hygiene_grade = @hygiene_grade
+      WHERE stall_id = @stall_id;
+    `);
+
+    await transaction.commit();
+
+    return completedInspection;
+  } catch (error) {
+    if (transaction) {
+      try {
+        await transaction.rollback();
+      } catch (rollbackError) {
+        console.error("Rollback error:", rollbackError);
+      }
+    }
+
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) await connection.close();
+  }
+}
+
+
+async function getInspectionRecords(stallId) {
+  let connection;
+
+  try {
+    connection = await sql.connect(dbConfig);
+
+    const request = connection.request();
+
+    let query = `
+      SELECT
+        i.inspection_id,
+        i.stall_id,
+        s.stall_name,
+        h.centre_name,
+        i.officer_id,
+        u.full_name AS officer_name,
+        i.inspection_date,
+        i.inspection_status,
+        i.score,
+        i.hygiene_grade,
+        i.remarks,
+        i.result,
+        i.completed_at
+      FROM Inspections i
+      INNER JOIN Stalls s ON i.stall_id = s.stall_id
+      INNER JOIN HawkerCentres h ON s.hawker_centre_id = h.hawker_centre_id
+      INNER JOIN Users u ON i.officer_id = u.user_id
+      WHERE 1 = 1
+    `;
+
+    if (stallId) {
+      query += ` AND i.stall_id = @stall_id`;
+      request.input("stall_id", sql.Int, stallId);
+    }
+
+    query += ` ORDER BY i.inspection_date DESC;`;
+
+    const result = await request.query(query);
+
+    return result.recordset;
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) await connection.close();
+  }
+}
+
+
 module.exports = {
   stallExists,
   scheduleInspection,
   getUpcomingScheduledInspections,
   rescheduleInspection,
-  cancelInspection
+  cancelInspection,
+  completeInspectionResult,
+  getInspectionRecords,
 };
