@@ -43,7 +43,15 @@ function requireAuth(req, res, next) {
   }
 
   try {
-    req.user = verifyToken(token);
+    const decoded = verifyToken(token);
+
+    if (decoded.mfaPending) {
+      return res.status(401).json({
+        message: "OTP verification required before accessing this resource."
+      });
+    }
+
+    req.user = decoded;
     next();
   } catch (error) {
     return res.status(401).json({
