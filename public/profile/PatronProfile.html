@@ -62,12 +62,26 @@
                         </p>
                         </div>
 
-                    <button
-                        class="edit-profile-btn"
-                        type="button"
-                        onclick="window.location.href='/profile/EditProfile.html'">
+                    <button class="edit-profile-btn" type="button" onclick="window.location.href='/profile/EditProfile.html'">
                         Edit Profile
                     </button>
+
+                    <button id="accountSettingsBtn" class="account-settings-btn" type="button">
+                        Account Settings
+                    </button>
+
+                    <div id="dangerZone" class="danger-zone hidden">
+                        <h4>Danger Zone</h4>
+                        <p>
+                            Deactivating your account will prevent you from logging in again.
+                            Your past records will not be deleted.
+                        </p>
+
+                        <button id="deactivateAccountBtn" class="deactivate-account-btn" type="button">
+                            Deactivate Account
+                        </button>
+                    </div>
+
                     
                     <button class="logout-btn">Logout</button>
                 </div>

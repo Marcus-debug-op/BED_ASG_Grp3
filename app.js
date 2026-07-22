@@ -24,6 +24,7 @@ const menuItemLikeRoute = require("./Routes/menuItemLikeRoute");
 const promotionRoute = require("./Routes/promotionRoute");
 const vendorDashboardRoute = require("./Routes/vendorDashboardRoute");
 const inspectionRoute = require("./Routes/inspectionRoute");
+const accountRoute = require("./Routes/accountRoute");
 const { prototype } = require("module");
 
 const app = express();
@@ -46,13 +47,13 @@ app.use("/api/vendor/menu", menuItemRoute); // Vendor menu item management (CRUD
 app.use("/api/stalls", stallRoute); // // Public stall listing + menu display (BED-61, BED-62)
 app.use("/api/orders", orderRoute); // Order creation + status
 app.use("/api/profile", profileRoute); // Profile page(Patron only for now)
+app.use("/api/account", accountRoute);//  Patron account deactivation only
 app.use("/api", feedbackRoute); // Feedback submit + vendor read (BED-2)
 app.use("/api/complaints", complaintRoute); // Officer-only complaint review and resolution
 app.use("/api/vendor/complaints", vendorComplaintRoute); // Vendor: view + acknowledge complaints against their own stalls
 app.use("/api/vendor/promotions", promotionRoute); // Vendor: manage their own stall's promotion codes
 app.use("/api/vendor/dashboard", vendorDashboardRoute); // Vendor: dashboard summary metrics
 app.use("/api/inspections", inspectionRoute);// Officer: scehdule inspections
-
 app.use("/api/menu-items", menuItemLikeRoute); // Menu item likes (BED-26)
 
 // Test API route

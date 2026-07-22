@@ -375,6 +375,10 @@ function renderScheduledInspections(inspections) {
             Reschedule
           </button>
 
+          <button class="btn-primary" onclick="openCompleteInspectionModal(${inspection.inspection_id}, ${inspection.stall_id}, '${escapeHtml(inspection.stall_name)}')">
+            Complete Inspection
+          </button>
+
           <button class="btn-secondary" onclick="cancelInspection(${inspection.inspection_id})">
             Cancel
           </button>
@@ -515,6 +519,110 @@ function escapeHtml(value) {
     .replaceAll("'", "\\'");
 }
 
+
+function openCompleteInspectionModal(inspectionId, stallId, stallName) {
+  document.getElementById("inspect-schedule-id").value = inspectionId;
+  document.getElementById("inspect-stall-id").value = stallId;
+  document.getElementById("inspect-stall-name").value = stallName;
+  document.getElementById("display-stall-name").textContent = stallName;
+
+  document.getElementById("input-score").value = "";
+  document.getElementById("input-hygiene-grade").value = "";
+  document.getElementById("input-result").value = "Pass";
+  document.getElementById("input-remarks").value = "";
+  document.getElementById("input-strengths").value = "";
+  document.getElementById("grade-preview").textContent = "";
+
+  document.getElementById("modal-inspect").classList.remove("hidden");
+}
+
+function calculateLiveGrade(scoreValue) {
+  const score = Number(scoreValue);
+  const gradePreview = document.getElementById("grade-preview");
+  const gradeSelect = document.getElementById("input-hygiene-grade");
+
+  if (Number.isNaN(score) || score < 0 || score > 100) {
+    gradePreview.textContent = "Enter a score from 0 to 100.";
+    return;
+  }
+
+  let grade;
+
+  if (score >= 85) {
+    grade = "A";
+  } else if (score >= 70) {
+    grade = "B";
+  } else if (score >= 50) {
+    grade = "C";
+  } else {
+    grade = "D";
+  }
+
+  gradeSelect.value = grade;
+  gradePreview.textContent = `Suggested grade: ${grade}`;
+}
+
+async function submitInspection() {
+  const inspectionId = document.getElementById("inspect-schedule-id").value;
+  const score = document.getElementById("input-score").value;
+  const hygieneGrade = document.getElementById("input-hygiene-grade").value;
+  const result = document.getElementById("input-result").value;
+  const strengths = document.getElementById("input-strengths").value.trim();
+  const remarks = document.getElementById("input-remarks").value.trim();
+
+  if (!inspectionId) {
+    alert("No inspection selected.");
+    return;
+  }
+
+  if (!score) {
+    alert("Please enter a hygiene score.");
+    return;
+  }
+
+  if (!hygieneGrade) {
+    alert("Please select a hygiene grade.");
+    return;
+  }
+
+  const finalRemarks = strengths
+    ? `Strengths: ${strengths}\nRemarks: ${remarks}`
+    : remarks;
+
+  try {
+    const response = await fetch(`/api/inspections/${inspectionId}/result`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        score: Number(score),
+        hygiene_grade: hygieneGrade,
+        remarks: finalRemarks,
+        result
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Unable to submit inspection result.");
+      return;
+    }
+
+    alert("Inspection result submitted successfully.");
+
+    closeModal("modal-inspect");
+    loadScheduledInspections();
+  } catch (error) {
+    console.error("Submit inspection error:", error);
+    alert("Unable to connect to server.");
+  }
+}
+
+
+
 /*
   Because this script is type="module", onclick functions must be attached to window.
 */
@@ -528,3 +636,8 @@ window.confirmSchedule = confirmSchedule;
 window.rescheduleInspection = rescheduleInspection;
 window.cancelInspection = cancelInspection;
 window.logoutOfficer = logoutOfficer;
+window.openCompleteInspectionModal = openCompleteInspectionModal;
+window.calculateLiveGrade = calculateLiveGrade;
+window.submitInspection = submitInspection;
+
+

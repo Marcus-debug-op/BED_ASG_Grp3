@@ -1085,6 +1085,36 @@
         }
       }
     },
+    "/api/account/deactivate": {
+      "patch": {
+        "tags": [
+          "Account"
+        ],
+        "description": "Deactivate the logged-in user account without deleting historical records",
+        "responses": {
+          "200": {
+            "description": "Account deactivated successfully"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Account not found or already deactivated"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/feedback": {
       "post": {
         "tags": [
@@ -1745,8 +1775,45 @@
           "400": {
             "description": "Bad Request"
           },
+          "403": {
+            "description": "Forbidden"
+          },
           "404": {
             "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Inspections"
+        ],
+        "description": "NEA officer views inspection records, optionally filtered by stall ID",
+        "parameters": [
+          {
+            "name": "stall_id",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Optional stall ID filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
           },
           "500": {
             "description": "Internal Server Error"
@@ -1851,6 +1918,70 @@
             "in": "path",
             "required": true,
             "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/inspections/{inspectionId}/result": {
+      "patch": {
+        "tags": [
+          "Inspections"
+        ],
+        "description": "NEA officer records inspection result and hygiene grade",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "number",
+                  "example": 85
+                },
+                "hygiene_grade": {
+                  "type": "string",
+                  "example": "A"
+                },
+                "remarks": {
+                  "type": "string",
+                  "example": "Stall is clean and food preparation area is well maintained."
+                },
+                "result": {
+                  "type": "string",
+                  "example": "Pass"
+                }
+              }
+            }
           }
         ],
         "responses": {

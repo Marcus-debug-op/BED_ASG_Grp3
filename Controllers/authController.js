@@ -22,6 +22,12 @@ async function loginWithRole(req, res, requiredRole) {
       });
     }
 
+    if (user.is_active === false || user.is_active === 0) {
+      return res.status(403).json({
+        message: "This account has been deactivated."
+      });
+    }
+
     const passwordMatches = await bcrypt.compare(password, user.password_hash);
     console.log("Password match:", passwordMatches);
 

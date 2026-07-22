@@ -162,6 +162,57 @@ if (logoutBtn) {
   });
 }
 
+const accountSettingsBtn = document.getElementById("accountSettingsBtn");
+const dangerZone = document.getElementById("dangerZone");
+
+if (accountSettingsBtn && dangerZone) {
+  accountSettingsBtn.addEventListener("click", () => {
+    dangerZone.classList.toggle("hidden");
+  });
+}
+
+const deactivateAccountBtn = document.getElementById("deactivateAccountBtn");
+
+if (deactivateAccountBtn) {
+  deactivateAccountBtn.addEventListener("click", async () => {
+    const typedConfirmation = prompt(
+      "To confirm account deactivation, type DEACTIVATE below:"
+    );
+
+    if (typedConfirmation !== "DEACTIVATE") {
+      alert("Account deactivation cancelled.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/account/deactivate", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Unable to deactivate account.");
+        return;
+      }
+
+      alert("Your account has been deactivated successfully.");
+
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("user");
+
+      window.location.href = "/index.html";
+    } catch (error) {
+      console.error("Deactivate account error:", error);
+      alert("Unable to connect to server.");
+    }
+  });
+}
+
 const discountContainer = document.getElementById("discount-container");
 
 if (discountContainer) {

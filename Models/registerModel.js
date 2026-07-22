@@ -6,11 +6,7 @@ async function findUserByEmail(email) {
     try {
         connection = await sql.connect(dbConfig);
 
-        const sqlQuery = `
-    SELECT user_id, full_name, email, password_hash, role, phone_number
-    FROM Users
-    WHERE email = @email
-    `;
+        const sqlQuery = `SELECT user_id, full_name, email, password_hash, role, phone_number, is_active FROM Users WHERE email = @email`;
 
         const request = await connection.request();
         request.input("email",sql.VarChar(100), email);

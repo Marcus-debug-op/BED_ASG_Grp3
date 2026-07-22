@@ -122,9 +122,69 @@ async function cancelInspection(req, res) {
   }
 }
 
+
+async function completeInspectionResult(req, res) {
+  try {
+    const officerId = req.user.sub;
+    const inspectionId = Number(req.params.inspectionId);
+
+    const { score, hygiene_grade, remarks, result } = req.body;
+
+    if (Number.isNaN(inspectionId)) {
+      return res.status(400).json({
+        message: "Invalid inspection ID."
+      });
+    }
+
+    const completedInspection = await inspectionModel.completeInspectionResult(inspectionId,officerId,score,hygiene_grade,remarks,result);
+
+    if (!completedInspection) {
+      return res.status(404).json({
+        message: "Scheduled inspection not found or cannot be completed."
+      });
+    }
+
+    res.status(200).json({
+      message: "Inspection result recorded successfully.",
+      inspection: completedInspection
+    });
+  } catch (error) {
+    console.error("Error completing inspection:", error);
+
+    res.status(500).json({
+      message: "Unable to record inspection result."
+    });
+  }
+}
+
+async function getInspectionRecords(req, res) {
+  try {
+    const stallId = req.query.stall_id ? Number(req.query.stall_id) : null;
+
+    if (req.query.stall_id && Number.isNaN(stallId)) {
+      return res.status(400).json({
+        message: "Invalid stall ID."
+      });
+    }
+
+    const inspections = await inspectionModel.getInspectionRecords(stallId);
+
+    res.status(200).json(inspections);
+  } catch (error) {
+    console.error("Error loading inspection records:", error);
+
+    res.status(500).json({
+      message: "Unable to load inspection records."
+    });
+  }
+}
+
+
 module.exports = {
   scheduleInspection,
   getUpcomingScheduledInspections,
   rescheduleInspection,
-  cancelInspection
+  cancelInspection,
+  completeInspectionResult,
+  getInspectionRecords,
 };
