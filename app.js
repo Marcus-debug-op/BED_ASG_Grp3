@@ -25,6 +25,7 @@ const promotionRoute = require("./Routes/promotionRoute");
 const vendorDashboardRoute = require("./Routes/vendorDashboardRoute");
 const inspectionRoute = require("./Routes/inspectionRoute");
 const accountRoute = require("./Routes/accountRoute");
+const operatorDashboardRoute = require("./Routes/operatorDashboardRoute");
 const { prototype } = require("module");
 
 const app = express();
@@ -55,6 +56,7 @@ app.use("/api/vendor/promotions", promotionRoute); // Vendor: manage their own s
 app.use("/api/vendor/dashboard", vendorDashboardRoute); // Vendor: dashboard summary metrics
 app.use("/api/inspections", inspectionRoute);// Officer: scehdule inspections
 app.use("/api/menu-items", menuItemLikeRoute); // Menu item likes (BED-26)
+app.use("/api/operator/dashboard", operatorDashboardRoute);
 
 // Test API route
 app.get("/api/test", (req, res) => {

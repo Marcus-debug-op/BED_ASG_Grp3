@@ -4,7 +4,7 @@ const dbConfig = require("../dbConfig");
 async function findUserByEmail(email) {
     let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        connection = await new sql.ConnectionPool(dbConfig).connect();
 
         const sqlQuery = `SELECT user_id, full_name, email, password_hash, role, phone_number, is_active FROM Users WHERE email = @email`;
 
@@ -40,7 +40,7 @@ async function findUserByEmail(email) {
 async function createPatron(userData) {
     let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        connection = await new sql.ConnectionPool(dbConfig).connect();
 
         const sqlQuery =  `
         INSERT INTO Users (full_name, email, password_hash, role, phone_number)
@@ -94,7 +94,7 @@ async function createVendor(userData) {
     let transaction;
 
      try {
-    connection = await sql.connect(dbConfig);
+    connection = await new sql.ConnectionPool(dbConfig).connect();
 
      // Create a transaction using the current database connection.
     transaction = new sql.Transaction(connection)

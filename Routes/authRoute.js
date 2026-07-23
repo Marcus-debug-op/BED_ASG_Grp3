@@ -2,7 +2,9 @@ const express = require("express");
 const passport = require("passport");
 
 const authController = require("../Controllers/authController");
+const passwordResetController = require("../Controllers/passwordResetController");
 const validateLogin = require("../Middlewares/loginValidation");
+const { validateForgotPassword, validateResetPassword } = require("../Middlewares/passwordResetValidation");
 const { requireAuth, blockGuests } = require("../Middlewares/authMiddleware");
 
 const router = express.Router();
@@ -132,6 +134,51 @@ router.post("/verify-otp", authController.verifyOtp
 // Google OAuth 2.0 sign-in/sign-up for patrons (BED-144), via Passport's Google strategy.
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"], session: false }));
 router.get("/google/callback", authController.googleAuthCallback);
+
+// Password reset (BED-142) - works for any role (patron/vendor/officer/operator).
+router.post("/forgot-password", validateForgotPassword, passwordResetController.forgotPassword
+  /*
+    #swagger.tags = ['Auth']
+    #swagger.description = 'Request a password reset email. Always returns a generic success message, whether or not the email exists, to prevent account enumeration.'
+    #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+        email: 'marcusisapatron@gmail.com'
+      }
+    }
+    #swagger.responses[200] = {
+      description: 'Generic success message'
+    }
+    #swagger.responses[400] = {
+      description: 'Validation failed'
+    }
+  */
+);
+
+router.patch("/reset-password", validateResetPassword, passwordResetController.resetPassword
+  /*
+    #swagger.tags = ['Auth']
+    #swagger.description = 'Reset a password using the token emailed by /forgot-password.'
+    #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+        token: 'the-token-from-the-email-link',
+        newPassword: 'NewPassword123!'
+      }
+    }
+    #swagger.responses[200] = {
+      description: 'Password reset successfully'
+    }
+    #swagger.responses[400] = {
+      description: 'Validation failed'
+    }
+    #swagger.responses[401] = {
+      description: 'Invalid or expired token'
+    }
+  */
+);
 
 // Guest session - no credentials required.
 router.post("/guest", authController.createGuestSession);

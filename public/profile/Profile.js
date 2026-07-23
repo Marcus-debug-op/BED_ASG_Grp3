@@ -1,4 +1,13 @@
 const token = localStorage.getItem("token");
+const role = localStorage.getItem("role");
+
+const operatorDashboardLink = document.getElementById("operatorDashboardLink");
+
+if (operatorDashboardLink && role === "operator") {
+  operatorDashboardLink.hidden = false;
+}
+
+const token = localStorage.getItem("token");
 
 if (!token) {
   window.location.href = "/auth/signup.html";

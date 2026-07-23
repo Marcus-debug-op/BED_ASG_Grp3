@@ -298,6 +298,30 @@
       background: rgba(255,255,255,0.55);
     }
 
+    /* Forgot / Reset Password pages */
+    .forgot-msg {
+      margin: 10px 2px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+      min-height: 18px;
+    }
+
+    .forgot-msg.is-error {
+      color: var(--accent-red);
+    }
+
+    .back-to-signin {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+    }
+
+    .back-to-signin:hover {
+      text-decoration: underline;
+    }
+
     .divider {
       width: 100%;
       display: flex;
