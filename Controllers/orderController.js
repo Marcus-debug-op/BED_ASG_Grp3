@@ -1,29 +1,86 @@
 const orderModel = require("../Models/orderModel");
 
-// POST /api/orders -> create the order (validation handled by validateOrder middleware).
 async function createOrder(req, res) {
   try {
-    // Identify the patron from their token and read the validated order body.(damien)
+    // The patron's id comes from their login token (set by the auth middleware),
+    // NOT from the request body - so an order is always tied to the real user.
     const patronId = req.user.sub;
-    const { stall_id, items, promo_code } = req.body;
 
-    // Create the order; the model flags an invalid/unavailable item.
-    const result = await orderModel.createOrder(patronId, stall_id, items, promo_code);
+    // Read the checkout details out of the request body,
+    // alongside the existing stall_id / items / promo_code.
+    const {
+      stall_id, items, promo_code,
+      checkout_id, collection_method, delivery_address,
+      postal_code, delivery_charge, payment_method
+    } = req.body;
+
+    // Bundle the checkout details into one object to hand to the model.
+    // Keeping them together keeps the createOrder() call tidy.
+    const checkoutDetails = {
+      checkout_id, collection_method, delivery_address,
+      postal_code, delivery_charge, payment_method
+    };
+
+    // Ask the model to create the order. The model returns either the created
+    // order, or an { error } object describing what went wrong.
+    const result = await orderModel.createOrder(
+      patronId, stall_id, items, promo_code, checkoutDetails
+    );
+
+    // The model flags an item that doesn't exist / isn't available for the stall.
     if (result.error === "INVALID_ITEM") {
       return res.status(400).json({ message: `Invalid or unavailable menu item: ${result.menuItemId}` });
     }
-    // Added for promotion application/redemption (damien) - specific,
-    // user-facing reasons a promo code was rejected.
+
+    // The model flags a promo code that failed validation (damien's feature).
     if (result.error === "PROMO_INVALID") {
       return res.status(400).json({ message: result.message, reason: result.reason });
     }
 
-    // Success: 201 Created with the new order.
+    // Success: 201 Created, with the new order in the response body.
     res.status(201).json(result);
 
   } catch (error) {
     console.error("Error creating order:", error);
     res.status(500).json({ message: "Unable to create order." });
+  }
+}
+
+// ============================================================================
+// getOrdersByCheckout
+// ----------------------------------------------------------------------------
+// Handles GET /api/orders/checkout/:checkoutId
+// Returns all of the patron's orders that share the given checkout id, so the
+// frontend can render them as one combined receipt.
+// ============================================================================
+async function getOrdersByCheckout(req, res) {
+  try {
+    // Ownership: the patron id comes from the token, so a patron can only ever
+    // fetch their OWN checkout group.
+    const patronId = req.user.sub;
+
+    // The checkout id comes from the URL, e.g. /api/orders/checkout/HH-123-456
+    const checkoutId = req.params.checkoutId;
+
+    // Guard: a checkout id must actually be provided.
+    if (!checkoutId) {
+      return res.status(400).json({ message: "Missing checkout id." });
+    }
+
+    // Ask the model for every order under this checkout id (for this patron).
+    const result = await orderModel.getOrdersByCheckoutId(checkoutId, patronId);
+
+    // Nothing found -> 404 (either the id is wrong, or it isn't this patron's).
+    if (!result.orders || result.orders.length === 0) {
+      return res.status(404).json({ message: "No orders found for this checkout." });
+    }
+
+    // Success: 200 OK with the grouped orders.
+    res.status(200).json(result);
+
+  } catch (error) {
+    console.error("Error fetching checkout group:", error);
+    res.status(500).json({ message: "Unable to fetch checkout orders." });
   }
 }
 
@@ -259,5 +316,6 @@ module.exports = {
   getOrderHistory,
   getVendorOrders,
   getVendorOrderDetails,
-  updateVendorOrderStatus
+  updateVendorOrderStatus,
+  getOrdersByCheckout
 };

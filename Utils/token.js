@@ -5,6 +5,22 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "2h";
 const GUEST_JWT_EXPIRES_IN = process.env.GUEST_JWT_EXPIRES_IN || "6h";
 
+// Generates a short-lived "pending" token issued right after password
+// verification, before the OTP step is completed. Cannot be used on any
+// protected route (authMiddleware rejects mfaPending tokens) - it only
+// proves "this user just entered the correct password" for the 5 minutes
+// they have to enter the OTP.
+function generatePendingToken(user) {
+  const payload = {
+    sub: user.user_id,
+    email: user.email,
+    role: user.role,
+    mfaPending: true
+  };
+
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "5m" });
+}
+
 // Generates a token for a logged-in, registered user (patron / vendor / officer / operator)
 function generateUserToken(user) {
   const payload = {
@@ -36,6 +52,7 @@ function verifyToken(token) {
 
 module.exports = {
   generateUserToken,
+  generatePendingToken,
   generateGuestToken,
   verifyToken
 };

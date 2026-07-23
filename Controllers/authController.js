@@ -1,12 +1,17 @@
 const bcrypt = require("bcrypt");
 const passport = require("passport");
 const registerModel = require("../Models/registerModel");
-const { generateUserToken, generateGuestToken } = require("../Utils/token");
+const otpStore = require("../Utils/otpStore");
+const { generateUserToken, generatePendingToken, generateGuestToken, verifyToken } = require("../Utils/token");
 
 const FRONTEND_APP_URL = process.env.FRONTEND_APP_URL || "index.html";
 const FRONTEND_LOGIN_URL = process.env.FRONTEND_LOGIN_URL || "/auth/SigninPatron.html";
 
-// Shared login logic for a specific required role ("patron" | "vendor").
+// Roles that must pass an OTP step after their password is verified,
+// before a real (usable) token is issued.
+const MFA_ROLES = ["officer", "operator"];
+
+// Shared login logic for a specific required role ("patron" | "vendor" | "officer" | "operator").
 async function loginWithRole(req, res, requiredRole) {
   try {
     const { email, password } = req.body;
@@ -43,6 +48,31 @@ async function loginWithRole(req, res, requiredRole) {
       });
     }
 
+    // Officer/operator accounts require OTP verification before a usable
+    // token is issued - password alone only proves step 1 of login.
+    if (MFA_ROLES.includes(user.role)) {
+      const otp = otpStore.saveOtp(user.user_id);
+      const pendingToken = generatePendingToken(user);
+
+      // TODO (production): send `otp` to user.email via a real mailer
+      // instead of/in addition to this.
+      console.log(`[DEV] OTP for ${user.email} (${user.role}): ${otp}`);
+
+      const response = {
+        message: "Password verified. Enter the OTP sent to your email to finish signing in.",
+        mfaRequired: true,
+        pendingToken
+      };
+
+      // Dev-only convenience so this can be demoed without a real mailbox.
+      // Never do this in production - it defeats the purpose of the OTP.
+      if (process.env.NODE_ENV !== "production") {
+        response.devOtp = otp;
+      }
+
+      return res.status(200).json(response);
+    }
+
     const token = generateUserToken(user);
 
     res.status(200).json({
@@ -60,6 +90,63 @@ async function loginWithRole(req, res, requiredRole) {
     res.status(500).json({
       message: "Unable to process login."
     });
+  }
+}
+
+// POST /api/auth/verify-otp - second step of login for officer/operator.
+// Takes the pendingToken issued by loginWithRole plus the OTP the user entered.
+async function verifyOtp(req, res) {
+  try {
+    const { pendingToken, otp } = req.body;
+
+    if (!pendingToken || !otp) {
+      return res.status(400).json({ message: "pendingToken and otp are required." });
+    }
+
+    let decoded;
+    try {
+      decoded = verifyToken(pendingToken);
+    } catch (error) {
+      return res.status(401).json({ message: "Login session expired. Please log in again." });
+    }
+
+    if (!decoded.mfaPending) {
+      return res.status(400).json({ message: "Invalid login session." });
+    }
+
+    const result = otpStore.verifyOtp(decoded.sub, otp);
+
+    if (result.outcome === "expired") {
+      return res.status(401).json({ message: "OTP has expired. Please log in again." });
+    }
+    if (result.outcome === "not_found") {
+      return res.status(401).json({ message: "No OTP pending for this session. Please log in again." });
+    }
+    if (result.outcome === "incorrect") {
+      return res.status(401).json({ message: "Incorrect OTP." });
+    }
+
+    // OTP verified - now issue the real, usable token.
+    const user = await registerModel.findUserAuthByEmail(decoded.email);
+    if (!user) {
+      return res.status(401).json({ message: "Account no longer exists." });
+    }
+
+    const token = generateUserToken(user);
+
+    res.status(200).json({
+      message: "Login successful.",
+      token,
+      user: {
+        user_id: user.user_id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    console.error("Error verifying OTP:", err);
+    res.status(500).json({ message: "Unable to verify OTP." });
   }
 }
 
@@ -135,6 +222,7 @@ module.exports = {
   loginVendor,
   loginOfficer,
   loginOperator,
+  verifyOtp,
   createGuestSession,
   getCurrentSession,
   googleAuthCallback
