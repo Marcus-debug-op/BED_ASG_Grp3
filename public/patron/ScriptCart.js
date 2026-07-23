@@ -1,5 +1,9 @@
-
-const CART_KEY = "hawkerhub_cart";
+// The cart key includes the logged-in user's id, so two accounts using the
+// same browser never share a cart. Guests fall back to a shared guest key.
+function getCartKey() {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  return user.user_id ? `hawkerhub_cart_${user.user_id}` : "hawkerhub_cart_guest";
+}
 const ECO_KEY = "hawkerhub_eco_packaging";
 const ECO_FEE = 0.20;
 
@@ -59,7 +63,7 @@ function normalizeItem(item) {
 
 function readCart() {
   try {
-    const raw = localStorage.getItem(CART_KEY);
+    const raw = localStorage.getItem(getCartKey());
     const data = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(data)) return [];
     return data.map(normalizeItem);
@@ -70,7 +74,7 @@ function readCart() {
 
 function saveCart(cart) {
   const normalized = (cart || []).map(normalizeItem);
-  localStorage.setItem(CART_KEY, JSON.stringify(normalized));
+  localStorage.setItem(getCartKey(), JSON.stringify(normalized));
   window.dispatchEvent(new Event("cart-updated"));
 }
 

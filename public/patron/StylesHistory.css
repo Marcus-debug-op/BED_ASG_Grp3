@@ -305,3 +305,17 @@
     width: 92vw;
   }
 }
+
+/* Combined receipt styling */
+.combined-receipt { 
+  border-left: 3px solid #f57c1f; 
+}
+.combined-stall-block { 
+  border-top: 1px solid #eee; 
+  padding: 8px 0; 
+  margin-top: 6px; 
+}
+.combined-stall-block:first-of-type { 
+  border-top: none; 
+  margin-top: 0; 
+}

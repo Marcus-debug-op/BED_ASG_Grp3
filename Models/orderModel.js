@@ -3,9 +3,10 @@ const dbConfig = require("../dbConfig");
 // Added for promotion application/redemption (damien).
 const promotionModel = require("./promotionModel");
 
-// Creates an order and its line items as a single transaction (all-or-nothing).
-// promoCode is optional - added for promotion application/redemption (damien).
-async function createOrder(patronId, stallId, items, promoCode) {
+// Added checkoutDetails so each order can also save the checkout
+// info (collection method, delivery address, payment method, etc).
+// It defaults to {} so any existing caller that doesn't pass it still works.
+async function createOrder(patronId, stallId, items, promoCode, checkoutDetails = {}) {
   let connection;
   let transaction;
 
@@ -25,7 +26,7 @@ async function createOrder(patronId, stallId, items, promoCode) {
       priceRequest.input("stall_id", sql.Int, stallId);
 
       const priceResult = await priceRequest.query(`
-        SELECT price
+        SELECT price, item_name
         FROM MenuItems
         WHERE menu_item_id = @menu_item_id
           AND stall_id = @stall_id
@@ -39,11 +40,14 @@ async function createOrder(patronId, stallId, items, promoCode) {
       }
 
       const unitPrice = priceResult.recordset[0].price;
+      // Snapshot the dish name as it is right now, so the receipt stays accurate.
+      const itemName = priceResult.recordset[0].item_name;
       const subtotal = unitPrice * item.quantity;
       totalAmount += subtotal;
 
       pricedItems.push({
         menu_item_id: item.menu_item_id,
+        item_name: itemName,          // snapshot for the receipt
         quantity: item.quantity,
         unit_price: unitPrice,
         subtotal: subtotal
@@ -77,18 +81,49 @@ async function createOrder(patronId, stallId, items, promoCode) {
       appliedDiscountAmount = promoResult.discountAmount;
     }
 
-    // Insert the master Orders row and get back its new order_id
-    // (order_status defaults to 'Pending' in the table).
+    // ---------------------------------------------------------------
+    // Unpack the checkout details that the controller passed in.
+    // We give each one a default of null so that if a field wasn't sent
+    // (e.g. a Pickup order has no address), it's stored as NULL.
+    // ---------------------------------------------------------------
+    const {
+      checkout_id = null,
+      collection_method = null,
+      delivery_address = null,
+      postal_code = null,
+      delivery_charge = null,
+      payment_method = null
+    } = checkoutDetails;
+
+    // Build the INSERT for the master Orders row.
+    // .input(name, type, value) safely binds each value (prevents SQL injection).
     const orderRequest = new sql.Request(transaction);
     orderRequest.input("patron_id", sql.Int, patronId);
     orderRequest.input("stall_id", sql.Int, stallId);
     orderRequest.input("total_amount", sql.Decimal(10, 2), finalAmount);
     orderRequest.input("promotion_id", sql.Int, appliedPromotionId);
 
+    // BED-231: bind the six new checkout-detail columns.
+    orderRequest.input("checkout_id", sql.VarChar(30), checkout_id);
+    orderRequest.input("collection_method", sql.VarChar(20), collection_method);
+    orderRequest.input("delivery_address", sql.VarChar(255), delivery_address);
+    orderRequest.input("postal_code", sql.VarChar(6), postal_code);
+    orderRequest.input("delivery_charge", sql.Decimal(10, 2), delivery_charge);
+    orderRequest.input("payment_method", sql.VarChar(20), payment_method);
+
+    // Insert the order and immediately OUTPUT the new row's key fields.
+    // (order_status defaults to 'Pending' in the table definition.)
     const orderResult = await orderRequest.query(`
-      INSERT INTO Orders (patron_id, stall_id, total_amount, promotion_id)
-      OUTPUT INSERTED.order_id, INSERTED.order_status, INSERTED.total_amount, INSERTED.order_date
-      VALUES (@patron_id, @stall_id, @total_amount, @promotion_id);
+      INSERT INTO Orders
+        (patron_id, stall_id, total_amount, promotion_id,
+         checkout_id, collection_method, delivery_address, postal_code,
+         delivery_charge, payment_method)
+      OUTPUT INSERTED.order_id, INSERTED.order_status,
+             INSERTED.total_amount, INSERTED.order_date
+      VALUES
+        (@patron_id, @stall_id, @total_amount, @promotion_id,
+         @checkout_id, @collection_method, @delivery_address, @postal_code,
+         @delivery_charge, @payment_method);
     `);
 
     const newOrder = orderResult.recordset[0];
@@ -102,10 +137,11 @@ async function createOrder(patronId, stallId, items, promoCode) {
       lineRequest.input("quantity", sql.Int, line.quantity);
       lineRequest.input("unit_price", sql.Decimal(10, 2), line.unit_price);
       lineRequest.input("subtotal", sql.Decimal(10, 2), line.subtotal);
+      lineRequest.input("item_name", sql.VarChar(100), line.item_name);
 
       await lineRequest.query(`
-        INSERT INTO OrderItems (order_id, menu_item_id, quantity, unit_price, subtotal)
-        VALUES (@order_id, @menu_item_id, @quantity, @unit_price, @subtotal);
+        INSERT INTO OrderItems (order_id, menu_item_id, quantity, unit_price, subtotal, item_name)
+        VALUES (@order_id, @menu_item_id, @quantity, @unit_price, @subtotal, @item_name);
       `);
     }
 
@@ -222,7 +258,7 @@ async function getOrderHistory(patronId) {
     // ORDER BY newest first. If they have none, recordset is just an empty array.
     const result = await request.query(`
       SELECT o.order_id, o.stall_id, s.stall_name, o.order_status,
-             o.total_amount, o.order_date
+             o.total_amount, o.order_date, o.checkout_id
       FROM Orders o
       JOIN Stalls s ON o.stall_id = s.stall_id
       WHERE o.patron_id = @patron_id
@@ -428,6 +464,70 @@ async function getOrderDetails(orderId) {
   }
 } 
 
+// ============================================================================
+// getOrdersByCheckoutId
+// ----------------------------------------------------------------------------
+// Returns EVERY order that shares one checkout_id, each with its line items.
+// This is what powers the "combined receipt" - because one checkout can create
+// several orders (one per stall), we fetch them all by their shared checkout_id.
+//
+// Security: we also filter by patron_id (taken from the token in the
+// controller), so a patron can only ever load their OWN checkout groups.
+// ============================================================================
+async function getOrdersByCheckoutId(checkoutId, patronId) {
+  let connection;
+  try {
+    connection = await sql.connect(dbConfig);
+
+    // Step 1: get all orders in this checkout that belong to this patron.
+    const orderReq = connection.request();
+    orderReq.input("checkout_id", sql.VarChar(30), checkoutId);
+    orderReq.input("patron_id", sql.Int, patronId);
+
+    const orderResult = await orderReq.query(`
+      SELECT o.order_id, o.stall_id, s.stall_name, o.order_status,
+             o.total_amount, o.order_date, o.checkout_id,
+             o.collection_method, o.delivery_address, o.postal_code,
+             o.delivery_charge, o.payment_method
+      FROM Orders o
+      JOIN Stalls s ON o.stall_id = s.stall_id
+      WHERE o.checkout_id = @checkout_id
+        AND o.patron_id = @patron_id
+      ORDER BY o.order_id;
+    `);
+
+    const orders = orderResult.recordset;
+
+    // No matching orders -> return empty so the controller can send a 404.
+    if (orders.length === 0) return { orders: [] };
+
+    // Step 2: for each order, fetch its line items (with dish names via a JOIN).
+    for (const order of orders) {
+      const itemReq = connection.request();
+      itemReq.input("order_id", sql.Int, order.order_id);
+
+      const itemResult = await itemReq.query(`
+        SELECT oi.menu_item_id, m.item_name, oi.quantity,
+               oi.unit_price, oi.subtotal
+        FROM OrderItems oi
+        JOIN MenuItems m ON oi.menu_item_id = m.menu_item_id
+        WHERE oi.order_id = @order_id
+        ORDER BY oi.order_item_id;
+      `);
+
+      // Attach the items array onto the order object.
+      order.items = itemResult.recordset;
+    }
+
+    return { orders };
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) await connection.close();   // always release the connection
+  }
+}
+
 // Helped update functions
 module.exports = {
   getOrderDetails,
@@ -437,5 +537,6 @@ module.exports = {
   getOrderHistory,
   getOrdersForVendor,
   getOrderDetailsForVendor,
-  updateOrderStatusForVendor
+  updateOrderStatusForVendor,
+  getOrdersByCheckoutId
 };

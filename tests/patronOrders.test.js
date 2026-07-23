@@ -168,5 +168,26 @@ describe("Patron Order API Tests", () => {
       .set("Authorization", `Bearer ${patronToken}`);
 
     expect(res.statusCode).toBe(404);
+
+  // ==========================================================================
+  // The checkout-group endpoint (combined receipt data).
+  // ==========================================================================
+
+  // A checkout id that doesn't exist should return 404, not crash.
+  test("GET /api/orders/checkout/:checkoutId returns 404 for an unknown checkout", async () => {
+    const res = await request(app)
+      .get("/api/orders/checkout/HH-does-not-exist-000")
+      .set("Authorization", `Bearer ${patronToken}`);
+
+    expect(res.statusCode).toBe(404);
+  });
+
+  // The endpoint is patron-only, so no token must be blocked with 401.
+  test("GET /api/orders/checkout/:checkoutId is blocked without a token", async () => {
+    const res = await request(app)
+      .get("/api/orders/checkout/HH-anything-000");
+
+    expect(res.statusCode).toBe(401);
+  });
   });
 });

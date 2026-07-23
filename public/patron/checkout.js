@@ -1,5 +1,11 @@
+// The cart key includes the logged-in user's id, so two accounts using the
+// same browser never share a cart. Guests fall back to a shared guest key.
+function getCartKey() {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  return user.user_id ? `hawkerhub_cart_${user.user_id}` : "hawkerhub_cart_guest";
+}
+
 // Storage keys
-const CART_KEY = "hawkerhub_cart";
 const ECO_KEY = "hawkerhub_eco_packaging";
 const COUPON_KEY = "hawkerhub_coupon";
 const CARD_DETAILS_KEY = "hawkerhub_card_details";
@@ -7,10 +13,29 @@ const ECO_FEE = 0.20;
 
 const LAST_ORDER_NO_KEY = "hawkerhub_last_order_no";
 
+// ============================================================================
+// delivery fee calculation
+// ----------------------------------------------------------------------------
+// Rule: flat $3.00 for carts up to $10, then $0.30 for every additional FULL
+// dollar above $10. "Full dollar" means cents are ignored (Math.floor).
+// Example: $25 subtotal -> 3 + 0.30 * floor(25 - 10) = 3 + 4.50 = $7.50.
+// ============================================================================
+function calcDeliveryFee(subtotal, isDelivery) {
+  if (!isDelivery) return 0;                       // Pickup has no delivery fee
+  if (subtotal <= 10) return 3.00;                 // flat base fee up to $10
+  const extraDollars = Math.floor(subtotal - 10);  // whole dollars above $10
+  return 3.00 + (extraDollars * 0.30);             // base + 30c per extra dollar
+}
+
+// BED-231: small helper - is the patron currently on Delivery?
+function isDeliverySelected() {
+  return collectionMethod?.value === "Delivery";
+}
+
 // Helpers
 function readCart() {
   try {
-    return JSON.parse(localStorage.getItem(CART_KEY)) || [];
+    return JSON.parse(localStorage.getItem(getCartKey())) || [];
   } catch {
     return [];
   }
@@ -239,7 +264,7 @@ function validatePostalLive() {
 deliveryAddress?.addEventListener("input", validateAddressLive);
 postalCode?.addEventListener("input", validatePostalLive);
 
-function applyDeliveryUI() {
+function applyDeliveryUI(recalc = false) {
   const isDelivery = collectionMethod?.value === "Delivery";
   if (deliveryAddressField) deliveryAddressField.style.display = isDelivery ? "block" : "none";
   if (postalCodeField) postalCodeField.style.display = isDelivery ? "block" : "none";
@@ -248,10 +273,14 @@ function applyDeliveryUI() {
     if (deliveryAddress) clearFieldState(deliveryAddress, addressMsg);
     if (postalCode) clearFieldState(postalCode, postalMsg);
   }
+   // BED-231: recalc only when triggered by a real change event. On the initial
+  // setup call it's skipped, because the promo state it reads isn't declared yet.
+  if (recalc) updateCheckoutSummary();
 }
 
-collectionMethod?.addEventListener("change", applyDeliveryUI);
-applyDeliveryUI();
+
+collectionMethod?.addEventListener("change", () => applyDeliveryUI(true));
+applyDeliveryUI(false);
 
 // Form Validation
 function validateCheckoutForm() {
@@ -668,7 +697,10 @@ function updateCheckoutSummary() {
   const discountValid = appliedPromo && appliedPromo.code === currentCode && appliedPromo.subtotal === subtotal;
   const discountAmount = discountValid ? appliedPromo.discountAmount : 0;
 
-  const total = Math.max(0, subtotal + ecoFee - discountAmount);
+  // Work out the delivery fee (0 unless Delivery is selected) and
+  // add it into the total, alongside the eco fee and any promo discount.
+  const deliveryFee = calcDeliveryFee(subtotal, isDeliverySelected());
+  const total = Math.max(0, subtotal + ecoFee + deliveryFee - discountAmount);
 
   document.getElementById("checkoutSubtotal").textContent = formatMoney(subtotal);
   document.getElementById("checkoutTotal").textContent = formatMoney(total);
@@ -679,6 +711,20 @@ function updateCheckoutSummary() {
     document.getElementById("checkoutEcoFee").textContent = `+${formatMoney(ecoFee)}`;
   }
 
+  // Show the delivery fee row when there's a fee, hide it otherwise.
+  // This row sits below eco packaging and above the promo box in the HTML.
+  const deliveryRow = document.getElementById("checkoutDeliveryRow");
+  if (deliveryRow) {
+    deliveryRow.style.display = deliveryFee > 0 ? "flex" : "none";
+    document.getElementById("checkoutDeliveryFee").textContent = `+${formatMoney(deliveryFee)}`;
+  }
+
+  // Show the fee explanation note only when there's a delivery fee.
+  const deliveryFeeNote = document.getElementById("deliveryFeeNote");
+  if (deliveryFeeNote) {
+    deliveryFeeNote.style.display = deliveryFee > 0 ? "block" : "none";
+  }
+
   const discRow = document.getElementById("discountRow");
   if (discRow) {
     discRow.style.display = discountValid ? "flex" : "none";
@@ -687,7 +733,8 @@ function updateCheckoutSummary() {
     }
   }
 
-  return { cart, subtotal, ecoFee, promoCode: currentCode, discountAmount, total };
+  // BED-231: include deliveryFee so the submit handler can read it back.
+  return { cart, subtotal, ecoFee, deliveryFee, discountAmount, promoCode: currentCode, total };
 }
 
 updateCheckoutSummary();
@@ -743,21 +790,62 @@ submitBtn?.addEventListener("click", async () => {
     let promoApplied = false;
     let promoMessageToShow = null;
 
+    // ========================================================================
+    // One checkout id for the WHOLE checkout.
+    // Generated once here, then stamped onto every stall order below, so all
+    // the orders from this checkout can be grouped into one receipt later.
+    // Format: HH- + current timestamp + a small random number for uniqueness.
+    // ========================================================================
+    const checkoutId = `HH-${Date.now()}-${Math.floor(Math.random() * 900 + 100)}`;
+
+    // Read the checkout details once - they're the same for every
+    // stall order in this checkout (except the fee, handled below).
+    const collectionMethodVal = isDeliverySelected() ? "Delivery" : "Pickup";
+    const paymentMethodVal = document.querySelector('input[name="pay"]:checked')?.value || "cash";
+    const deliveryAddressVal = isDeliverySelected() ? (deliveryAddress?.value.trim() || null) : null;
+    const postalCodeVal = isDeliverySelected() ? (postalCode?.value.trim() || null) : null;
+
+    // The delivery fee is for the WHOLE cart, so we only attach it to
+    // the FIRST order. Otherwise a 2-stall checkout would be charged twice.
+    const fullDeliveryFee = calcDeliveryFee(info.subtotal, isDeliverySelected());
+    let deliveryFeeAssigned = false;   // becomes true once one order takes the fee
+
     // Create ONE order per stall by POSTing each group to the order API.
     // Each POST is single-stall, so it passes the backend's stall validation.
     const createdOrders = [];
     for (const stallId in itemsByStall) {
-      const buildPayload = (withPromo) => ({
-        stall_id: Number(stallId),
-        items: itemsByStall[stallId].map(i => ({
-          menu_item_id: Number(i.id),            // cart item id = SQL menu_item_id
-          quantity: i.qty
-        })),
-        ...(withPromo && promoCode ? { promo_code: promoCode } : {})
-      });
+      // BED-231: build the POST body for one stall's order.
+      const buildPayload = (withPromo) => {
+        // Put the full delivery fee on the first order only; the rest get 0
+        // (for delivery) or null (for pickup, since there's no delivery at all).
+        const thisDeliveryCharge = (!deliveryFeeAssigned && fullDeliveryFee > 0)
+          ? fullDeliveryFee
+          : (isDeliverySelected() ? 0 : null);
 
-      const postOrder = (withPromo) =>
-        fetch("/api/orders", {
+        return {
+          // ----- existing fields -----
+          stall_id: Number(stallId),
+          items: itemsByStall[stallId].map(i => ({
+            menu_item_id: Number(i.id),
+            quantity: i.qty
+          })),
+          ...(withPromo && promoCode ? { promo_code: promoCode } : {}),
+
+          // ----- BED-231: checkout details (same across stalls, except fee) -----
+          checkout_id: checkoutId,
+          collection_method: collectionMethodVal,
+          payment_method: paymentMethodVal,
+          delivery_address: deliveryAddressVal,
+          postal_code: postalCodeVal,
+          delivery_charge: thisDeliveryCharge
+        };
+      };
+
+      // Send one stall's order to the API.
+      // withPromo decides whether to include the promo code in the body.
+      // Returns the raw fetch response so the caller can check response.ok.
+      const postOrder = (withPromo) => {
+        return fetch("/api/orders", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -765,6 +853,7 @@ submitBtn?.addEventListener("click", async () => {
           },
           body: JSON.stringify(buildPayload(withPromo))
         });
+      };
 
       // First attempt: include the promo code if the patron entered one and
       // it hasn't already been successfully applied to an earlier stall order.
@@ -793,6 +882,10 @@ submitBtn?.addEventListener("click", async () => {
       const created = await response.json();
       createdOrders.push(created);
 
+      // Once one order has taken the delivery fee, mark it assigned so
+      // the remaining stall orders in this checkout are charged 0.
+      if (!deliveryFeeAssigned && fullDeliveryFee > 0) deliveryFeeAssigned = true;
+
       if (attemptWithPromo && created.promotion) {
         promoApplied = true;
         promoMessageToShow = `Promo applied: -${formatMoney(created.promotion.discount_amount)}`;
@@ -811,7 +904,7 @@ submitBtn?.addEventListener("click", async () => {
     localStorage.setItem(LAST_ORDER_NO_KEY, String(lastOrder.order.order_id));
 
     // All stall orders saved -> clear the local cart, eco toggle and card details.
-    localStorage.removeItem(CART_KEY);
+    localStorage.removeItem(getCartKey());
     localStorage.removeItem(ECO_KEY);
     localStorage.removeItem(COUPON_KEY);
     localStorage.removeItem(CARD_DETAILS_KEY);
