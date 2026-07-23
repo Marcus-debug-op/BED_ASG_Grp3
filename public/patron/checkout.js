@@ -1,5 +1,11 @@
+// The cart key includes the logged-in user's id, so two accounts using the
+// same browser never share a cart. Guests fall back to a shared guest key.
+function getCartKey() {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  return user.user_id ? `hawkerhub_cart_${user.user_id}` : "hawkerhub_cart_guest";
+}
+
 // Storage keys
-const CART_KEY = "hawkerhub_cart";
 const ECO_KEY = "hawkerhub_eco_packaging";
 const COUPON_KEY = "hawkerhub_coupon";
 const CARD_DETAILS_KEY = "hawkerhub_card_details";
@@ -29,7 +35,7 @@ function isDeliverySelected() {
 // Helpers
 function readCart() {
   try {
-    return JSON.parse(localStorage.getItem(CART_KEY)) || [];
+    return JSON.parse(localStorage.getItem(getCartKey())) || [];
   } catch {
     return [];
   }
@@ -898,7 +904,7 @@ submitBtn?.addEventListener("click", async () => {
     localStorage.setItem(LAST_ORDER_NO_KEY, String(lastOrder.order.order_id));
 
     // All stall orders saved -> clear the local cart, eco toggle and card details.
-    localStorage.removeItem(CART_KEY);
+    localStorage.removeItem(getCartKey());
     localStorage.removeItem(ECO_KEY);
     localStorage.removeItem(COUPON_KEY);
     localStorage.removeItem(CARD_DETAILS_KEY);
