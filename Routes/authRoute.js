@@ -58,7 +58,7 @@ router.post("/login/vendor", validateLogin, authController.loginVendor
 router.post("/login/officer", validateLogin, authController.loginOfficer
      /*
     #swagger.tags = ['Auth']
-    #swagger.description = 'Login as an officer account'
+    #swagger.description = 'Step 1 of officer login. Verifies email/password, then sends an OTP and returns a short-lived pendingToken to use with /verify-otp.'
     #swagger.parameters['body'] = {
       in: 'body',
       required: true,
@@ -67,13 +67,22 @@ router.post("/login/officer", validateLogin, authController.loginOfficer
         password: 'Password123!'
       }
     }
+    #swagger.responses[200] = {
+      description: 'Password verified. OTP sent - use the returned pendingToken with POST /verify-otp.'
+    }
+    #swagger.responses[400] = {
+      description: 'Validation failed'
+    }
+    #swagger.responses[401] = {
+      description: 'Invalid email or password'
+    }
   */
 );
 
 router.post("/login/operator", validateLogin, authController.loginOperator
       /*
     #swagger.tags = ['Auth']
-    #swagger.description = 'Login as an operator account'
+    #swagger.description = 'Step 1 of operator login. Verifies email/password, then sends an OTP and returns a short-lived pendingToken to use with /verify-otp.'
     #swagger.parameters['body'] = {
       in: 'body',
       required: true,
@@ -81,6 +90,41 @@ router.post("/login/operator", validateLogin, authController.loginOperator
         email: 'operator@example.com',
         password: 'Password123!'
       }
+    }
+    #swagger.responses[200] = {
+      description: 'Password verified. OTP sent - use the returned pendingToken with POST /verify-otp.'
+    }
+    #swagger.responses[400] = {
+      description: 'Validation failed'
+    }
+    #swagger.responses[401] = {
+      description: 'Invalid email or password'
+    }
+  */
+);
+
+// Second step of login for officer/operator - takes the pendingToken issued
+// by the /login/officer or /login/operator response above, plus the OTP.
+router.post("/verify-otp", authController.verifyOtp
+  /*
+    #swagger.tags = ['Auth']
+    #swagger.description = 'Step 2 of officer/operator login. Verifies the OTP against the pendingToken from step 1, then returns the real login token.'
+    #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+        pendingToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        otp: '123456'
+      }
+    }
+    #swagger.responses[200] = {
+      description: 'Login successful'
+    }
+    #swagger.responses[400] = {
+      description: 'Missing or invalid pendingToken/otp'
+    }
+    #swagger.responses[401] = {
+      description: 'Incorrect or expired OTP, or expired login session'
     }
   */
 );
