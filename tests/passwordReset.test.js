@@ -2,6 +2,11 @@ const request = require("supertest");
 const bcrypt = require("bcrypt");
 const sql = require("mssql");
 const dbConfig = require("../dbConfig");
+
+jest.mock("../Utils/emailService", () => ({
+  sendPasswordResetEmail: jest.fn().mockResolvedValue({})
+}));
+
 const app = require("../app");
 
 /*

@@ -6,7 +6,7 @@ async function setResetToken(userId, token, expiry) {
   let connection;
 
   try {
-    connection = await sql.connect(dbConfig);
+    connection = await new sql.ConnectionPool(dbConfig).connect();
 
     const request = connection.request();
     request.input("user_id", sql.Int, userId);
@@ -32,7 +32,7 @@ async function findUserByResetToken(token) {
   let connection;
 
   try {
-    connection = await sql.connect(dbConfig);
+    connection = await new sql.ConnectionPool(dbConfig).connect();
 
     const request = connection.request();
     request.input("reset_token", sql.VarChar(255), token);
@@ -58,7 +58,7 @@ async function updatePasswordAndClearToken(userId, passwordHash) {
   let connection;
 
   try {
-    connection = await sql.connect(dbConfig);
+    connection = await new sql.ConnectionPool(dbConfig).connect();
 
     const request = connection.request();
     request.input("user_id", sql.Int, userId);
