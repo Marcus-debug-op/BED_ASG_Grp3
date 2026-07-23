@@ -97,6 +97,21 @@ router.get("/history", requireRole("patron"), orderController.getOrderHistory
     #swagger.security = [{ "bearerAuth": [] }]
   */);
 
+// ============================================================================
+// GET /api/orders/checkout/:checkoutId
+// Returns all orders sharing one checkout id (the combined receipt data).
+//
+// IMPORTANT - route order: this MUST be declared before the "/:id" route.
+// Express matches routes top-to-bottom, so if "/:id" came first, the word
+// "checkout" would be read as an :id value and never reach this handler.
+// ============================================================================
+router.get("/checkout/:checkoutId", requireRole("patron"), orderController.getOrdersByCheckout
+/*
+    #swagger.tags = ['Orders']
+    #swagger.description = "Patron retrieves all their orders that share one checkout id (combined receipt)"
+    #swagger.security = [{ "bearerAuth": [] }]
+  */);
+
 router.get("/:id/status", requireRole("patron"), orderController.getOrderStatus
 /*
     #swagger.tags = ['Orders']
