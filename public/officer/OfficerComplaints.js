@@ -1,4 +1,4 @@
-import { saveSession, getSession, clearSession, authFetch } from "./authStorage.js";
+import { saveSession, getSession, clearSession, authFetch } from "../shared/authStorage";
 
 let currentComplaintId = null;
 let currentStatusFilter = "";

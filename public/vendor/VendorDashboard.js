@@ -259,14 +259,18 @@ document.addEventListener("DOMContentLoaded", () => {
     // Logout
     // ===========================
 
-    document
-        .getElementById("logoutBtn")
-        .addEventListener("click", () => {
+    const logoutBtn = document.getElementById("logoutBtn");
 
-            localStorage.clear();
+    if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        localStorage.removeItem("user");
+        localStorage.removeItem("hawkerhub_auth");
+        localStorage.removeItem("cart");
 
-            window.location.href = "signup.html";
-
-        });
+        window.location.href = "/auth/signup.html";
+    });
+    }
 
 });
