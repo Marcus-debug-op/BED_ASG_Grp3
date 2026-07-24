@@ -510,3 +510,115 @@ input:focus, select:focus{
 .field-msg.ok{
   color: #2e7d32; 
 }
+
+/* BED-223: saved address bars */
+.save-address-toggle{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.saved-address-list{ 
+  display: flex; 
+  flex-direction: column; 
+  gap: 6px; 
+}
+
+.saved-address-bar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #fff;
+}
+
+.saved-address-bar:hover{ 
+  border-color: #f57c1f; 
+  background: #fff8f0; 
+}
+
+.saved-address-text{ 
+  font-size: 13px; 
+  line-height: 1.3; 
+}
+
+.saved-address-text small{ 
+  color: #777; 
+}
+
+.saved-address-actions{ 
+  display: flex; 
+  gap: 6px; 
+  flex-shrink: 0; 
+}
+
+.saved-address-actions button{
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.addr-update-btn{ 
+  background: #f57c1f; 
+  color: #fff; 
+}
+
+.addr-delete-btn{ 
+  background: #eee; 
+  color: #333; 
+}
+
+/* BED-223: address modals */
+.modal-overlay {
+  position: fixed; 
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-box {
+  background: #fff; 
+  border-radius: 12px;
+  padding: 20px; 
+  width: 340px; 
+  max-width: 90vw;
+}
+.modal-box h3 { 
+  margin: 0 0 10px; 
+  font-size: 18px; }
+.modal-actions { 
+  display: flex; 
+  justify-content: flex-end; 
+  gap: 8px; 
+  margin-top: 16px; 
+}
+
+.modal-actions button {
+  border: none; 
+  border-radius: 8px; 
+  padding: 8px 14px;
+  font-size: 14px; 
+  cursor: pointer; 
+  background: #eee;
+}
+
+.modal-actions .primary { 
+  background: #f57c1f; 
+  color: #fff; 
+}
+
+.modal-actions .danger  { 
+  background: #e53935; 
+  color: #fff; 
+}

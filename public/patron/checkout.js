@@ -114,6 +114,25 @@ const deliveryAddress = document.getElementById("deliveryAddress");
 const postalCode = document.getElementById("postalCode");
 const fullNameInput = document.getElementById("fullName");
 const phoneInput = document.getElementById("phoneNumber");
+// BED-223: saved address elements
+const savedAddressSection = document.getElementById("savedAddressSection");
+const savedAddressList = document.getElementById("savedAddressList");
+const saveAddressTick = document.getElementById("saveAddressTick");
+
+// Remembers which saved address the patron clicked, so we know whether a
+// later edit should UPDATE that one or CREATE a new one.
+let selectedAddressId = null;
+
+// BED-223: address modal elements
+const addrDeleteOverlay = document.getElementById("addrDeleteOverlay");
+const addrDeleteText = document.getElementById("addrDeleteText");
+const addrUpdateOverlay = document.getElementById("addrUpdateOverlay");
+const addrUpdateAddress = document.getElementById("addrUpdateAddress");
+const addrUpdatePostal = document.getElementById("addrUpdatePostal");
+const addrUpdateError = document.getElementById("addrUpdateError");
+
+// Which address the currently open modal is working on.
+let addrPendingId = null;
 
 // Live phone validation
 const phoneMsg = document.getElementById("phoneMsg");
@@ -264,10 +283,190 @@ function validatePostalLive() {
 deliveryAddress?.addEventListener("input", validateAddressLive);
 postalCode?.addEventListener("input", validatePostalLive);
 
+// BED-223: escape text before putting it in HTML, so an address containing
+// characters like < or & can't break the page or inject markup.
+function escapeAddr(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+// BED-223: fetch this patron's saved addresses and draw them as bars.
+async function loadSavedAddresses() {
+  if (!savedAddressList) return;
+
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return;                     // not logged in -> nothing to load
+
+    const res = await fetch("/api/addresses", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error(`Request failed (${res.status})`);
+
+    const data = await res.json();
+    const addresses = data.addresses || [];
+
+    // No saved addresses yet -> show nothing (the tick is still available).
+    if (addresses.length === 0) {
+      savedAddressList.innerHTML = "";
+      return;
+    }
+
+    // One bar per saved address, each with update and delete buttons.
+    savedAddressList.innerHTML = addresses.map((a) => `
+      <div class="saved-address-bar" data-id="${a.address_id}">
+        <div class="saved-address-text">
+          ${escapeAddr(a.address)}<br>
+          <small>${escapeAddr(a.postal_code)}${a.contact_name ? " &middot; " + escapeAddr(a.contact_name) : ""}</small>
+        </div>
+        <div class="saved-address-actions">
+          <button type="button" class="addr-update-btn" data-id="${a.address_id}">Update</button>
+          <button type="button" class="addr-delete-btn" data-id="${a.address_id}">Delete</button>
+        </div>
+      </div>
+    `).join("");
+
+    // Clicking the bar itself fills the delivery fields with that address.
+    savedAddressList.querySelectorAll(".saved-address-bar").forEach((bar) => {
+      bar.addEventListener("click", (e) => {
+        // Ignore clicks that landed on the Update/Delete buttons.
+        if (e.target.closest(".saved-address-actions")) return;
+
+        const id = Number(bar.getAttribute("data-id"));
+        const picked = addresses.find((a) => a.address_id === id);
+        if (!picked) return;
+
+        fillDeliveryFields(picked);
+      });
+    });
+    
+    // BED-223: Delete button -> open the confirm box (nothing is deleted yet).
+    savedAddressList.querySelectorAll(".addr-delete-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = Number(btn.getAttribute("data-id"));
+        const picked = addresses.find((a) => a.address_id === id);
+        if (!picked) return;
+
+        addrPendingId = id;
+        if (addrDeleteText) addrDeleteText.textContent = `${picked.address}, ${picked.postal_code}`;
+        if (addrDeleteOverlay) addrDeleteOverlay.style.display = "flex";
+      });
+    });
+
+    // BED-223: Update button -> open the edit box pre-filled with current values.
+    savedAddressList.querySelectorAll(".addr-update-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = Number(btn.getAttribute("data-id"));
+        const picked = addresses.find((a) => a.address_id === id);
+        if (!picked) return;
+
+        addrPendingId = id;
+        if (addrUpdateAddress) addrUpdateAddress.value = picked.address || "";
+        if (addrUpdatePostal) addrUpdatePostal.value = picked.postal_code || "";
+        if (addrUpdateError) addrUpdateError.style.display = "none";
+        if (addrUpdateOverlay) addrUpdateOverlay.style.display = "flex";
+      });
+    });
+
+  } catch (err) {
+    console.error("Could not load saved addresses:", err);
+  }
+}
+
+// BED-223: copy a saved address into the checkout fields, then re-run the
+// live validation so each field shows its green state.
+function fillDeliveryFields(a) {
+  if (deliveryAddress) deliveryAddress.value = a.address || "";
+  if (postalCode) postalCode.value = a.postal_code || "";
+  if (a.contact_name && fullNameInput) fullNameInput.value = a.contact_name;
+  if (a.contact_phone && phoneInput) phoneInput.value = a.contact_phone;
+
+  // Remember which one was picked (used later for update vs create).
+  selectedAddressId = a.address_id;
+
+  // Re-run validation so the filled fields turn green.
+  validateAddressLive?.();
+  validatePostalLive?.();
+  validateNameLive?.();
+  validatePhoneLive?.();
+}
+
+// BED-223: close both modals and forget which address was pending.
+function closeAddrModals() {
+  if (addrDeleteOverlay) addrDeleteOverlay.style.display = "none";
+  if (addrUpdateOverlay) addrUpdateOverlay.style.display = "none";
+  addrPendingId = null;
+}
+
+// Cancel buttons: close without changing anything.
+document.getElementById("addrDeleteCancelBtn")?.addEventListener("click", closeAddrModals);
+document.getElementById("addrUpdateCancelBtn")?.addEventListener("click", closeAddrModals);
+
+// BED-223: DELETE - only runs when the patron confirms.
+document.getElementById("addrDeleteConfirmBtn")?.addEventListener("click", async () => {
+  if (!addrPendingId) return;
+
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`/api/addresses/${addrPendingId}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+
+    closeAddrModals();
+    await loadSavedAddresses();   // redraw the bars without the deleted one
+  } catch (e) {
+    console.error("Could not delete address:", e);
+    alert("Could not delete that address. Please try again.");
+  }
+});
+
+// BED-223: UPDATE - validate, then save the edited address.
+document.getElementById("addrUpdateSaveBtn")?.addEventListener("click", async () => {
+  if (!addrPendingId) return;
+
+  const newAddress = String(addrUpdateAddress?.value || "").trim();
+  const newPostal = String(addrUpdatePostal?.value || "").trim();
+
+  // Same rules as the checkout fields, checked before we call the API.
+  if (!newAddress) return showAddrUpdateError("Delivery address must be filled.");
+  if (!/^\d{6}$/.test(newPostal)) return showAddrUpdateError("Postal code must be 6 digits.");
+
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`/api/addresses/${addrPendingId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ address: newAddress, postal_code: newPostal })
+    });
+    if (!res.ok) throw new Error(`Update failed (${res.status})`);
+
+    closeAddrModals();
+    await loadSavedAddresses();   // redraw the bars with the new details
+  } catch (e) {
+    console.error("Could not update address:", e);
+    showAddrUpdateError("Could not save changes. Please try again.");
+  }
+});
+
+// BED-223: show a validation/error message inside the update box.
+function showAddrUpdateError(msg) {
+  if (!addrUpdateError) return;
+  addrUpdateError.textContent = msg;
+  addrUpdateError.style.display = "block";
+}
+
 function applyDeliveryUI(recalc = false) {
   const isDelivery = collectionMethod?.value === "Delivery";
   if (deliveryAddressField) deliveryAddressField.style.display = isDelivery ? "block" : "none";
   if (postalCodeField) postalCodeField.style.display = isDelivery ? "block" : "none";
+  // BED-223: the saved address block belongs to delivery only.
+  if (savedAddressSection) savedAddressSection.style.display = isDelivery ? "block" : "none";
 
   if (!isDelivery) {
     if (deliveryAddress) clearFieldState(deliveryAddress, addressMsg);
@@ -277,7 +476,6 @@ function applyDeliveryUI(recalc = false) {
   // setup call it's skipped, because the promo state it reads isn't declared yet.
   if (recalc) updateCheckoutSummary();
 }
-
 
 collectionMethod?.addEventListener("change", () => applyDeliveryUI(true));
 applyDeliveryUI(false);
@@ -738,6 +936,8 @@ function updateCheckoutSummary() {
 }
 
 updateCheckoutSummary();
+// BED-223: load the patron's saved addresses on page load.
+loadSavedAddresses();
 
 // Submit checkout — saves the order to the SQL backend
 const submitBtn = document.querySelector(".cta");
@@ -897,6 +1097,29 @@ submitBtn?.addEventListener("click", async () => {
       setPromoMessage("This promo code isn't valid for any stall in your cart.", true);
     } else if (promoMessageToShow) {
       setPromoMessage(promoMessageToShow, false);
+    }
+
+    // BED-223: if the patron ticked "save this address", store it for reuse.
+    if (isDeliverySelected() && saveAddressTick?.checked) {
+      try {
+        await fetch("/api/addresses", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            address: deliveryAddressVal,
+            postal_code: postalCodeVal,
+            contact_name: form.fullName,
+            contact_phone: form.phone
+          })
+        });
+      } catch (e) {
+        // Saving the address is a convenience, not part of the order, so a
+        // failure here must never block a successful checkout.
+        console.error("Could not save address:", e);
+      }
     }
 
     // Save the most recent order id so the success page can display it.
