@@ -9,6 +9,38 @@
     <link rel="stylesheet" href="cardmodal.css" />
   </head>
 
+  <!-- BED-223: delete confirmation box -->
+  <div class="modal-overlay" id="addrDeleteOverlay" style="display: none;">
+    <div class="modal-box">
+      <h3>Delete this address?</h3>
+      <p id="addrDeleteText" style="font-size:14px; color:#555;"></p>
+      <div class="modal-actions">
+        <button type="button" id="addrDeleteCancelBtn">Cancel</button>
+        <button type="button" id="addrDeleteConfirmBtn" class="danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BED-223: update box, pre-filled with the address's current details -->
+  <div class="modal-overlay" id="addrUpdateOverlay" style="display: none;">
+    <div class="modal-box">
+      <h3>Update address</h3>
+      <label class="field">
+        <span class="label">Delivery Address *</span>
+        <input type="text" id="addrUpdateAddress" />
+      </label>
+      <label class="field">
+        <span class="label">Postal Code *</span>
+        <input type="text" id="addrUpdatePostal" />
+      </label>
+      <small id="addrUpdateError" class="field-msg err" style="display:none;"></small>
+      <div class="modal-actions">
+        <button type="button" id="addrUpdateCancelBtn">Cancel</button>
+        <button type="button" id="addrUpdateSaveBtn" class="primary">Save changes</button>
+      </div>
+    </div>
+  </div>
+
   <body>
     <section class="page-banner-wrap">
       <div class="page-banner">
@@ -65,6 +97,17 @@
               <input type="text" id="postalCode" placeholder="e.g. 123456" />
               <small id="postalMsg" class="field-msg"></small>
             </label>
+            <!-- BED-223: Saved addresses. This whole block only shows when
+                 Delivery is selected (JS toggles it in applyDeliveryUI). -->
+            <div class="field" id="savedAddressSection" style="display: none;">
+
+            <!-- Tick toggle: when on, this address is saved on submit -->
+            <label class="save-address-toggle">
+              <input type="checkbox" id="saveAddressTick" />
+              <span>Save this address for next time</span>
+            </label>
+            <!-- The patron's saved addresses get rendered into here -->
+            <div id="savedAddressList" class="saved-address-list"></div>
           </div>
         </section>
 
