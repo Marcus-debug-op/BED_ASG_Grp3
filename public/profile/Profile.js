@@ -1,14 +1,6 @@
 const token = localStorage.getItem("token");
 const role = localStorage.getItem("role");
 
-const operatorDashboardLink = document.getElementById("operatorDashboardLink");
-
-if (operatorDashboardLink && role === "operator") {
-  operatorDashboardLink.hidden = false;
-}
-
-const token = localStorage.getItem("token");
-
 if (!token) {
   window.location.href = "/auth/signup.html";
 } else {
@@ -158,14 +150,23 @@ if (updateProfileImageBtn) {
 
 const logoutBtn = document.querySelector(".logout-btn");
 
+function clearLoginSession() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  localStorage.removeItem("user");
+  localStorage.removeItem("hawkerhub_auth");
+  localStorage.removeItem("cart");
+}
+
 if (logoutBtn) {
   logoutBtn.addEventListener("click", () => {
     if (window.showLogoutModal) {
       window.showLogoutModal();
     } else {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("user");
+      const confirmLogout = confirm("Log out?");
+      if (!confirmLogout) return;
+
+      clearLoginSession();
       window.location.href = "/index.html";
     }
   });
