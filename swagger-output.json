@@ -240,7 +240,7 @@
         "tags": [
           "Auth"
         ],
-        "description": "Login as an officer account",
+        "description": "Step 1 of officer login. Verifies email/password, then sends an OTP and returns a short-lived pendingToken to use with /verify-otp.",
         "parameters": [
           {
             "name": "body",
@@ -262,8 +262,14 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "Password verified. OTP sent - use the returned pendingToken with POST /verify-otp."
+          },
           "400": {
-            "description": "Bad Request"
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Invalid email or password"
           }
         }
       }
@@ -273,7 +279,7 @@
         "tags": [
           "Auth"
         ],
-        "description": "Login as an operator account",
+        "description": "Step 1 of operator login. Verifies email/password, then sends an OTP and returns a short-lived pendingToken to use with /verify-otp.",
         "parameters": [
           {
             "name": "body",
@@ -295,8 +301,56 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "Password verified. OTP sent - use the returned pendingToken with POST /verify-otp."
+          },
           "400": {
-            "description": "Bad Request"
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Invalid email or password"
+          }
+        }
+      }
+    },
+    "/api/auth/verify-otp": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "description": "Step 2 of officer/operator login. Verifies the OTP against the pendingToken from step 1, then returns the real login token.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "pendingToken": {
+                  "type": "string",
+                  "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "otp": {
+                  "type": "string",
+                  "example": "123456"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login successful"
+          },
+          "400": {
+            "description": "Missing or invalid pendingToken/otp"
+          },
+          "401": {
+            "description": "Incorrect or expired OTP, or expired login session"
+          },
+          "500": {
+            "description": "Internal Server Error"
           }
         }
       }
@@ -317,6 +371,83 @@
         "responses": {
           "default": {
             "description": ""
+          }
+        }
+      }
+    },
+    "/api/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "description": "Request a password reset email. Always returns a generic success message, whether or not the email exists, to prevent account enumeration.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "example": "marcusisapatron@gmail.com"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Generic success message"
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password": {
+      "patch": {
+        "tags": [
+          "Auth"
+        ],
+        "description": "Reset a password using the token emailed by /forgot-password.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "token": {
+                  "type": "string",
+                  "example": "the-token-from-the-email-link"
+                },
+                "newPassword": {
+                  "type": "string",
+                  "example": "NewPassword123!"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password reset successfully"
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Invalid or expired token"
+          },
+          "500": {
+            "description": "Internal Server Error"
           }
         }
       }
@@ -778,6 +909,24 @@
                 },
                 "promo_code": {
                   "example": "any"
+                },
+                "checkout_id": {
+                  "example": "any"
+                },
+                "collection_method": {
+                  "example": "any"
+                },
+                "delivery_address": {
+                  "example": "any"
+                },
+                "postal_code": {
+                  "example": "any"
+                },
+                "delivery_charge": {
+                  "example": "any"
+                },
+                "payment_method": {
+                  "example": "any"
                 }
               }
             }
@@ -863,6 +1012,44 @@
           },
           "403": {
             "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/orders/checkout/{checkoutId}": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "description": "Patron retrieves all their orders that share one checkout id (combined receipt)",
+        "parameters": [
+          {
+            "name": "checkoutId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
           },
           "500": {
             "description": "Internal Server Error"
@@ -2104,6 +2291,205 @@
             "description": "Internal Server Error"
           }
         }
+      }
+    },
+    "/api/operator/dashboard/": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/operator/dashboard/metrics": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/addresses/": {
+      "post": {
+        "tags": [
+          "Saved Addresses"
+        ],
+        "description": "Patron saves a new delivery address",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "example": "any"
+                },
+                "postal_code": {
+                  "example": "any"
+                },
+                "contact_name": {
+                  "example": "any"
+                },
+                "contact_phone": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Saved Addresses"
+        ],
+        "description": "Patron retrieves all of their saved delivery addresses",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/addresses/{id}": {
+      "put": {
+        "tags": [
+          "Saved Addresses"
+        ],
+        "description": "Patron updates one of their saved delivery addresses",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "example": "any"
+                },
+                "postal_code": {
+                  "example": "any"
+                },
+                "contact_name": {
+                  "example": "any"
+                },
+                "contact_phone": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Saved Addresses"
+        ],
+        "description": "Patron deletes one of their saved delivery addresses",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     }
   }
