@@ -18,7 +18,7 @@ const displayBadgeId = document.getElementById("display-badge-id");
   The token is needed because the inspection APIs are protected.
 */
 if (!token) {
-  window.location.href = "/auth/SigninOfficer.html";
+  window.location.href = "SignInOfficer.html";
 } else if (role !== "officer") {
   document.body.innerHTML = "<h2>You do not have permission to access this page.</h2>";
 } else {
@@ -504,7 +504,7 @@ function logoutOfficer() {
   localStorage.removeItem("role");
   localStorage.removeItem("user");
 
-  window.location.href = "/auth/SigninOfficer.html";
+  window.location.href = "SignInOfficer.html";
 }
 
 /*

@@ -133,18 +133,12 @@ export function initNavbarAuth() {
     dashboardAuthBtn.textContent = "Sign out";
 
     dashboardAuthBtn.onclick = () => {
-      if (!confirm("Sign out?")) return;
-
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("user");
-
-      window.location.href = "/index.html";
+      showLogoutModal();
     };
   }
 
-  applyRoleBasedNav(role);
-}
+    applyRoleBasedNav(role);
+  }
 
 function showLogoutModal() {
   const logoutModal = document.getElementById("logoutModal");
@@ -167,6 +161,9 @@ function showLogoutModal() {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("user");
+    localStorage.removeItem("hawkerhub_auth");
+    localStorage.removeItem("cart");
+
     window.location.href = "/index.html";
   };
 
