@@ -1,6 +1,8 @@
 const token = localStorage.getItem("token");
 const role = localStorage.getItem("role");
 
+
+// Role guard: only logged-in operators can access this dashboard.
 if (!token || role !== "operator") {
   window.location.replace("/operator/SignInOperator.html");
 }
@@ -17,6 +19,7 @@ function formatCurrency(value) {
   }).format(Number(value || 0));
 }
 
+// Display the latest hygiene grade summary from completed NEA inspections.
 function renderHygieneGrades(grades) {
   const body = document.getElementById("hygiene-grades");
   if (!body) return;
@@ -35,6 +38,7 @@ function renderHygieneGrades(grades) {
   `).join("");
 }
 
+// Load live centre-wide metrics from the backend instead of using hard-coded values.
 async function loadDashboard() {
   if (!token || role !== "operator") return;
 
@@ -89,6 +93,28 @@ function loadOperatorInfo() {
   }
 }
 
+// Sidebar navigation scrolls to the matching dashboard section.
+function setupOperatorNavigation() {
+  const navButtons = document.querySelectorAll(".nav-item[data-target]");
+
+  navButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = button.dataset.target;
+      const section = document.getElementById(`section-${target}`);
+
+      navButtons.forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+
+      if (section) {
+        section.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }
+    });
+  });
+}
+
 document.getElementById("logoutBtn")?.addEventListener("click", () => {
   localStorage.removeItem("token");
   localStorage.removeItem("role");
@@ -98,6 +124,7 @@ document.getElementById("logoutBtn")?.addEventListener("click", () => {
   window.location.href = "/operator/SignInOperator.html";
 });
 
+setupOperatorNavigation();
 loadOperatorInfo();
 loadDashboard();
 setInterval(loadDashboard, 30000);

@@ -1,6 +1,8 @@
 const sql = require("mssql");
 const dbConfig = require("../dbConfig");
 
+
+// Used by registration controllers to prevent duplicate email accounts.
 async function findUserByEmail(email) {
     let connection;
     try {
@@ -36,7 +38,7 @@ async function findUserByEmail(email) {
     }
 }
 
-
+// Creates a normal patron account in the Users table.
 async function createPatron(userData) {
     let connection;
     try {
@@ -99,7 +101,7 @@ async function createVendor(userData) {
      // Create a transaction using the current database connection.
     transaction = new sql.Transaction(connection)
 
-    // Start the transaction before running the insert queries.
+    // Start a transaction because vendor registration affects both Users and Stalls.
     await transaction.begin();
 
     // This request is attached to the transaction.
@@ -126,7 +128,7 @@ async function createVendor(userData) {
 
     
     // Get the newly created vendor's user_id.
-    // This ID is needed to link the stall to the vendor.
+    // The new user_id becomes the vendor_id used by the Stalls table.
     const userId = userResult.recordset[0].user_id;;
 
 

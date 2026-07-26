@@ -1,22 +1,22 @@
 const sql = require("mssql");
 const dbConfig = require("../dbConfig");
 
-// BED-61: Stall Listing API (supports optional search + cuisine filter via query params)
+// Public stall listing API.
+// Supports search/filtering and also returns vendor name + current hygiene grade
+// so patron, officer, and vendor pages can display stall details consistently.
 async function getAllStalls(filters = {}) {
   let connection;
 
   try {
-    connection = await sql.connect(dbConfig);
+    connection = await sql.connect(dbConfig);   
     const request = connection.request();
 
     let sqlQuery = `
-      SELECT s.stall_id, s.stall_name, s.cuisine_type, s.description, s.unit_number,
-             s.operating_hours, s.price_range, s.phone_number, s.image_url,
-             h.hawker_centre_id, h.centre_name, h.area
-      FROM Stalls s
-      INNER JOIN HawkerCentres h ON s.hawker_centre_id = h.hawker_centre_id
-      WHERE s.is_active = 1
-    `;
+  SELECT s.stall_id, s.stall_name,s.cuisine_type,s.description,s.unit_number,s.operating_hours,s.price_range,s.phone_number,s.image_url,s.current_hygiene_grade,h.hawker_centre_id,h.centre_name,h.area,u.full_name AS vendor_name FROM Stalls s
+  INNER JOIN HawkerCentres h ON s.hawker_centre_id = h.hawker_centre_id
+  INNER JOIN Users u ON s.vendor_id = u.user_id
+  WHERE s.is_active = 1`;
+
 
     if (filters.search) {
       sqlQuery += ` AND (s.stall_name LIKE @search OR s.description LIKE @search)`;

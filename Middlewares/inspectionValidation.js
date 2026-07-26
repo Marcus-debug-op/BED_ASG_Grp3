@@ -1,5 +1,7 @@
 const Joi = require("joi");
 
+
+// Scheduling requires both stall_id and inspection_date because a new inspection is created.
 const scheduleInspectionSchema = Joi.object({
   stall_id: Joi.number().integer().positive().required().messages({
     "number.base": "Please provide a valid stall ID.",
@@ -16,6 +18,7 @@ const scheduleInspectionSchema = Joi.object({
   })
 });
 
+// Rescheduling only needs a new inspection_date because the inspection already exists.
 const rescheduleInspectionSchema = Joi.object({
   inspection_date: Joi.date().iso().greater("now").required().messages({
     "date.base": "Please provide a valid inspection date.",
@@ -25,6 +28,7 @@ const rescheduleInspectionSchema = Joi.object({
   })
 });
 
+// Completing an inspection requires score, result, and a valid hygiene grade.
 const completeInspectionSchema = Joi.object({
   score: Joi.number().integer().min(0).max(100).required().messages({
     "number.base": "Score must be a number.",

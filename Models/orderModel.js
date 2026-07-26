@@ -275,7 +275,7 @@ async function getOrderHistory(patronId) {
 }
 
 
-
+// Join Orders with Stalls so the query can filter orders by the logged-in vendor.
 async function getOrdersForVendor(vendorId) {
   let connection;
 
@@ -318,6 +318,7 @@ async function getOrdersForVendor(vendorId) {
   }
 }
 
+// Uses both order_id and vendor_id to prevent vendors from viewing another stall's order.
 async function getOrderDetailsForVendor(orderId, vendorId) {
   let connection;
 
@@ -368,6 +369,7 @@ async function getOrderDetailsForVendor(orderId, vendorId) {
   }
 }
 
+// Updates the order status only when the order belongs to a stall owned by this vendor.
 async function updateOrderStatusForVendor(orderId, vendorId, orderStatus) {
   let connection;
 
@@ -426,13 +428,16 @@ async function getOrderDetails(orderId) {
     // --- Query 1: the order header ---
     // Join Stalls to get the stall name. Also select patron_id so the CONTROLLER
     // can check ownership (it strips it out before sending to the user).
+    
     const orderReq = connection.request();
     orderReq.input("order_id", sql.Int, orderId);
+
+    /* Ownership check: vendor can only affect orders from their own stalls.*/
     const orderResult = await orderReq.query(`
       SELECT o.order_id, o.patron_id, o.stall_id, s.stall_name,
              o.order_status, o.total_amount, o.order_date
       FROM Orders o
-      JOIN Stalls s ON o.stall_id = s.stall_id
+      JOIN Stalls s ON o.stall_id = s.stall_id 
       WHERE o.order_id = @order_id;
     `);
 

@@ -10,6 +10,10 @@ async function deactivateOwnAccount(userId) {
     const request = connection.request();
     request.input("user_id", sql.Int, userId);
 
+    // Soft deactivate the account instead of deleting it.
+    // This keeps past orders, feedback, and complaints for reporting/history.
+
+    // is_active = 0 blocks future login while also preserves the user record.
     const result = await request.query(`
       UPDATE Users
       SET 

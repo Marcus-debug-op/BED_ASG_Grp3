@@ -19,10 +19,31 @@
       </div>
 
       <nav class="nav-menu">
-        <div class="nav-item active">Dashboard</div>
-        <button class="btn-danger" id="logoutBtn" type="button">Log Out</button>
+        <button class="nav-item active" type="button" data-target="dashboard">
+          Dashboard
+        </button>
+
+        <button class="nav-item" type="button" data-target="stalls">
+          Stall Management
+        </button>
+
+        <button class="nav-item" type="button" data-target="rental">
+          Rental & Lease
+        </button>
+
+        <button class="nav-item" type="button" data-target="complaints">
+          Complaints
+        </button>
+
+        <button class="nav-item" type="button" data-target="hygiene">
+          Hygiene Grades
+        </button>
+
+        <button class="btn-danger" id="logoutBtn" type="button">
+          Log Out
+        </button>
       </nav>
-    </aside>
+      </aside>
 
     <main class="main-content">
       <header class="header">
@@ -34,7 +55,7 @@
         Loading dashboard data...
       </p>
 
-      <section class="stats-grid">
+      <section class="stats-grid" id="section-dashboard">
         <article class="card stat-card">
           <div class="stat-header"><span>Total Centre Revenue</span></div>
           <div class="stat-value" id="total-revenue">$0.00</div>
@@ -64,8 +85,32 @@
         </article>
       </section>
 
+
       <section class="dashboard-grid">
-        <article class="card">
+        <article class="card" id="section-stalls">
+          <h3>Stall Management</h3>
+          <p class="subtitle">
+            Operator can review active stalls and stall-related information here.
+          </p>
+          <p class="stat-subtext">
+            Stall management details can be expanded when the operator stall feature is connected.
+          </p>
+        </article>
+
+        <article class="card" id="section-complaints">
+          <h3>Complaints</h3>
+          <p class="subtitle">
+            Operator can monitor complaint volume and pending cases here.
+          </p>
+          <p class="stat-subtext">
+            Pending complaint count is already shown in the dashboard metrics.
+          </p>
+        </article>
+      </section>
+
+
+      <section class="dashboard-grid">
+        <article class="card" id="section-rental">
           <h3>Rental & Lease Overview</h3>
           <p class="subtitle">Agreements and leases ending in the next 30 days.</p>
 
@@ -83,7 +128,7 @@
           <p id="rental-status" class="stat-subtext"></p>
         </article>
 
-        <article class="card">
+        <article class="card" id="section-hygiene">
           <h3>Latest NEA Hygiene Grades</h3>
           <p class="subtitle">Most recent completed inspection for each stall.</p>
 
