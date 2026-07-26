@@ -1,322 +1,139 @@
-/*
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { 
-    getAuth, 
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    onAuthStateChanged,
-    setPersistence,
-    browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { 
-    getFirestore, 
-    doc, 
-    getDoc,
-    setDoc,
-    collection,
-    query,
-    where,
-    getDocs,
-    serverTimestamp 
-} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyDo8B0OLtAj-Upfz7yNFeGz4cx3KWLZLuQ",
-    authDomain: "hawkerhub-64e2d.firebaseapp.com",
-    databaseURL: "https://hawkerhub-64e2d-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "hawkerhub-64e2d",
-    storageBucket: "hawkerhub-64e2d.firebasestorage.app",
-    messagingSenderId: "722888051277",
-    appId: "1:722888051277:web:59926d0a54ae0e4fe36a04"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const ROLE = "officer";
-const OPPOSITE_ROLE = "operator";
-
-setPersistence(auth, browserLocalPersistence);
-
-const submitBtn = document.getElementById("submitBtn");
-let officerNameEl, emailEl, passwordEl, badgeIdEl;
-
+// Officer sign-in. Two-step flow: password step, then OTP step.
 document.addEventListener("DOMContentLoaded", () => {
-    officerNameEl = document.getElementById("officerName");
-    emailEl = document.getElementById("email");
-    passwordEl = document.getElementById("password");
-    badgeIdEl = document.getElementById("badgeId");
+  const emailEl = document.getElementById("email");
+  const passwordEl = document.getElementById("password");
+  const badgeIdEl = document.getElementById("badgeId");
+  const submitBtn = document.getElementById("submitBtn");
 
-    submitBtn?.addEventListener("click", handleSubmit);
-    badgeIdEl?.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") handleSubmit(e);
-    });
-});
+  const passwordFields = document.getElementById("password-fields");
+  const otpStep = document.getElementById("otp-step");
+  const otpEl = document.getElementById("otp");
+  const otpBtn = document.getElementById("otpSubmitBtn");
+  const devOtpHint = document.getElementById("dev-otp-hint");
 
-async function handleSubmit(e) {
-    e.preventDefault();
-    
-    const officerName = (officerNameEl?.value || "").trim();
-    const email = (emailEl?.value || "").trim().toLowerCase();
-    const password = passwordEl?.value || "";
-    const badgeId = (badgeIdEl?.value || "").trim();
+  if (!emailEl || !passwordEl || !badgeIdEl || !submitBtn) return;
 
-    if (!officerName) {
-        alert("Please enter your officer name.");
-        return;
-    }
+  // Step 1: email + password -> triggers OTP, does not log the user in yet.
+  submitBtn.addEventListener("click", handleLogin);
+  passwordEl.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") handleLogin();
+  });
+
+  async function handleLogin() {
+    const email = emailEl.value.trim();
+    const password = passwordEl.value;
+    const badgeId = badgeIdEl.value.trim();
 
     if (!email || !password) {
-        alert("Please enter both email and password.");
-        return;
-    }
-
-    if (password.length < 6) {
-        alert("Password must be at least 6 characters.");
-        return;
+      alert("Please enter both email and password.");
+      return;
     }
 
     if (!badgeId) {
-        alert("Please enter your badge ID.");
+      alert("Please enter your badge ID.");
+      return;
+    }
+
+    setLoading(submitBtn, true, "Sign In");
+
+    try {
+      const response = await fetch("/api/auth/login/officer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, badgeId })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Login failed.");
+        setLoading(submitBtn, false, "Sign In");
         return;
-    }
+      }
 
-    setLoading(true);
+      if (!data.mfaRequired || !data.pendingToken) {
+        alert("Unexpected login response. Please try again.");
+        setLoading(submitBtn, false, "Sign In");
+        return;
+      }
 
-    try {
-        let userCredential;
-        let isNewAccount = false;
-        
-        try {
-            // STEP 1: Try to sign in with existing credentials
-            console.log("Attempting sign in for:", email);
-            userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-            console.log("Sign in successful for UID:", user.uid);
-            
-            // STEP 2: Check if user has opposite role (operator trying to sign in as officer)
-            const oppositeRoleDoc = await getDoc(doc(db, "operators", user.uid));
-            if (oppositeRoleDoc.exists()) {
-                console.log("ERROR: User is an operator, not an officer");
-                await auth.signOut();
-                alert("This email is registered as an Operator. Please use the Operator Portal instead.");
-                setLoading(false);
-                return;
-            }
-            
-            // STEP 3: Check if user exists in officers collection
-            const roleDoc = await getDoc(doc(db, "officers", user.uid));
-            if (!roleDoc.exists()) {
-                // User exists in Auth but not in Firestore officers - create entry
-                console.log("User authenticated but no Firestore doc - creating officer document");
-                await createRoleDocument(user.uid, email, officerName, badgeId);
-                isNewAccount = true;
-            } else {
-                // EXISTING OFFICER - This is the normal login path for repeat logins
-                console.log("Existing officer logging in - updating last login");
-                await setDoc(doc(db, "officers", user.uid), {
-                    officerName: officerName,
-                    badgeId: badgeId,
-                    lastLogin: serverTimestamp()
-                }, { merge: true });
-            }
-            
-        } catch (signInError) {
-            console.log("Sign in error:", signInError.code);
-            
+      sessionStorage.setItem("pendingToken", data.pendingToken);
 
-            if (signInError.code === "auth/user-not-found" || 
-                signInError.code === "auth/invalid-credential") {
-                
+      // Dev-only convenience so this can be demoed without a real mailbox.
+      // Remove this block once real email delivery is wired up for production.
+      if (data.devOtp && devOtpHint) {
+        devOtpHint.textContent = `[DEV ONLY] Your OTP is: ${data.devOtp}`;
+        devOtpHint.style.display = "block";
+      }
 
-                console.log("User may not exist - attempting account creation");
-                
-                // Before creating, check if email exists with opposite role
-                const emailExistsInOppositeRole = await checkEmailInOppositeRole(email);
-                if (emailExistsInOppositeRole) {
-                    alert(`This email is already registered as an ${OPPOSITE_ROLE}. Each email can only be used for one role.`);
-                    setLoading(false);
-                    return;
-                }
-                
-                // Try to create new account
-                try {
-                    console.log("Creating new officer account...");
-                    userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    const user = userCredential.user;
-                    await createRoleDocument(user.uid, email, officerName, badgeId);
-                    isNewAccount = true;
-                    console.log("New officer account created successfully");
-                } catch (createError) {
-                    console.log("Account creation error:", createError.code);
-                    
-                    if (createError.code === "auth/email-already-in-use") {
-
-                        alert("Incorrect password. Please try again or use the 'Forgot Password' link.");
-                        setLoading(false);
-                        return;
-                    } else {
-                        throw createError;
-                    }
-                }
-            } else if (signInError.code === "auth/wrong-password") {
-
-                console.log("Wrong password - account exists");
-                alert("Incorrect password. Please try again or use the 'Forgot Password' link.");
-                setLoading(false);
-                return;
-            } else {
-
-                throw signInError;
-            }
-        }
-
-        // SUCCESS - User is authenticated
-        const user = userCredential.user;
-        console.log("Authentication successful for:", user.email);
-
-        // Store session data
-        localStorage.setItem("hawkerhub_user", JSON.stringify({
-            uid: user.uid,
-            email: user.email,
-            role: ROLE,
-            officerName: officerName,
-            badgeId: badgeId,
-            isNewAccount: isNewAccount
-        }));
-
-        console.log("Redirecting to officer dashboard...");
-        // Redirect to officer dashboard
-        window.location.href = "NEAofficer.html";
-
+      if (passwordFields) passwordFields.style.display = "none";
+      if (otpStep) otpStep.style.display = "block";
+      otpEl?.focus();
     } catch (err) {
-        console.error("Authentication error:", err);
-        alert(prettyFirebaseError(err));
-        setLoading(false);
+      console.error("Officer login error:", err);
+      alert("Unable to connect to the server.");
+      setLoading(submitBtn, false, "Sign In");
     }
-}
+  }
 
-async function checkEmailInOppositeRole(email) {
+  // Step 2: OTP -> only now is the user actually logged in.
+  if (otpBtn) {
+    otpBtn.addEventListener("click", handleVerifyOtp);
+    otpEl?.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") handleVerifyOtp();
+    });
+  }
+
+  async function handleVerifyOtp() {
+    const otp = otpEl.value.trim();
+    const pendingToken = sessionStorage.getItem("pendingToken");
+
+    if (!otp) {
+      alert("Please enter the OTP.");
+      return;
+    }
+
+    if (!pendingToken) {
+      alert("Your login session expired. Please sign in again.");
+      if (passwordFields) passwordFields.style.display = "block";
+      if (otpStep) otpStep.style.display = "none";
+      return;
+    }
+
+    setLoading(otpBtn, true, "Verify & Sign In");
+
     try {
-        console.log("Checking if email exists in opposite role:", email);
-        
-        // Query the operators collection for this email
-        const operatorsRef = collection(db, "operators");
-        const q = query(operatorsRef, where("email", "==", email));
-        const querySnapshot = await getDocs(q);
-        
-        if (!querySnapshot.empty) {
-            console.log("Email found in operators collection");
-            return true;
-        }
-        
-        // Also check users collection for safety
-        const usersRef = collection(db, "users");
-        const userQuery = query(usersRef, where("email", "==", email), where("role", "==", OPPOSITE_ROLE));
-        const userSnapshot = await getDocs(userQuery);
-        
-        const exists = !userSnapshot.empty;
-        console.log("Email exists in opposite role:", exists);
-        return exists;
-    } catch (error) {
-        console.error("Error checking opposite role:", error);
-        // If query fails, return false to allow continuation (fail open)
-        return false;
-    }
-}
+      const response = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pendingToken, otp })
+      });
 
-async function createRoleDocument(uid, email, officerName, badgeId) {
-    console.log("Creating officer Firestore documents for UID:", uid);
-    
-    const accountData = {
-        uid: uid,
-        email: email,
-        officerName: officerName,
-        badgeId: badgeId,
-        role: ROLE,
-        createdAt: serverTimestamp(),
-        lastLogin: serverTimestamp(),
-        isActive: true
-    };
-    
-    // Create document in officers collection
-    await setDoc(doc(db, "officers", uid), accountData);
-    
-    // Also create in users collection for unified queries
-    await setDoc(doc(db, "users", uid), accountData);
-    
-    console.log(`Created ${ROLE} account documents in Firestore`);
-}
+      const data = await response.json();
 
-function setLoading(isLoading) {
-    if (!submitBtn) return;
-    if (isLoading) {
-        submitBtn.disabled = true;
-        submitBtn.style.opacity = "0.7";
-        submitBtn.textContent = "Signing In...";
-    } else {
-        submitBtn.disabled = false;
-        submitBtn.style.opacity = "1";
-        submitBtn.textContent = "Sign In";
-    }
-}
+      if (!response.ok) {
+        alert(data.message || "OTP verification failed.");
+        setLoading(otpBtn, false, "Verify & Sign In");
+        return;
+      }
 
-function prettyFirebaseError(err) {
-    const code = err?.code || "";
-    const message = err?.message || "";
-    
-    if (message.includes("Operator Portal") || message.includes("Officer Portal")) {
-        return message;
-    }
-    
-    switch (true) {
-        case code.includes("invalid-credential"):
-        case code.includes("wrong-password"):
-            return "Incorrect email or password. Please try again.";
-        case code.includes("invalid-email"):
-            return "Please enter a valid email address.";
-        case code.includes("weak-password"):
-            return "Password is too weak. Must be at least 6 characters.";
-        case code.includes("email-already-in-use"):
-            return "This email is already registered. Please sign in with your password.";
-        case code.includes("too-many-requests"):
-            return "Too many attempts. Please try again later.";
-        case code.includes("network-request-failed"):
-            return "Network error. Please check your connection.";
-        default:
-            return err?.message || "An error occurred. Please try again.";
-    }
-}
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("role", data.user.role);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      sessionStorage.removeItem("pendingToken");
 
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        try {
-            console.log("Auth state changed - user detected:", user.uid);
-            
-            // Verify they are an officer, not an operator
-            const operatorDoc = await getDoc(doc(db, "operators", user.uid));
-            if (operatorDoc.exists()) {
-                // Wrong role, sign out
-                console.log("User is an operator, signing out from officer portal");
-                await auth.signOut();
-                return;
-            }
-            
-            const officerDoc = await getDoc(doc(db, "officers", user.uid));
-            if (officerDoc.exists()) {
-                // Only redirect if not already on the officer page
-                if (!window.location.href.includes("NEAofficer.html") && 
-                    !window.location.href.includes("SignInOfficer.html")) {
-                    console.log("Officer authenticated, redirecting to dashboard");
-                    window.location.href = "NEAofficer.html";
-                }
-            }
-        } catch (error) {
-            console.error("Error in auth state change:", error);
-        }
+      window.location.href = "NEAofficer.html";
+    } catch (err) {
+      console.error("OTP verification error:", err);
+      alert("Unable to connect to the server.");
+      setLoading(otpBtn, false, "Verify & Sign In");
     }
+  }
+
+  function setLoading(btn, isLoading, restingLabel) {
+    if (!btn) return;
+    btn.disabled = isLoading;
+    btn.style.opacity = isLoading ? "0.7" : "1";
+    btn.textContent = isLoading ? "Please wait..." : restingLabel;
+  }
 });
-
-export { auth, db };                                                
-
-*/

@@ -20,7 +20,7 @@
     <div class="panel-wrap">
       <div class="panel">
         <div class="panel-top">
-          
+
         </div>
 
         <div class="panel-body">
@@ -28,13 +28,24 @@
           <div class="title">Operator Sign In</div>
           <div class="subtitle">Operator Portal</div>
 
-          <label for="email">Email Address</label>
-          <input id="email" type="email" placeholder="Enter your email" />
+          <div id="password-fields">
+            <label for="email">Email Address</label>
+            <input id="email" type="email" placeholder="Enter your email" />
 
-          <label for="password">Password</label>
-          <input id="password" type="password" placeholder="Enter your password" />
+            <label for="password">Password</label>
+            <input id="password" type="password" placeholder="Enter your password" />
 
-          <button class="submit" type="button" id="submitBtn">Sign In</button>
+            <button class="submit" type="button" id="submitBtn">Sign In</button>
+          </div>
+
+          <div id="otp-step" style="display:none;">
+            <label for="otp">Enter the 6-digit code sent to your email</label>
+            <input id="otp" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
+
+            <button class="submit" type="button" id="otpSubmitBtn">Verify &amp; Sign In</button>
+
+            <p id="dev-otp-hint" style="display:none; font-size: 0.85em; opacity: 0.7; margin-top: 8px;"></p>
+          </div>
         </div>
 
         <div class="panel-footer"></div>
