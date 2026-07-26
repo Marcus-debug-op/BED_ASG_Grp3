@@ -292,3 +292,139 @@ body {
     border: 1px dashed #ccc;
     font-size: 1.2rem;
 }
+
+/* Vendor Order History Page */
+.vendor-orders-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px 32px 80px;
+}
+
+.orders-header {
+  margin-bottom: 28px;
+}
+
+.orders-header h1 {
+  margin: 0 0 10px;
+  font-size: 2.4rem;
+  color: #2b2118;
+  letter-spacing: -0.04em;
+}
+
+.orders-header p {
+  margin: 0;
+  color: #76675b;
+  font-size: 1rem;
+}
+
+.orders-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid #f0e4d6;
+  border-radius: 18px;
+  box-shadow: 0 8px 20px rgba(125, 83, 42, 0.06);
+}
+
+.orders-filter label {
+  font-weight: 700;
+  color: #2b2118;
+}
+
+.orders-filter input {
+  padding: 10px 12px;
+  border: 1px solid #e7d8c5;
+  border-radius: 10px;
+  font: inherit;
+}
+
+.orders-filter button,
+.view-details-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 999px;
+  background: #f97316;
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.orders-filter button:hover,
+.view-details-btn:hover {
+  background: #ea580c;
+}
+
+.status-message {
+  margin: 14px 0 24px;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.orders-list {
+  display: grid;
+  gap: 20px;
+}
+
+.order-card {
+  padding: 26px 30px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #f0e4d6;
+  border-radius: 22px;
+  box-shadow: 0 12px 30px rgba(125, 83, 42, 0.07);
+}
+
+.order-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.order-card h3 {
+  margin: 0;
+  color: #2b2118;
+  font-size: 1.25rem;
+}
+
+.order-status {
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.order-card p {
+  margin: 10px 0;
+  color: #51443a;
+}
+
+.order-card strong {
+  color: #2b2118;
+}
+
+.empty-message {
+  padding: 30px;
+  background: white;
+  border: 1px solid #f0e4d6;
+  border-radius: 18px;
+  color: #76675b;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .vendor-orders-page {
+    padding: 32px 20px 60px;
+  }
+
+  .order-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

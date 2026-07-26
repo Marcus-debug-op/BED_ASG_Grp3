@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vendor Order Details</title>
+  <link rel="stylesheet" href="/shared/topnav.css" />
+  <link rel="stylesheet" href="/vendor/VendorOrder.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="vendor-orders-page">
+    <section class="orders-header">
+      <h1>Order Details</h1>
+      <p>View the full details of this past order.</p>
+    </section>
+
+    <section id="details-message" class="status-message">
+      Loading order details...
+    </section>
+
+    <section id="order-details" class="orders-list"></section>
+
+    <button class="view-details-btn" type="button" onclick="history.back()">
+      Back
+    </button>
+  </main>
+
+  <script type="module" src="/shared/navbar-init.js"></script>
+  <script src="/vendor/VendorOrderDetails.js"></script>
+</body>
+</html>

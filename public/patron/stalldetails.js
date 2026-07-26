@@ -46,6 +46,14 @@ async function loadDetails() {
         const cuisineEl = document.getElementById("stall-cuisine");
         if (cuisineEl) cuisineEl.textContent = s.cuisine_type || "General";
 
+        const hygieneEl = document.getElementById("stall-hygiene");
+
+        if (hygieneEl) {
+        hygieneEl.textContent = s.current_hygiene_grade
+            ? `Grade ${s.current_hygiene_grade}`
+            : "No hygiene grade yet";
+        }
+
         // BED-85 stretch goal: fetch the real average instead of hardcoding it.
         // Separate request from /api/stalls above since that endpoint doesn't
         // include rating data - a failure here shouldn't break the rest of

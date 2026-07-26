@@ -113,6 +113,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         const imageUrl = normalizeImageUrl(s.image_url);
         const shortDesc = s.description || "";
 
+        const hygieneGrade = s.current_hygiene_grade? `Grade ${s.current_hygiene_grade}`: "No grade yet";
+
         return `
           <article class="stall-card"
             data-name="${escapeAttr((s.stall_name || "").toLowerCase())}"
@@ -123,9 +125,15 @@ document.addEventListener("DOMContentLoaded", async () => {
             <img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(s.stall_name || "Stall")}" class="stall-img" onerror="this.src='/img/placeholder.jpg'" />
             <div class="stall-body">
               <h3>${escapeHtml(s.stall_name || "Unnamed Stall")}</h3>
+
               <div class="stall-meta">
                 ${escapeHtml(cap(cuisine))} • ${escapeHtml(s.centre_name || "")}
               </div>
+
+              <div class="stall-meta">
+                Hygiene: ${escapeHtml(hygieneGrade)}
+              </div>
+
               <p class="stall-desc">${escapeHtml(shortDesc)}</p>
 
               <a class="view-btn" href="/patron/stalldetails.html?stall=${encodeURIComponent(s.stall_id)}">View</a>

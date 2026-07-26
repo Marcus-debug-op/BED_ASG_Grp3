@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vendor Order History</title>
+  <link rel="stylesheet" href="/shared/topnav.css" />
+  <link rel="stylesheet" href="/vendor/VendorOrder.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="vendor-orders-page">
+    <section class="orders-header">
+      <h1>Order History</h1>
+      <p>View past completed orders from your stall.</p>
+    </section>
+
+    <section class="orders-filter">
+      <label for="history-date">Filter by date:</label>
+      <input type="date" id="history-date" />
+      <button id="clear-filter-btn">Clear</button>
+    </section>
+
+    <section id="history-message" class="status-message"></section>
+
+    <section id="history-list" class="orders-list">
+      Loading order history...
+    </section>
+  </main>
+
+  <script type="module" src="/shared/navbar-init.js"></script>
+  <script src="/vendor/VendorOrderHistory.js"></script>
+</body>
+</html>

@@ -101,6 +101,7 @@ async function loadVendorStalls() {
           <p><strong>Hawker Centre:</strong> ${stall.centre_name || "-"}</p>
           <p><strong>Cuisine:</strong> ${stall.cuisine_type || "-"}</p>
           <p><strong>Unit:</strong> ${stall.unit_number || "-"}</p>
+          <p><strong>Hygiene Grade:</strong> ${hygieneGrade}</p>
           <p><strong>Status:</strong> ${stall.is_active ? "Active" : "Inactive"}</p>
         </div>
       `;
