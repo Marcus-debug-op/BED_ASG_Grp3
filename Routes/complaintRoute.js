@@ -2,17 +2,23 @@ const express = require("express");
 const complaintController = require("../Controllers/complaintController");
 const { requireRole, blockGuests } = require("../Middlewares/authMiddleware");
 const { validateStatusUpdate, validateComplaintSubmission } = require("../Middlewares/complaintValidation");
+const uploadComplaintImage = require("../Middlewares/uploadComplaintImage");
 
 const router = express.Router();
 
 // Any registered (non-guest) user can file a new complaint. Guests are
 // blocked since Complaints.patron_id is a NOT NULL FK to Users - there's
 // no row to attach a guest's complaint to.
-router.post("/", blockGuests, validateComplaintSubmission, complaintController.submitComplaint
+// BED-131: uploadComplaintImage runs before validation so multer has
+// already parsed multipart fields into req.body by the time Joi checks it;
+// the image itself is optional (a text-only complaint still succeeds).
+router.post("/", blockGuests, uploadComplaintImage.single("image"), validateComplaintSubmission, complaintController.submitComplaint
 /*
   #swagger.tags = ['Complaints']
-  #swagger.description = 'A registered user submits a complaint against a stall (details, date, complaint text). On success, a unique tracking id is generated and the complaint is created with a default "Open" status, so the user knows their complaint was officially received.'
+  #swagger.description = 'A registered user submits a complaint against a stall, or a General Facility complaint with no specific stall (details, date, complaint text, optional image). On success, a unique tracking id is generated and the complaint is created with a default "Open" status, so the user knows their complaint was officially received.'
   #swagger.security = [{ "bearerAuth": [] }]
+  #swagger.consumes = ['multipart/form-data']
+  #swagger.parameters['image'] = { in: 'formData', type: 'file', required: false, description: 'Optional photo evidence for the complaint.' }
 */);
 
 // Officer + Operator: reviewing and resolving complaints filed against
