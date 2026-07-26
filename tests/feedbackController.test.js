@@ -64,7 +64,10 @@ describe("feedbackController.submitFeedback (BED-2)", () => {
 
     await feedbackController.submitFeedback(req, res);
 
-    expect(feedbackModel.createFeedback).toHaveBeenCalledWith(42, req.body);
+    // BED-132: submitFeedback now merges an optional photo_path (null here,
+    // since req.file is undefined - a text-only submission) into the
+    // payload passed to the model, rather than forwarding req.body as-is.
+    expect(feedbackModel.createFeedback).toHaveBeenCalledWith(42, { ...req.body, photo_path: null });
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith(created);
   });

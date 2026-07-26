@@ -2,9 +2,10 @@ const sql = require("mssql");
 const dbConfig = require("../dbConfig");
 
 // BED-2: Patron submits feedback for a stall.
+// BED-132: photo_path is optional - a text-only review still works.
 // No pre-check on stall_id existing - we let the FK constraint fail and the
 // controller catches error.number === 547 (same pattern as menuItemController.deleteMenuItem).
-async function createFeedback(patronId, { stall_id, rating, comment }) {
+async function createFeedback(patronId, { stall_id, rating, comment, photo_path }) {
   let connection;
 
   try {
@@ -15,12 +16,13 @@ async function createFeedback(patronId, { stall_id, rating, comment }) {
     request.input("stall_id", sql.Int, stall_id);
     request.input("rating", sql.Int, rating);
     request.input("comment", sql.VarChar(500), comment || null);
+    request.input("photo_path", sql.VarChar(255), photo_path || null);
 
     const result = await request.query(`
-      INSERT INTO Feedbacks (patron_id, stall_id, rating, comment)
+      INSERT INTO Feedbacks (patron_id, stall_id, rating, comment, photo_path)
       OUTPUT INSERTED.feedback_id, INSERTED.patron_id, INSERTED.stall_id,
-             INSERTED.rating, INSERTED.comment, INSERTED.created_at
-      VALUES (@patron_id, @stall_id, @rating, @comment);
+             INSERTED.rating, INSERTED.comment, INSERTED.photo_path, INSERTED.created_at
+      VALUES (@patron_id, @stall_id, @rating, @comment, @photo_path);
     `);
 
     return result.recordset[0];
