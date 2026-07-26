@@ -14,7 +14,7 @@ const MFA_ROLES = ["officer", "operator"];
 // Shared login logic for a specific required role ("patron" | "vendor" | "officer" | "operator").
 async function loginWithRole(req, res, requiredRole) {
   try {
-    const { email, password } = req.body;
+    const { email, password, badgeId } = req.body;
 
     console.log("Email received:", email);
 
@@ -46,6 +46,25 @@ async function loginWithRole(req, res, requiredRole) {
       return res.status(403).json({
         message: `This account is not registered as a ${requiredRole}.`
       });
+    }
+
+    // Officers must additionally confirm their badge ID matches what's on
+    // file - an extra identity check on top of email/password, specific
+    // to officer accounts (enforcement/inspection authority).
+    if (requiredRole === "officer") {
+      if (!badgeId) {
+        return res.status(400).json({
+          message: "Badge ID is required."
+        });
+      }
+
+      const badgeMatches = badgeId.trim() === (user.badge_id || "").trim();
+
+      if (!badgeMatches) {
+        return res.status(401).json({
+          message: "Badge ID does not match our records."
+        });
+      }
     }
 
     // Officer/operator accounts require OTP verification before a usable
