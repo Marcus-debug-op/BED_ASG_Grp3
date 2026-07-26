@@ -12,9 +12,10 @@ async function getAllStalls(filters = {}) {
     const request = connection.request();
 
     let sqlQuery = `
-  SELECT s.stall_id, s.stall_name,s.cuisine_type,s.description,s.unit_number,s.operating_hours,s.price_range,s.phone_number,s.image_url,s.current_hygiene_grade,h.hawker_centre_id,h.centre_name,h.area,u.full_name AS vendor_name FROM Stalls s
+  SELECT s.stall_id, s.stall_name,c.cuisine_name AS cuisine_type,s.description,s.unit_number,s.operating_hours,s.price_range,s.phone_number,s.image_url,s.current_hygiene_grade,h.hawker_centre_id,h.centre_name,h.area,u.full_name AS vendor_name FROM Stalls s
   INNER JOIN HawkerCentres h ON s.hawker_centre_id = h.hawker_centre_id
   INNER JOIN Users u ON s.vendor_id = u.user_id
+  INNER JOIN Cuisines c ON s.cuisine_id = c.cuisine_id
   WHERE s.is_active = 1`;
 
 
@@ -24,7 +25,7 @@ async function getAllStalls(filters = {}) {
     }
 
     if (filters.cuisine) {
-      sqlQuery += ` AND s.cuisine_type = @cuisine`;
+      sqlQuery += ` AND c.cuisine_name = @cuisine`;
       request.input("cuisine", sql.NVarChar, filters.cuisine);
     }
 
@@ -63,9 +64,10 @@ async function getMenuByStallId(stallId) {
     stallRequest.input("stall_id", sql.Int, stallId);
 
     const stallResult = await stallRequest.query(`
-      SELECT s.stall_id, s.stall_name, s.cuisine_type, s.description, s.unit_number, h.centre_name
+      SELECT s.stall_id, s.stall_name, c.cuisine_name AS cuisine_type, s.description, s.unit_number, h.centre_name
       FROM Stalls s
       INNER JOIN HawkerCentres h ON s.hawker_centre_id = h.hawker_centre_id
+      INNER JOIN Cuisines c ON s.cuisine_id = c.cuisine_id
       WHERE s.stall_id = @stall_id AND s.is_active = 1;
     `);
 

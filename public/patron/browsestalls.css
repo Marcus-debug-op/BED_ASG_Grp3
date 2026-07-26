@@ -123,11 +123,12 @@ body {
 /* Stall Section */
 .stall-section {
     padding: 50px 0;
-    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-                url('/img/hawker_background1.avif');
+    background-color: #000; /* solid fallback shown instantly, no yellow flash */
+    background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
+                       url('/img/hawker_background1.avif');
     background-size: cover;
     background-position: center;
-    min-height: 80vh;
+    background-repeat: no-repeat;
 }
 
 .section-header {

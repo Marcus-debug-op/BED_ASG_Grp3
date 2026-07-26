@@ -137,14 +137,18 @@ async function createVendor(userData) {
 
     const stallQuery = `
       INSERT INTO Stalls 
-      (vendor_id, hawker_centre_id, stall_name, cuisine_type, description, unit_number)
+      (vendor_id, hawker_centre_id, stall_name, cuisine_id, description, unit_number)
       VALUES
-      (@vendor_id, @hawker_centre_id, @stall_name, @cuisine_type, @description, @unit_number);
+      (@vendor_id, @hawker_centre_id, @stall_name,
+        (SELECT cuisine_id FROM Cuisines WHERE cuisine_name = @cuisine_type),
+        @description, @unit_number);
 
       SELECT CAST(SCOPE_IDENTITY() AS INT) AS stall_id;
     `;
-    
+
     // Insert the stall record and link it to the vendor using vendor_id.
+    // cuisine_type here is the cuisine NAME coming from the signup form;
+    // it gets resolved to the matching cuisine_id in Cuisines above.
     const stallResult = await stallRequest
       .input("vendor_id", sql.Int, userId)
       .input("stall_name", sql.VarChar(100), userData.stall_name)
