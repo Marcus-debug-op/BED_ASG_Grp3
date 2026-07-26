@@ -27,6 +27,7 @@ const inspectionRoute = require("./Routes/inspectionRoute");
 const accountRoute = require("./Routes/accountRoute");
 const operatorDashboardRoute = require("./Routes/operatorDashboardRoute");
 const savedAddressRoute = require("./Routes/savedAddressRoute");
+const rentalAgreementRoute = require("./Routes/rentalAgreementRoute"); 
 const { prototype } = require("module");
 
 const app = express();
@@ -59,6 +60,7 @@ app.use("/api/inspections", inspectionRoute);// Officer: scehdule inspections
 app.use("/api/menu-items", menuItemLikeRoute); // Menu item likes (BED-26)
 app.use("/api/operator/dashboard", operatorDashboardRoute);
 app.use("/api/addresses", savedAddressRoute); // Patron saved delivery addresses (CRUD)
+app.use("/api/operator/rental-agreements", rentalAgreementRoute); // Operator rental agreement management (BED-23)
 
 // Test API route
 app.get("/api/test", (req, res) => {
