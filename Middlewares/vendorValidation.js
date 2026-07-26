@@ -52,8 +52,7 @@ const Joi = require("joi");
 
     description: Joi.string().max(255).required()
     .messages({
-      "string.empty": "Stall description is required.",
-      "string.min": "Stall description must be at least 5 characters long.",
+      "string.empty": "Stall description is required.", 
       "any.required": "Stall description is required."
     }),
 

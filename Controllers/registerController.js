@@ -9,7 +9,7 @@ const registerModel = require("../Models/registerModel");
 async function registerPatron(req, res) {
   try {
     // Check whether the email is already used by another account.
-    // This prevents duplicate accounts with the same email.
+    // The model uses a transaction so both inserts succeed together or fail together.
     const existingUser = await registerModel.findUserByEmail(req.body.email);
 
     if (existingUser) {
@@ -55,6 +55,7 @@ async function registerPatron(req, res) {
 // Vendor registration creates both:
 // 1. A vendor user account in the Users table.
 // 2. A linked stall record in the Stalls table.
+// The model uses a transaction so both inserts succeed together or fail together.
 async function registerVendor(req, res) {
   try {
     // Check whether the email is already registered.
@@ -67,8 +68,7 @@ async function registerVendor(req, res) {
       });
     }
 
-    // Hash the vendor's password before saving it.
-    // This prevents plain-text passwords from being stored in the database.
+    // Hash the password before saving so plain-text passwords are never stored.
     const passwordHash = await bcrypt.hash(req.body.password, 10);
 
     // Create the vendor account and linked stall record.

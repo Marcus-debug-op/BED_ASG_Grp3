@@ -12,13 +12,14 @@ const criticalViolations = document.getElementById("critical-violations");
 const avgZoneScore = document.getElementById("avg-zone-score");
 const displayOfficerName = document.getElementById("display-officer-name");
 const displayBadgeId = document.getElementById("display-badge-id");
+const officerEmail = document.getElementById("officer-email");
 
 /*
   This page should only be accessed by officer users.
   The token is needed because the inspection APIs are protected.
 */
 if (!token) {
-  window.location.href = "SignInOfficer.html";
+  window.location.href = "/officer/SignInOfficer.html";
 } else if (role !== "officer") {
   document.body.innerHTML = "<h2>You do not have permission to access this page.</h2>";
 } else {
@@ -26,6 +27,7 @@ if (!token) {
   setupDatePickers();
   loadStalls();
   loadScheduledInspections();
+  loadInspectionRecords();
 }
 
 /*
@@ -42,7 +44,13 @@ function setupOfficerInfo() {
     if (displayBadgeId) {
       displayBadgeId.textContent = user?.user_id || "-";
     }
-  } catch (error) {
+
+    if (officerEmail) {
+      officerEmail.textContent = user?.email || "Officer account";
+    }
+  } 
+  
+  catch (error) {
     console.error("Unable to read saved user:", error);
   }
 }
@@ -78,7 +86,7 @@ function switchPage(page, clickedItem) {
 }
 
 /*
-  Load stalls so officer can choose which stall to schedule inspection for.
+  Load all active stalls so the officer can select a stall for inspection scheduling.
 */
 async function loadStalls() {
   try {
@@ -145,8 +153,8 @@ function renderStalls(stalls) {
       <tr>
         <td>${stall.stall_id}</td>
         <td>${stall.stall_name}</td>
-        <td>${stall.vendor_name || "-"}</td>
-        <td>${stall.last_grade || "Not inspected"}</td>
+        <td>${stall.vendor_name || stall.full_name || "-"}</td>
+        <td>${stall.current_hygiene_grade || stall.last_grade || "Not inspected"}</td>
         <td>
           <button 
             class="btn-primary" 
@@ -258,6 +266,8 @@ function checkAvailability() {
 /*
   Schedule inspection.
   This calls POST /api/inspections.
+
+  Create a new scheduled inspection using the selected stall, date, and time.
 */
 async function confirmSchedule() {
   const stallId = document.getElementById("schedule-stall-id").value;
@@ -299,7 +309,10 @@ async function confirmSchedule() {
     alert("Inspection scheduled successfully.");
 
     closeModal("modal-schedule");
+    
     loadScheduledInspections();
+    loadInspectionRecords();
+    loadStalls();
     switchPage("schedule", document.querySelector(".nav-item:nth-child(3)"));
   } catch (error) {
     console.error("Schedule inspection error:", error);
@@ -310,6 +323,8 @@ async function confirmSchedule() {
 /*
   Load upcoming scheduled inspections.
   This calls GET /api/inspections/scheduled.
+
+  // Load only active Scheduled inspections for the Schedule page.
 */
 async function loadScheduledInspections() {
   try {
@@ -332,8 +347,10 @@ async function loadScheduledInspections() {
     }
 
     renderScheduledInspections(data);
-    renderRecentInspections(data);
-  } catch (error) {
+
+  } 
+  
+  catch (error) {
     console.error("Load inspections error:", error);
 
     scheduleList.innerHTML = `
@@ -342,13 +359,11 @@ async function loadScheduledInspections() {
   }
 }
 
-/*
-  Display scheduled inspections.
-*/
+
 function renderScheduledInspections(inspections) {
   if (!scheduleList) return;
 
-  if (!inspections || inspections.length === 0) {
+  if (!Array.isArray(inspections) || inspections.length === 0) {
     scheduleList.innerHTML = `
       <p class="text-muted-center">No scheduled inspections found.</p>
     `;
@@ -358,10 +373,10 @@ function renderScheduledInspections(inspections) {
   scheduleList.innerHTML = inspections.map((inspection) => {
     return `
       <div class="card inspection-card">
-        <h3>${inspection.stall_name}</h3>
+        <h3>${inspection.stall_name || "-"}</h3>
         <p><strong>Hawker Centre:</strong> ${inspection.centre_name || "-"}</p>
         <p><strong>Date:</strong> ${new Date(inspection.inspection_date).toLocaleString()}</p>
-        <p><strong>Status:</strong> ${inspection.inspection_status}</p>
+        <p><strong>Status:</strong> ${inspection.inspection_status || "-"}</p>
 
         <label class="form-label">New Date/Time</label>
         <input 
@@ -389,7 +404,7 @@ function renderScheduledInspections(inspections) {
 }
 
 /*
-  Show same scheduled data on dashboard recent table.
+  Display scheduled inspections.
 */
 function renderRecentInspections(inspections) {
   if (!recentInspectionsBody) return;
@@ -397,35 +412,100 @@ function renderRecentInspections(inspections) {
   if (!inspections || inspections.length === 0) {
     recentInspectionsBody.innerHTML = `
       <tr>
-        <td colspan="4" class="text-muted-center">No scheduled inspections found.</td>
+        <td colspan="4" class="text-muted-center">
+          No inspection activity found.
+        </td>
       </tr>
     `;
     return;
   }
 
-  recentInspectionsBody.innerHTML = inspections.slice(0, 5).map((inspection) => {
+  recentInspectionsBody.innerHTML = inspections.slice(0, 8).map((inspection) => {
     return `
       <tr>
-        <td>${inspection.stall_name}</td>
+        <td>${inspection.stall_name || "-"}</td>
         <td>${new Date(inspection.inspection_date).toLocaleString()}</td>
-        <td>Pending</td>
-        <td>${inspection.inspection_status}</td>
+        <td>${inspection.hygiene_grade || "Pending"}</td>
+        <td>${inspection.inspection_status || "-"}</td>
       </tr>
     `;
   }).join("");
+}
+
+// Load all inspection records for the dashboard activity table.
+async function loadInspectionRecords() {
+  try {
+    const response = await fetch("/api/inspections", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      recentInspectionsBody.innerHTML = `
+        <tr>
+          <td colspan="4" class="text-muted-center">
+            ${data.message || "Unable to load inspection records."}
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    renderRecentInspections(data);
+    updateDashboardStats(data);
+  } catch (error) {
+    console.error("Load inspection records error:", error);
+
+    recentInspectionsBody.innerHTML = `
+      <tr>
+        <td colspan="4" class="text-muted-center">
+          Unable to connect to server.
+        </td>
+      </tr>
+    `;
+  }
+}
+
+
+
+function updateDashboardStats(inspections) {
+  if (!Array.isArray(inspections)) return;
+
+  const completedInspections = inspections.filter((inspection) =>
+    inspection.inspection_status === "Completed"
+  );
+
+  const criticalCount = completedInspections.filter((inspection) =>
+    inspection.hygiene_grade === "C" || inspection.hygiene_grade === "D"
+  ).length;
+
+  const scores = completedInspections
+    .map((inspection) => Number(inspection.score))
+    .filter((score) => !Number.isNaN(score));
+
+  const averageScore =
+    scores.length > 0
+      ? (scores.reduce((sum, score) => sum + score, 0) / scores.length).toFixed(1)
+      : "0.0";
 
   if (criticalViolations) {
-    criticalViolations.textContent = "0";
+    criticalViolations.textContent = criticalCount;
   }
 
   if (avgZoneScore) {
-    avgZoneScore.textContent = "0.0";
+    avgZoneScore.textContent = averageScore;
   }
 }
 
 /*
   Reschedule inspection.
   This calls PUT /api/inspections/:inspectionId.
+
+  Send only the new inspection date/time because the inspection already exists.
 */
 async function rescheduleInspection(inspectionId) {
   const newDate = document.getElementById(`reschedule-${inspectionId}`).value;
@@ -456,7 +536,9 @@ async function rescheduleInspection(inspectionId) {
 
     alert("Inspection rescheduled successfully.");
     loadScheduledInspections();
-  } catch (error) {
+    loadInspectionRecords();
+  } 
+  catch (error) {
     console.error("Reschedule inspection error:", error);
     alert("Unable to connect to server.");
   }
@@ -465,6 +547,8 @@ async function rescheduleInspection(inspectionId) {
 /*
   Cancel inspection.
   This calls PATCH /api/inspections/:inspectionId/cancel.
+
+  Uses the DELETE endpoint, but the backend performs a soft delete by setting status to Cancelled.
 */
 async function cancelInspection(inspectionId) {
   const confirmCancel = confirm("Are you sure you want to cancel this inspection?");
@@ -474,8 +558,8 @@ async function cancelInspection(inspectionId) {
   }
 
   try {
-    const response = await fetch(`/api/inspections/${inspectionId}/cancel`, {
-      method: "PATCH",
+    const response = await fetch(`/api/inspections/${inspectionId}`, {
+      method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -490,11 +574,19 @@ async function cancelInspection(inspectionId) {
 
     alert("Inspection cancelled successfully.");
     loadScheduledInspections();
-  } catch (error) {
+    loadInspectionRecords();
+  } 
+  
+  catch (error) {
     console.error("Cancel inspection error:", error);
     alert("Unable to connect to server.");
   }
 }
+
+
+
+
+
 
 /*
   Logout officer.
@@ -504,7 +596,7 @@ function logoutOfficer() {
   localStorage.removeItem("role");
   localStorage.removeItem("user");
 
-  window.location.href = "SignInOfficer.html";
+  window.location.href = "/officer/SignInOfficer.html";
 }
 
 /*
@@ -562,6 +654,8 @@ function calculateLiveGrade(scoreValue) {
   gradePreview.textContent = `Suggested grade: ${grade}`;
 }
 
+// Submit the completed inspection result.
+// The backend saves the score/grade and updates the stall's current hygiene grade.
 async function submitInspection() {
   const inspectionId = document.getElementById("inspect-schedule-id").value;
   const score = document.getElementById("input-score").value;
@@ -614,8 +708,13 @@ async function submitInspection() {
     alert("Inspection result submitted successfully.");
 
     closeModal("modal-inspect");
+
     loadScheduledInspections();
-  } catch (error) {
+    loadInspectionRecords();
+    loadStalls();
+  } 
+  
+  catch (error) {
     console.error("Submit inspection error:", error);
     alert("Unable to connect to server.");
   }
@@ -624,7 +723,8 @@ async function submitInspection() {
 
 
 /*
-  Because this script is type="module", onclick functions must be attached to window.
+  // Because this script is type="module", functions used by onclick in HTML
+  // must be attached to the window object.
 */
 window.switchPage = switchPage;
 window.openScheduleModal = openScheduleModal;

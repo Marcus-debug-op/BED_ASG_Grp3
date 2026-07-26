@@ -75,8 +75,20 @@ body {
 }
 
 .nav-item {
+  width: 100%;
   padding: 15px 18px;
+  border: none;
   border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+  text-align: left;
+}
+
+.nav-item:hover,
+.nav-item.active {
   background: var(--orange-soft);
   color: var(--orange-dark);
   font-weight: 800;

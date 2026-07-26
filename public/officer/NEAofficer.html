@@ -6,7 +6,7 @@
     <title>NEA Officer Portal - Hawker Hub</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="operatorandofficer.css">
+    <link rel="stylesheet" href="officer.css">
 </head>
 <body>
 
@@ -14,29 +14,35 @@
         
         <aside class="sidebar">
             <div class="brand">
-                <img src="/img/Logo.png" alt="Centre Logo" class="brand-logo">
+                <img src="/img/Logo.png" alt="HawkerHub Logo" class="brand-logo">
                 <div class="brand-info">
                     <div class="brand-title">NEA Officer Portal</div>
+                    <div class="brand-subtitle" id="officer-email">Loading account...</div>
                 </div>
             </div>
 
             <nav class="nav-menu">
-                <div class="nav-item active" onclick="switchPage('overview', this)">
+                <button class="nav-item active" type="button" onclick="switchPage('overview', this)">
                     Dashboard
-                </div>
-                
-                <div class="nav-item" onclick="switchPage('stalls', this)">
+                </button>
+
+                <button class="nav-item" type="button" onclick="switchPage('stalls', this)">
                     Stall Directory
-                </div>
-                
-                <div class="nav-item" onclick="switchPage('schedule', this)">
+                </button>
+
+                <button class="nav-item" type="button" onclick="switchPage('schedule', this)">
                     Schedule
-                </div>
-                
-                <div class="nav-item" onclick="switchPage('settings', this)">
+                </button>
+
+                <button class="nav-item" type="button" onclick="switchPage('settings', this)">
                     Settings
-                </div>
+                </button>
+
+                <button class="btn-danger" type="button" onclick="logoutOfficer()">
+                    Log Out
+                </button>
             </nav>
+
         </aside>
 
         <main class="main-content">
@@ -56,7 +62,7 @@
                         </div>
                         <div class="stat-value" id="total-stalls">0</div>
                         <div class="stat-trend positive">
-                            <span>Live Data</span> from Firestore
+                            <span>Live Data from SQL Server</span>
                         </div>
                     </div>
 
@@ -78,7 +84,7 @@
                 </div>
 
                 <div class="card dashboard-table-container">
-                    <h3>Recent Inspections</h3>
+                    <h3>Recent Inspection Activity </h3>
                     <table class="data-table">
                         <thead>
                             <tr>

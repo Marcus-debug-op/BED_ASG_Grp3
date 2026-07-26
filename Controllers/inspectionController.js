@@ -1,10 +1,15 @@
 const inspectionModel = require("../Models/inspectionModel");
 
+
+// Create a new scheduled inspection for an existing stall.
+// The officer ID comes from the JWT token so users cannot schedule on behalf of another officer.
 async function scheduleInspection(req, res) {
   try {
     const officerId = req.user.sub;
     const { stall_id, inspection_date } = req.body;
 
+    // Check the stall first so the API returns a clear 404 message
+    // instead of relying only on a database foreign key error.
     const exists = await inspectionModel.stallExists(stall_id);
 
     if (!exists) {
@@ -50,6 +55,8 @@ async function getUpcomingScheduledInspections(req, res) {
   }
 }
 
+// Check the stall first so the API returns a clear 404 message
+// instead of relying only on a database foreign key error.
 async function rescheduleInspection(req, res) {
   try {
     const officerId = req.user.sub;
@@ -87,6 +94,8 @@ async function rescheduleInspection(req, res) {
   }
 }
 
+// Cancel/delete a scheduled inspection using a soft delete approach.
+// The record is kept for activity history, but its status becomes Cancelled.
 async function cancelInspection(req, res) {
   try {
     const officerId = req.user.sub;
@@ -122,7 +131,8 @@ async function cancelInspection(req, res) {
   }
 }
 
-
+// Record the inspection result after the officer completes the visit.
+// This updates both the inspection record and the stall's latest hygiene grade.
 async function completeInspectionResult(req, res) {
   try {
     const officerId = req.user.sub;
@@ -157,6 +167,8 @@ async function completeInspectionResult(req, res) {
   }
 }
 
+// Record the inspection result after the officer completes the visit.
+// This updates both the inspection record and the stall's latest hygiene grade.
 async function getInspectionRecords(req, res) {
   try {
     const stallId = req.query.stall_id ? Number(req.query.stall_id) : null;

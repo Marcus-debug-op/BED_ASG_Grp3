@@ -3,7 +3,11 @@ const inspectionController = require("../Controllers/inspectionController");
 const { requireRole } = require("../Middlewares/authMiddleware");
 const {   validateScheduleInspection,validateRescheduleInspection,validateCompleteInspection } = require("../Middlewares/inspectionValidation");
 
-const router = express.Router();
+const router = express.Router();  
+
+
+// NEA inspection scheduling routes.
+// All routes are restricted to users with the officer role.
 
 router.post("/", requireRole("officer"),validateScheduleInspection,inspectionController.scheduleInspection
   /*
@@ -29,7 +33,7 @@ router.get("/scheduled", requireRole("officer"), inspectionController.getUpcomin
   */
 );
 
-router.put("/:inspectionId", requireRole("officer"), validateScheduleInspection, inspectionController.rescheduleInspection
+router.put("/:inspectionId", requireRole("officer"), validateRescheduleInspection, inspectionController.rescheduleInspection
   /*
     #swagger.tags = ['Inspections']
     #swagger.description = 'NEA officer reschedules an existing scheduled inspection'
@@ -63,6 +67,21 @@ router.patch("/:inspectionId/cancel", requireRole("officer"), inspectionControll
   */
 );
 
+// DELETE is implemented as a soft delete.
+// It cancels the inspection instead of permanently removing the row from SQL Server.
+router.delete("/:inspectionId", requireRole("officer"), inspectionController.cancelInspection
+  /*
+    #swagger.tags = ['Inspections']
+    #swagger.description = 'NEA officer deletes/cancels a scheduled inspection using soft delete'
+    #swagger.security = [{ "bearerAuth": [] }]
+    #swagger.parameters['inspectionId'] = {
+      in: 'path',
+      required: true,
+      type: 'integer'
+    }
+  */
+);
+
 
 router.get("/", requireRole("officer"), inspectionController.getInspectionRecords
   /*
@@ -78,6 +97,8 @@ router.get("/", requireRole("officer"), inspectionController.getInspectionRecord
   */
 );
 
+
+// Records the completed inspection result and updates the stall hygiene grade.
 router.patch("/:inspectionId/result",requireRole("officer"),validateCompleteInspection,inspectionController.completeInspectionResult
   /*
     #swagger.tags = ['Inspections']

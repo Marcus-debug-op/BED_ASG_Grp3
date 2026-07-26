@@ -1,6 +1,8 @@
 const sql = require("mssql");
 const dbConfig = require("../dbConfig");
 
+
+// Used before scheduling to make sure the selected stall exists and is active.
 async function stallExists(stallId) {
   let connection;
 
@@ -26,6 +28,8 @@ async function stallExists(stallId) {
   }
 }
 
+// Insert a new inspection with default status Scheduled.
+// officerId comes from the authenticated officer token.
 async function scheduleInspection(stallId, officerId, inspectionDate) {
   let connection;
 
@@ -59,6 +63,8 @@ async function scheduleInspection(stallId, officerId, inspectionDate) {
   }
 }
 
+// Load only upcoming Scheduled inspections for the officer's schedule page.
+// Completed and Cancelled inspections are excluded from the active schedule.
 async function getUpcomingScheduledInspections(officerId) {
   let connection;
 
@@ -97,6 +103,9 @@ async function getUpcomingScheduledInspections(officerId) {
   }
 }
 
+
+// Only Scheduled inspections can be rescheduled.
+// This prevents completed or cancelled records from being changed again.
 async function rescheduleInspection(inspectionId, officerId, inspectionDate) {
   let connection;
 
@@ -131,6 +140,9 @@ async function rescheduleInspection(inspectionId, officerId, inspectionDate) {
   }
 }
 
+
+// Soft delete: keep the inspection record for audit/history,
+// but remove it from the active schedule by marking it as Cancelled.
 async function cancelInspection(inspectionId, officerId) {
   let connection;
 
@@ -164,7 +176,8 @@ async function cancelInspection(inspectionId, officerId) {
   }
 }
 
-
+// Completing an inspection affects two tables, so a transaction is used.
+// Inspections stores the detailed result, while Stalls stores the latest hygiene grade.
 async function completeInspectionResult(inspectionId,officerId,score,hygieneGrade,remarks,resultStatus) {
   let connection;
   let transaction;
@@ -190,6 +203,7 @@ async function completeInspectionResult(inspectionId,officerId,score,hygieneGrad
     inspectionRequest.input("remarks", sql.VarChar(500), remarks || null);
     inspectionRequest.input("result", sql.VarChar(50), resultStatus);
 
+    // Store the latest grade on the stall so patron/vendor pages can display it quickly.
     const inspectionResult = await inspectionRequest.query(`
       UPDATE Inspections
       SET score = @score, hygiene_grade = @hygiene_grade, remarks = @remarks, result = @result, inspection_status = 'Completed', completed_at = GETDATE()
@@ -251,7 +265,8 @@ async function completeInspectionResult(inspectionId,officerId,score,hygieneGrad
   }
 }
 
-
+// Returns inspection history/activity records.
+// If stallId is provided, the results are filtered to one stall.
 async function getInspectionRecords(stallId) {
   let connection;
 

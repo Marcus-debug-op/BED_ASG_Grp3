@@ -176,6 +176,9 @@ async function getOrderHistory(req, res) {
 // GET /api/orders/vendor/my-orders
 // This function retrieves all orders that belong to stalls owned by the logged-in vendor.
 // The route should be protected by JWT authentication and vendor role authorization.
+
+// Vendor ID comes from the JWT token.
+// This ensures vendors can only retrieve orders from stalls they own.
 async function getVendorOrders(req, res) {
   try {
     //req.user.sub comes from the JWT token, sub stores the logged-in user's user_id.
@@ -197,6 +200,7 @@ async function getVendorOrders(req, res) {
 // GET /api/orders/vendor/my-orders/:orderId
 // This function retrieves the details of one specific order for the logged-in vendor.
 // It checks the order ID from the URL and uses the vendor ID from the JWT token.
+
 async function getVendorOrderDetails(req, res) {
   try {
     const vendorId = req.user.sub; //  Get logged-in vendor ID from token.
@@ -228,7 +232,8 @@ async function updateVendorOrderStatus(req, res) {
     const vendorId = req.user.sub; // Get logged-in vendor ID from token.
     const orderId = Number(req.params.orderId); // Get order ID from URL.
     const { order_status } = req.body;// Get new order status from frontend request body.
-
+    
+    // Restrict status updates to valid workflow states.
     const allowedStatuses = ["Pending", "Preparing", "Ready", "Completed", "Cancelled"]; //only statuses vendors are allowed to set.
 
     // Validate order ID & status.
