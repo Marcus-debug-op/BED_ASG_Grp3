@@ -191,7 +191,7 @@ module.exports = {
 // else, or submit one that's already "Resolved". complaint_id (an IDENTITY
 // column) doubles as the "unique tracking ID" the user story asks for -
 // there's no need for a separate generated code on top of it.
-async function createComplaint(patronId, stallId, complaintType, description) {
+async function createComplaint(patronId, stallId, complaintType, description, imagePath = null) {
   let connection;
 
   try {
@@ -202,12 +202,13 @@ async function createComplaint(patronId, stallId, complaintType, description) {
     request.input("stall_id", sql.Int, stallId);
     request.input("complaint_type", sql.VarChar(100), complaintType);
     request.input("description", sql.VarChar(500), description);
+    request.input("image_path", sql.VarChar(255), imagePath);
 
     const result = await request.query(`
-      INSERT INTO Complaints (patron_id, stall_id, complaint_type, description, complaint_status)
+      INSERT INTO Complaints (patron_id, stall_id, complaint_type, description, complaint_status, image_path)
       OUTPUT INSERTED.complaint_id, INSERTED.patron_id, INSERTED.stall_id, INSERTED.complaint_type,
-             INSERTED.description, INSERTED.complaint_status, INSERTED.created_at
-      VALUES (@patron_id, @stall_id, @complaint_type, @description, 'Open');
+             INSERTED.description, INSERTED.complaint_status, INSERTED.created_at, INSERTED.image_path
+      VALUES (@patron_id, @stall_id, @complaint_type, @description, 'Open', @image_path);
     `);
 
     return result.recordset[0];

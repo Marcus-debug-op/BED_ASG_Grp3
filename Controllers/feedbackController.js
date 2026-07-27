@@ -1,11 +1,18 @@
 const feedbackModel = require("../Models/feedbackModel");
 
 // BED-2: POST /api/feedback
+// BED-132: req.file (set by uploadFeedbackImage in the route) is optional -
+// merged into the validated body rather than changing validateFeedback's
+// schema, since req.body itself never contains the file.
 async function submitFeedback(req, res) {
   try {
     const patronId = req.user.sub;
+    const photoPath = req.file ? `uploads/feedback/${req.file.filename}` : null;
 
-    const created = await feedbackModel.createFeedback(patronId, req.body);
+    const created = await feedbackModel.createFeedback(patronId, {
+      ...req.body,
+      photo_path: photoPath
+    });
 
     res.status(201).json(created);
   } catch (error) {

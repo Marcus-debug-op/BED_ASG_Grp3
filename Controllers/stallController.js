@@ -1,13 +1,17 @@
 const stallModel = require("../Models/stallModel");
 
 // BED-61: Stall Listing API
-// GET /api/stalls?search=laksa&cuisine=Chinese Cuisine
+// BED-148: also accepts ?dietary=halal,vegetarian (comma-separated)
+// GET /api/stalls?search=laksa&cuisine=Chinese Cuisine&dietary=Halal,Vegetarian
 async function getStalls(req, res) {
   try {
     const filters = {
       search: req.query.search,
       cuisine: req.query.cuisine,
-      hawkerCentreId: req.query.hawker_centre_id
+      hawkerCentreId: req.query.hawker_centre_id,
+      dietary: req.query.dietary
+        ? req.query.dietary.split(",").map((value) => value.trim()).filter(Boolean)
+        : []
     };
 
     const stalls = await stallModel.getAllStalls(filters);

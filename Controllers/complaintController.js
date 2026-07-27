@@ -3,12 +3,24 @@ const complaintModel = require("../Models/complaintModel");
 // POST /api/complaints - any registered (non-guest) user files a new
 // complaint. patron_id is taken from the authenticated session (req.user.sub),
 // never from the request body - a user can't file a complaint as someone else.
+// BED-131: an image is optional (req.file, from uploadComplaintImage.single()
+// in the route) - a text-only complaint still succeeds without one. stall_id
+// stays required (an existing teammate test in complaintSubmission.test.js
+// explicitly asserts a missing stall_id is rejected).
 async function submitComplaint(req, res) {
   try {
     const patronId = req.user.sub;
     const { stall_id, complaint_type, description } = req.body;
 
-    const complaint = await complaintModel.createComplaint(patronId, stall_id, complaint_type, description);
+    const imagePath = req.file ? `uploads/complaints/${req.file.filename}` : null;
+
+    const complaint = await complaintModel.createComplaint(
+      patronId,
+      stall_id,
+      complaint_type,
+      description,
+      imagePath
+    );
 
     res.status(201).json({
       message: "Your complaint has been received and is being tracked.",
