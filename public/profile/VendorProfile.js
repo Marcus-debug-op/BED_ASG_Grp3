@@ -95,17 +95,19 @@ async function loadVendorStalls() {
     mainHawkerCentre.textContent = stalls[0].centre_name || "-";
 
     vendorStallsList.innerHTML = stalls.map(stall => {
-      return `
-        <div class="vendor-stall-card">
-          <h4>${stall.stall_name}</h4>
-          <p><strong>Hawker Centre:</strong> ${stall.centre_name || "-"}</p>
-          <p><strong>Cuisine:</strong> ${stall.cuisine_type || "-"}</p>
-          <p><strong>Unit:</strong> ${stall.unit_number || "-"}</p>
-          <p><strong>Hygiene Grade:</strong> ${hygieneGrade}</p>
-          <p><strong>Status:</strong> ${stall.is_active ? "Active" : "Inactive"}</p>
-        </div>
-      `;
-    }).join("");
+    const hygieneGrade = stall.current_hygiene_grade || "No grade yet";
+
+    return `
+      <div class="vendor-stall-card">
+        <h4>${stall.stall_name}</h4>
+        <p><strong>Hawker Centre:</strong> ${stall.centre_name || "-"}</p>
+        <p><strong>Cuisine:</strong> ${stall.cuisine_type || "-"}</p>
+        <p><strong>Unit:</strong> ${stall.unit_number || "-"}</p>
+        <p><strong>Hygiene Grade:</strong> ${hygieneGrade}</p>
+        <p><strong>Status:</strong> ${stall.is_active ? "Active" : "Inactive"}</p>
+      </div>
+    `;
+  }).join("");
 
   } catch (error) {
     console.error("Load vendor stalls error:", error);

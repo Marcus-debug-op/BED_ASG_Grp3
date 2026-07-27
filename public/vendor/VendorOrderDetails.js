@@ -36,6 +36,8 @@ function renderOrderDetails(rows) {
 
   const firstRow = rows[0];
 
+  const ecoPackaging = firstRow.eco_friendly_packaging ? "Yes" : "No";
+
   orderDetails.innerHTML = `
     <article class="order-card">
       <div class="order-card-header">
@@ -47,6 +49,7 @@ function renderOrderDetails(rows) {
       <p><strong>Stall:</strong> ${firstRow.stall_name || "-"}</p>
       <p><strong>Date:</strong> ${formatDateTime(firstRow.order_date)}</p>
       <p><strong>Total:</strong> ${formatCurrency(firstRow.total_amount)}</p>
+      <p><strong>Eco-Friendly Packaging:</strong> ${ecoPackaging}</p>
 
       <h3>Items Ordered</h3>
 

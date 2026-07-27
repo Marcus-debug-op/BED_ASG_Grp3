@@ -301,6 +301,7 @@ async function getOrdersForVendor(vendorId) {
         s.stall_name,
         o.order_status,
         o.total_amount,
+        o.eco_friendly_packaging,
         o.order_date
       FROM Orders o
       INNER JOIN Stalls s ON o.stall_id = s.stall_id
@@ -343,6 +344,7 @@ async function getOrderDetailsForVendor(orderId, vendorId) {
         o.order_id,
         o.order_status,
         o.total_amount,
+        o.eco_friendly_packaging,
         o.order_date,
         u.full_name AS patron_name,
         s.stall_name,

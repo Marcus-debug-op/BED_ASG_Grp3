@@ -68,6 +68,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       sessionStorage.setItem("selectedStallId", selectedStall.stall_id);
       sessionStorage.setItem("selectedStallName", selectedStall.stall_name);
 
+      window.location.href = `/vendor/VendorMenu.html?stallId=${selectedStall.stall_id}`;
+
     });
 
   } catch (error) {
