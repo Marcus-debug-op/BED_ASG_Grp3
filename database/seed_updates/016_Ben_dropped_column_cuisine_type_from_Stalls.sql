@@ -1,0 +1,1 @@
+ALTER TABLE stalls DROP COLUMN cuisine_type;
