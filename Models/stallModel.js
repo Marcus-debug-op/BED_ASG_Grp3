@@ -34,6 +34,33 @@ async function getAllStalls(filters = {}) {
       request.input("hawkerCentreId", sql.Int, filters.hawkerCentreId);
     }
 
+    // BED-148: filters.dietary is an array of cuisine names (e.g.
+    // ["Halal", "Vegetarian"]), already split/trimmed by the controller.
+    // Only stalls with at least one menu item tagged with at least one of
+    // the requested cuisines are returned. An EXISTS subquery is used
+    // instead of a JOIN so a stall isn't duplicated once per matching
+    // item - each stall appears at most once in the result either way.
+    // An unrecognised dietary value simply matches nothing and the
+    // response comes back as an empty array, rather than erroring.
+    if (Array.isArray(filters.dietary) && filters.dietary.length > 0) {
+      const dietaryParams = filters.dietary.map((_, index) => `@dietary${index}`);
+
+      filters.dietary.forEach((value, index) => {
+        request.input(`dietary${index}`, sql.NVarChar, value);
+      });
+
+      sqlQuery += `
+        AND EXISTS (
+          SELECT 1
+          FROM MenuItems mi
+          INNER JOIN MenuItemCuisines mic ON mi.menu_item_id = mic.menu_item_id
+          INNER JOIN Cuisines dc ON mic.cuisine_id = dc.cuisine_id
+          WHERE mi.stall_id = s.stall_id
+            AND dc.cuisine_name IN (${dietaryParams.join(", ")})
+        )
+      `;
+    }
+
     sqlQuery += ` ORDER BY s.stall_name;`;
 
     const result = await request.query(sqlQuery);
