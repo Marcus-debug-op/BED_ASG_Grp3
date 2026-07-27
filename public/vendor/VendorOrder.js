@@ -53,6 +53,12 @@ async function loadVendorOrders() {
   }
 }
 
+function formatEcoPackaging(value) {
+  return value === true || value === 1 || value === "1" || value === "Yes"
+    ? "Yes"
+    : "No";
+}
+
 /*
   Display the orders on the page.
   Also applies search and status filter.
@@ -116,6 +122,11 @@ ordersContainer.innerHTML = filteredOrders.map(order => {
         <div class="order-info">
           <span>Total</span>
           <strong>$${Number(order.total_amount).toFixed(2)}</strong>
+        </div>
+
+        <div class="order-info">
+          <span>Eco Packaging</span>
+          <strong>${formatEcoPackaging(order.eco_friendly_packaging)}</strong>
         </div>
       </div>
 
@@ -211,8 +222,16 @@ async function viewOrderDetails(orderId) {
       return;
     }
 
+    const firstItem = data[0];
+
     detailsBox.innerHTML = `
       <h4>Order Items</h4>
+
+      <p>
+        <strong>Eco-Friendly Packaging:</strong>
+        ${formatEcoPackaging(firstItem?.eco_friendly_packaging)}
+      </p>
+
       ${data.map(item => `
         <div class="order-item-row">
           <span>${item.item_name}</span>

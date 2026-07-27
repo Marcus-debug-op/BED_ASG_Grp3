@@ -42,14 +42,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    chosenList.innerHTML = stalls.map((stall) => `
+    
+    chosenList.innerHTML = stalls.map((stall) => {
+    const hygieneGrade = stall.current_hygiene_grade || "No grade yet";
+
+    return `
       <div class="stall-card" data-id="${stall.stall_id}">
         <span class="stall-name">${stall.stall_name}</span>
         <span class="stall-action">
-          ${stall.centre_name} · ${stall.unit_number} · Click to manage →
+          ${stall.centre_name} · ${stall.unit_number} · Grade: ${hygieneGrade} · Click to manage →
         </span>
       </div>
-    `).join("");
+    `;
+  }).join("");
 
     chosenList.addEventListener("click", (event) => {
       const card = event.target.closest(".stall-card");
@@ -62,6 +67,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       sessionStorage.setItem("selectedStallId", selectedStall.stall_id);
       sessionStorage.setItem("selectedStallName", selectedStall.stall_name);
+
+      window.location.href = `/vendor/VendorMenu.html?stallId=${selectedStall.stall_id}`;
 
     });
 

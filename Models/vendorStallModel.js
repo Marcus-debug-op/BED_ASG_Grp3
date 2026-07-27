@@ -7,19 +7,18 @@ async function getStallsByVendorId(vendorId) {
   try {
     connection = await sql.connect(dbConfig);
     const sqlQuery = `
-        SELECT s.stall_id, s.stall_name, c.cuisine_name AS cuisine_type, s.description, s.unit_number, s.is_active, h.centre_name
-        FROM Stalls s
-        INNER JOIN HawkerCentres h ON s.hawker_centre_id = h.hawker_centre_id
+        SELECT s.stall_id, s.stall_name, c.cuisine_name AS cuisine_type, s.description, s.unit_number, s.is_active, s.current_hygiene_grade, h.centre_name
+        FROM Stalls s INNER JOIN HawkerCentres h ON s.hawker_centre_id = h.hawker_centre_id
         LEFT JOIN Cuisines c ON s.cuisine_id = c.cuisine_id
         WHERE s.vendor_id = @vendor_id
         ORDER BY s.stall_name;
       `;
 
-    const request = await connection.request();
-    request.input("vendor_id", sql.Int, vendorId);
+      const request = await connection.request();
+      request.input("vendor_id", sql.Int, vendorId);
 
-    const result = await request.query(sqlQuery);
-    return result.recordset;
+      const result = await request.query(sqlQuery);
+      return result.recordset;
   }   
   
   catch (error) {
