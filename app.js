@@ -26,9 +26,11 @@ const vendorDashboardRoute = require("./Routes/vendorDashboardRoute");
 const inspectionRoute = require("./Routes/inspectionRoute");
 const accountRoute = require("./Routes/accountRoute");
 const operatorDashboardRoute = require("./Routes/operatorDashboardRoute");
+const operatorStallRoute = require("./Routes/operatorStallRoute");
 const savedAddressRoute = require("./Routes/savedAddressRoute");
 const rentalAgreementRoute = require("./Routes/rentalAgreementRoute"); 
-const vendorRentalAgreementRoute = require("./Routes/vendorRentalAgreementRoute"); 
+const vendorRentalAgreementRoute = require("./Routes/vendorRentalAgreementRoute");
+const neaAnalyticsRoute = require("./Routes/neaAnalyticsRoute");
 const { prototype } = require("module");
 
 const app = express();
@@ -60,9 +62,11 @@ app.use("/api/vendor/dashboard", vendorDashboardRoute); // Vendor: dashboard sum
 app.use("/api/inspections", inspectionRoute);// Officer: scehdule inspections
 app.use("/api/menu-items", menuItemLikeRoute); // Menu item likes (BED-26)
 app.use("/api/operator/dashboard", operatorDashboardRoute);
+app.use("/api/operator/stalls", operatorStallRoute); // BED-28: Operator stall record management (CRUD + deactivate)
 app.use("/api/addresses", savedAddressRoute); // Patron saved delivery addresses (CRUD)
 app.use("/api/operator/rental-agreements", rentalAgreementRoute); // Operator rental agreement management (BED-23)
 app.use("/api/vendor/rental-agreements", vendorRentalAgreementRoute); // Vendor rental agreement acknowledgement (BED-74)
+app.use("/api/nea", neaAnalyticsRoute);
 
 // Test API route
 app.get("/api/test", (req, res) => {
