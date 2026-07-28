@@ -92,7 +92,8 @@ async function createOrder(patronId, stallId, items, promoCode, checkoutDetails 
       delivery_address = null,
       postal_code = null,
       delivery_charge = null,
-      payment_method = null
+      payment_method = null,
+      eco_friendly_packaging = false   // BED-130
     } = checkoutDetails;
 
     // Build the INSERT for the master Orders row.
@@ -103,6 +104,7 @@ async function createOrder(patronId, stallId, items, promoCode, checkoutDetails 
     const savedTotal = finalAmount + Number(delivery_charge || 0);
     orderRequest.input("total_amount", sql.Decimal(10, 2), savedTotal);
     orderRequest.input("promotion_id", sql.Int, appliedPromotionId);
+    orderRequest.input("eco_friendly_packaging", sql.Bit, eco_friendly_packaging ? 1 : 0);
 
     // BED-231: bind the six new checkout-detail columns.
     orderRequest.input("checkout_id", sql.VarChar(30), checkout_id);
@@ -118,13 +120,13 @@ async function createOrder(patronId, stallId, items, promoCode, checkoutDetails 
       INSERT INTO Orders
         (patron_id, stall_id, total_amount, promotion_id,
          checkout_id, collection_method, delivery_address, postal_code,
-         delivery_charge, payment_method)
+         delivery_charge, payment_method, eco_friendly_packaging)
       OUTPUT INSERTED.order_id, INSERTED.order_status,
              INSERTED.total_amount, INSERTED.order_date
       VALUES
         (@patron_id, @stall_id, @total_amount, @promotion_id,
          @checkout_id, @collection_method, @delivery_address, @postal_code,
-         @delivery_charge, @payment_method);
+         @delivery_charge, @payment_method, @eco_friendly_packaging);
     `);
 
     const newOrder = orderResult.recordset[0];

@@ -28,6 +28,9 @@ function validateOrder(req, res, next) {
     // The delivery fee must be a number that is zero or more.
     delivery_charge: Joi.number().min(0).optional().allow(null),
 
+    // BED-130: optional boolean for the eco packaging choice.
+    eco_friendly_packaging: Joi.boolean().optional(),
+
     // Delivery address is REQUIRED only when collection_method is "Delivery".
     // .when() means "apply a different rule depending on another field".
     delivery_address: Joi.string().trim().max(255).when("collection_method", {
