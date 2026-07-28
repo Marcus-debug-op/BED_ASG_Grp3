@@ -3,6 +3,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ===========================
     // Authentication
     // ===========================
+    // Every vendor page checks these three things the same way: a JWT must
+    // exist, the role stored alongside it must be "vendor", and the user's
+    // profile info (name, email) is cached here so we don't have to fetch it
+    // again just to show a greeting.
 
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
@@ -17,6 +21,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // ===========================
     // Greeting
     // ===========================
+    // Purely cosmetic - picks a time-of-day message based on the vendor's
+    // own device clock. No backend involved.
 
     const greeting = document.getElementById("greeting");
 
@@ -39,6 +45,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // ===========================
     // Vendor Name
     // ===========================
+    // Comes from the cached "user" object in localStorage (set at login),
+    // not a fresh API call - just displaying what we already have.
 
     if (user) {
 
@@ -50,6 +58,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ===========================
     // Empty Revenue Chart
     // ===========================
+    // Sets up the Chart.js line chart with no data yet (data: []). The real
+    // numbers get plugged in later, inside loadDashboard() below, once the
+    // API response comes back - this block just builds the empty shell so
+    // the chart renders immediately instead of waiting on the network.
 
     const ctx = document
         .getElementById("revenueChart")
@@ -125,59 +137,70 @@ document.addEventListener("DOMContentLoaded", () => {
 
     });
 
-    // Show a useful dashboard immediately. Live API data below replaces these
-    // values once it is available; this also keeps the page presentable when
-    // the database has not been populated yet.
-    const demoRecentOrders = [
-        { order_id: 1042, customer_name: "Aisha Rahman", order_status: "Preparing" },
-        { order_id: 1041, customer_name: "Marcus Lim", order_status: "Ready" },
-        { order_id: 1040, customer_name: "Siti Nur", order_status: "Completed" },
-        { order_id: 1039, customer_name: "Daniel Tan", order_status: "Pending" }
-    ];
-    const demoWeeklyRevenue = [18.5, 26.8, 31.2, 24.6, 38.9, 52.4, 45.7];
-    const demoTopSellingDishes = [
-        { item_name: "Chicken Rice", total_quantity: 42 },
-        { item_name: "Laksa", total_quantity: 35 },
-        { item_name: "Char Kway Teow", total_quantity: 28 },
-        { item_name: "Fried Hokkien Mee", total_quantity: 21 },
-        { item_name: "Teh Tarik", total_quantity: 18 }
-    ];
-
     // ===========================
     // Dashboard summary cards
     // ===========================
+    // Everything below this point talks to GET /api/vendor/dashboard, which
+    // is a real SQL-backed endpoint (Models/vendorDashboardModel.js) - it
+    // aggregates today's revenue/orders, pending order count, average
+    // rating, recent orders, weekly revenue-by-day, and top selling dishes
+    // straight from the Orders/OrderItems/Feedbacks/Stalls tables. Nothing
+    // here is hardcoded or fabricated - if the DB has no data yet, the
+    // numbers are genuinely 0 and the tables/lists show their own
+    // "no data yet" empty states instead of made-up placeholder content.
 
-    fetch("/api/vendor/dashboard", {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    })
-        .then((res) => res.json())
-        .then((data) => {
-            document.getElementById("todayRevenue").textContent = `$${data.todayRevenue}`;
-            document.getElementById("todayOrders").textContent = data.todayOrders;
-            document.getElementById("pendingOrders").textContent = data.pendingOrders;
-            document.getElementById("averageRating").textContent = data.averageRating;
-
-            if (Array.isArray(data.recentOrders) && data.recentOrders.length) {
-                renderRecentOrders(data.recentOrders);
-            }
-
-            if (Array.isArray(data.topSellingDishes) && data.topSellingDishes.length) {
-                renderTopDishes(data.topSellingDishes);
-            }
-
-            if (Array.isArray(data.weeklyRevenue) && data.weeklyRevenue.length) {
-                const hasRevenue = data.weeklyRevenue.some((amount) => Number(amount) > 0);
-                revenueChart.data.datasets[0].data = hasRevenue ? data.weeklyRevenue : demoWeeklyRevenue;
-                revenueChart.update();
-                setRevenueEmptyState(true);
+    // Wrapped in its own named function (instead of a one-off fetch) so it
+    // can be called both immediately on page load AND again on a timer
+    // below - that's what keeps the dashboard updating on its own without
+    // the vendor having to manually refresh the page.
+    function loadDashboard() {
+        fetch("/api/vendor/dashboard", {
+            headers: {
+                Authorization: `Bearer ${token}`
             }
         })
-        .catch((error) => {
-            console.error("Error loading dashboard metrics:", error);
-        });
+            .then((res) => res.json())
+            .then((data) => {
+                // The 4 top summary cards.
+                document.getElementById("todayRevenue").textContent = `$${data.todayRevenue}`;
+                document.getElementById("todayOrders").textContent = data.todayOrders;
+                document.getElementById("pendingOrders").textContent = data.pendingOrders;
+                document.getElementById("averageRating").textContent = data.averageRating;
 
+                // Always call these (even with an empty array) rather than only
+                // calling them "if there's data" - both render functions already
+                // know how to show their own empty state, so this keeps the UI
+                // correct whether the vendor has 0 orders or 50.
+                renderRecentOrders(Array.isArray(data.recentOrders) ? data.recentOrders : []);
+                renderTopDishes(Array.isArray(data.topSellingDishes) ? data.topSellingDishes : []);
+
+                if (Array.isArray(data.weeklyRevenue) && data.weeklyRevenue.length) {
+                    const weeklyRevenue = data.weeklyRevenue.map(Number);
+                    const hasRevenue = weeklyRevenue.some((amount) => amount > 0);
+
+                    // Always plot the real numbers - including real zeros. No fake
+                    // fallback data; the empty-state message (not fabricated
+                    // numbers) is what tells the vendor there's nothing yet.
+                    revenueChart.data.datasets[0].data = weeklyRevenue;
+                    revenueChart.update();
+                    setRevenueEmptyState(hasRevenue);
+                }
+            })
+            .catch((error) => {
+                console.error("Error loading dashboard metrics:", error);
+            });
+    }
+
+    // Load once immediately so the vendor isn't staring at a blank
+    // dashboard, then keep polling every 30 seconds so new orders,
+    // status changes, or new reviews show up on their own - matches
+    // the same auto-refresh pattern used on the operator dashboard.
+    loadDashboard();
+    setInterval(loadDashboard, 30000);
+
+    // Builds the "Recent Orders" table rows from scratch each time it's
+    // called. Clears whatever was there before (replaceChildren) so old
+    // rows never linger after a refresh.
     function renderRecentOrders(orders) {
         const ordersBody = document.getElementById("ordersBody");
         ordersBody.replaceChildren();
@@ -201,6 +224,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             orderId.textContent = `#${order.order_id}`;
             customer.textContent = order.customer_name;
+            // e.g. order_status "Pending" -> CSS class "status-pending", so the
+            // badge color is driven by whatever status the backend actually sent.
             statusBadge.className = `order-status status-${String(order.order_status).toLowerCase()}`;
             statusBadge.textContent = order.order_status;
             status.appendChild(statusBadge);
@@ -209,6 +234,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Builds the "Top Selling Dishes" list. A bit more defensive than the
+    // other render functions because it also has to find (or create) the
+    // <ol> list itself - some earlier versions of the HTML didn't have a
+    // dedicated #topDishesList element, so this falls back to building one
+    // on the fly inside whichever .panel contains the "Top Selling Dishes"
+    // heading, keeping this working even if only this JS file gets updated
+    // without a matching HTML change.
     function renderTopDishes(dishes) {
         const panel = [...document.querySelectorAll(".panel")].find((element) =>
             element.querySelector("h2")?.textContent.trim() === "Top Selling Dishes"
@@ -246,6 +278,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Toggles the little "no revenue data yet" overlay on the chart panel.
+    // hasData = true hides it (real numbers are on screen); hasData = false
+    // shows it (every day this week was $0, so say so instead of showing a
+    // flat empty-looking line with no explanation).
     function setRevenueEmptyState(hasData) {
         const chartPanel = document.getElementById("revenueChart")?.closest(".panel");
         const emptyState = document.getElementById("revenueEmptyState") || chartPanel?.querySelector(".empty-state");
@@ -258,6 +294,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ===========================
     // Logout
     // ===========================
+    // Clears every piece of this vendor's session state from localStorage,
+    // then sends them back to the signup/landing page. Guarded with
+    // "if (logoutBtn)" in case this script ever runs on a page that
+    // doesn't have a logout button in its HTML.
 
     const logoutBtn = document.getElementById("logoutBtn");
 
