@@ -100,7 +100,8 @@ async function createOrder(patronId, stallId, items, promoCode, checkoutDetails 
     const orderRequest = new sql.Request(transaction);
     orderRequest.input("patron_id", sql.Int, patronId);
     orderRequest.input("stall_id", sql.Int, stallId);
-    orderRequest.input("total_amount", sql.Decimal(10, 2), finalAmount);
+    const savedTotal = finalAmount + Number(delivery_charge || 0);
+    orderRequest.input("total_amount", sql.Decimal(10, 2), savedTotal);
     orderRequest.input("promotion_id", sql.Int, appliedPromotionId);
 
     // BED-231: bind the six new checkout-detail columns.
@@ -495,9 +496,12 @@ async function getOrdersByCheckoutId(checkoutId, patronId) {
       SELECT o.order_id, o.stall_id, s.stall_name, o.order_status,
              o.total_amount, o.order_date, o.checkout_id,
              o.collection_method, o.delivery_address, o.postal_code,
-             o.delivery_charge, o.payment_method
+             o.delivery_charge, o.payment_method,
+             p.promo_code, r.discount_amount
       FROM Orders o
       JOIN Stalls s ON o.stall_id = s.stall_id
+      LEFT JOIN Promotions p ON o.promotion_id = p.promotion_id
+      LEFT JOIN PromotionRedemptions r ON o.order_id = r.order_id
       WHERE o.checkout_id = @checkout_id
         AND o.patron_id = @patron_id
       ORDER BY o.order_id;

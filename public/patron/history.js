@@ -182,6 +182,14 @@ async function showCombinedReceipt(checkoutId) {
     // Delivery fee was stored on only one order, so summing gives the real total.
     const deliveryFee = orders.reduce((s, o) => s + Number(o.delivery_charge || 0), 0);
     const grandTotal = orders.reduce((s, o) => s + Number(o.total_amount), 0);
+    // BED-209: total promo discount across all orders in this checkout, and
+    // the code used (all orders in one checkout share the same promo code).
+    const totalDiscount = orders.reduce((s, o) => s + Number(o.discount_amount || 0), 0);
+    const promoCode = orders.find((o) => o.promo_code)?.promo_code || null;
+    // Subtotal = sum of every item's subtotal across all stalls, before any
+    // eco, delivery or promo adjustments.
+    const subtotal = orders.reduce((sum, o) =>
+      sum + (o.items || []).reduce((s, i) => s + Number(i.subtotal || 0), 0), 0);
 
     // Build a block for each stall, listing that order's items.
     const stallBlocks = orders.map((o) => {
@@ -219,15 +227,24 @@ async function showCombinedReceipt(checkoutId) {
           <span>Collection</span>
           <strong>${collection}</strong>
         </div>
+        <div class="detail-row">
+          <span>Payment</span>
+          <strong>${payment}</strong>
+        </div>
+        <div class="detail-row">
+          <span>Subtotal</span>
+          <strong>${escapeHtml(formatMoney(subtotal))}</strong>
+        </div>
+        ${promoCode ? `
+        <div class="detail-row">
+          <span>Promo (${escapeHtml(promoCode)})</span>
+          <strong>-${escapeHtml(formatMoney(totalDiscount))}</strong>
+        </div>` : ""}
         ${deliveryFee > 0 ? `
         <div class="detail-row">
           <span>Delivery fee</span>
           <strong>${escapeHtml(formatMoney(deliveryFee))}</strong>
         </div>` : ""}
-        <div class="detail-row">
-          <span>Payment</span>
-          <strong>${payment}</strong>
-        </div>
         <div class="detail-row">
           <span>Total</span>
           <strong>${escapeHtml(formatMoney(grandTotal))}</strong>
