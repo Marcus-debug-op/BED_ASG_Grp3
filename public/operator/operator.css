@@ -85,6 +85,9 @@ body {
   font: inherit;
   font-weight: 750;
   text-align: left;
+  display: block;
+  text-decoration: none;
+  box-sizing: border-box;
 }
 
 .nav-item:hover,

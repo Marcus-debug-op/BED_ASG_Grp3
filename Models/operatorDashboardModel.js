@@ -73,12 +73,28 @@ async function getDashboardMetrics() {
       ORDER BY hygiene_grade;
     `);
 
-    const [financial, stalls, rentals, complaints, hygiene] = await Promise.all([
+    // Centre-wide revenue for the current week (Mon-Sun), Completed orders
+    // only - matches the same definition used for "Total Centre Revenue"
+    // above, just broken down per day instead of one lump total. Powers
+    // the dashboard's revenue trend chart.
+    const revenueTrendQuery = pool.request().query(`
+      DECLARE @monday DATE = DATEADD(WEEK, DATEDIFF(WEEK, 0, GETDATE()), 0);
+      DECLARE @nextMonday DATE = DATEADD(DAY, 7, @monday);
+
+      SELECT CAST(order_date AS DATE) AS order_day, SUM(total_amount) AS day_revenue
+      FROM Orders
+      WHERE order_status = 'Completed'
+        AND order_date >= @monday AND order_date < @nextMonday
+      GROUP BY CAST(order_date AS DATE);
+    `);
+
+    const [financial, stalls, rentals, complaints, hygiene, revenueTrend] = await Promise.all([
       financialQuery,
       stallQuery,
       rentalQuery,
       complaintQuery,
-      hygieneQuery
+      hygieneQuery,
+      revenueTrendQuery
     ]);
 
     return {
@@ -86,7 +102,8 @@ async function getDashboardMetrics() {
       stalls: stalls.recordset[0],
       rentals: rentals.recordset[0],
       complaints: complaints.recordset[0],
-      hygieneGrades: hygiene.recordset
+      hygieneGrades: hygiene.recordset,
+      revenueTrend: revenueTrend.recordset
     };
   } catch (error) {
     console.error("Database error loading operator dashboard metrics:", error);

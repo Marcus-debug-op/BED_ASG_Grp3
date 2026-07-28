@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HawkerHub – Stall Management</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="operator.css">
+  <link rel="stylesheet" href="OperatorStalls.css">
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="/img/Logo.png" alt="HawkerHub logo" class="brand-logo">
+        <div class="brand-info">
+          <div class="brand-title">Operator Overview</div>
+          <div class="brand-subtitle" id="operator-email">Loading account...</div>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <a class="nav-item" href="operator.html">Dashboard</a>
+        <a class="nav-item active" href="OperatorStalls.html">Stall Management</a>
+        <a class="nav-item" href="OperatorRentalLease.html">Rental & Lease</a>
+        <a class="nav-item" href="OperatorComplaintsPage.html">Complaints</a>
+        <a class="nav-item" href="OperatorHygieneGrades.html">Hygiene Grades</a>
+        <button class="btn-danger" id="logoutBtn" type="button">Log Out</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="header">
+        <h1>Stall Record Management</h1>
+        <p class="subtitle">Create, update, and deactivate hawker stall records.</p>
+      </header>
+
+      <section class="card">
+        <div class="stall-list-head">
+          <h3>All Stalls</h3>
+          <button class="btn-primary" id="addStallBtn" type="button">+ Add Stall</button>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Stall Name</th>
+              <th>Vendor</th>
+              <th>Hawker Centre</th>
+              <th>Unit No.</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="stallsBody">
+            <tr><td colspan="7" class="text-muted-center">Loading stalls...</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <!-- Add / Edit stall modal -->
+  <div id="stallModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modalTitle">Add Stall</h2>
+        <button type="button" id="closeModalBtn" class="modal-close">&times;</button>
+      </div>
+
+      <form id="stallForm" class="stall-form">
+        <input type="hidden" id="stallId">
+
+        <label for="vendorId">Vendor</label>
+        <select id="vendorId" required>
+          <option value="">Loading vendors...</option>
+        </select>
+
+        <label for="hawkerCentreId">Hawker Centre</label>
+        <select id="hawkerCentreId" required>
+          <option value="">Loading hawker centres...</option>
+        </select>
+
+        <label for="stallName">Stall Name</label>
+        <input id="stallName" type="text" required maxlength="100" placeholder="e.g. Marcus Beancurd House">
+
+        <label for="unitNumber">Unit Number</label>
+        <input id="unitNumber" type="text" maxlength="20" placeholder="e.g. #01-88">
+
+        <label for="description">Description</label>
+        <textarea id="description" maxlength="255" placeholder="Optional"></textarea>
+
+        <div class="form-row-2">
+          <div>
+            <label for="operatingHours">Operating Hours</label>
+            <input id="operatingHours" type="text" maxlength="50" placeholder="e.g. 9am - 9pm">
+          </div>
+
+          <div>
+            <label for="priceRange">Price Range</label>
+            <input id="priceRange" type="text" maxlength="20" placeholder="e.g. $">
+          </div>
+        </div>
+
+        <label for="phoneNumber">Phone Number</label>
+        <input id="phoneNumber" type="text" maxlength="20" placeholder="Optional">
+
+        <label for="imageUrl">Image URL</label>
+        <input id="imageUrl" type="url" maxlength="255" placeholder="https://... (optional)">
+
+        <p id="stallFormMsg" class="form-msg" aria-live="polite"></p>
+
+        <div class="form-actions">
+          <button type="button" id="cancelBtn" class="btn-secondary">Cancel</button>
+          <button type="submit" class="btn-primary">Save Stall</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="operator.js"></script>
+  <script src="OperatorStalls.js"></script>
+</body>
+</html>
