@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HawkerHub – Complaints</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="operator.css">
+  <link rel="stylesheet" href="OperatorStalls.css">
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="/img/Logo.png" alt="HawkerHub logo" class="brand-logo">
+        <div class="brand-info">
+          <div class="brand-title">Operator Overview</div>
+          <div class="brand-subtitle" id="operator-email">Loading account...</div>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <a class="nav-item" href="operator.html">Dashboard</a>
+        <a class="nav-item" href="OperatorStalls.html">Stall Management</a>
+        <a class="nav-item" href="OperatorRentalLease.html">Rental & Lease</a>
+        <a class="nav-item active" href="OperatorComplaintsPage.html">Complaints</a>
+        <a class="nav-item" href="OperatorHygieneGrades.html">Hygiene Grades</a>
+        <button class="btn-danger" id="logoutBtn" type="button">Log Out</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="header">
+        <h1>Complaints</h1>
+        <p class="subtitle">Complaints filed against vendors (excludes NEA hygiene complaints, which officers handle).</p>
+      </header>
+
+      <section class="card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Type</th>
+              <th>Stall</th>
+              <th>Filed By</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="complaintsBody">
+            <tr><td colspan="6" class="text-muted-center">Loading complaints...</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <!-- Complaint status update modal -->
+  <div id="complaintModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="complaintModalTitle">Update Complaint</h2>
+        <button type="button" id="closeComplaintModalBtn" class="modal-close">&times;</button>
+      </div>
+
+      <form id="complaintForm" class="stall-form">
+        <input type="hidden" id="complaintId">
+
+        <label for="complaintDescription">Complaint</label>
+        <textarea id="complaintDescription" rows="3" readonly></textarea>
+
+        <label for="complaintStatus">Status</label>
+        <select id="complaintStatus" required>
+          <option value="Open">Open</option>
+          <option value="Acknowledged">Acknowledged</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Resolved">Resolved</option>
+          <option value="Closed">Closed</option>
+        </select>
+
+        <label for="complaintNote">Resolution Note</label>
+        <textarea id="complaintNote" maxlength="500" placeholder="Optional note about how this was handled"></textarea>
+
+        <p id="complaintFormMsg" class="form-msg" aria-live="polite"></p>
+
+        <div class="form-actions">
+          <button type="button" id="cancelComplaintBtn" class="btn-secondary">Cancel</button>
+          <button type="submit" class="btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="operator.js"></script>
+  <script src="OperatorComplaints.js"></script>
+</body>
+</html>

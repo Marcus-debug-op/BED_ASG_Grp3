@@ -6,7 +6,7 @@
   <title>HawkerHub – Operator Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="operator.css">
-  <link rel="stylesheet" href="OperatorStalls.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="container">
@@ -20,31 +20,14 @@
       </div>
 
       <nav class="nav-menu">
-        <button class="nav-item active" type="button" data-target="dashboard">
-          Dashboard
-        </button>
-
-        <button class="nav-item" type="button" data-target="stalls">
-          Stall Management
-        </button>
-
-        <button class="nav-item" type="button" data-target="rental">
-          Rental & Lease
-        </button>
-
-        <button class="nav-item" type="button" data-target="complaints">
-          Complaints
-        </button>
-
-        <button class="nav-item" type="button" data-target="hygiene">
-          Hygiene Grades
-        </button>
-
-        <button class="btn-danger" id="logoutBtn" type="button">
-          Log Out
-        </button>
+        <a class="nav-item active" href="operator.html">Dashboard</a>
+        <a class="nav-item" href="OperatorStalls.html">Stall Management</a>
+        <a class="nav-item" href="OperatorRentalLease.html">Rental & Lease</a>
+        <a class="nav-item" href="OperatorComplaintsPage.html">Complaints</a>
+        <a class="nav-item" href="OperatorHygieneGrades.html">Hygiene Grades</a>
+        <button class="btn-danger" id="logoutBtn" type="button">Log Out</button>
       </nav>
-      </aside>
+    </aside>
 
     <main class="main-content">
       <header class="header">
@@ -56,7 +39,7 @@
         Loading dashboard data...
       </p>
 
-      <section class="stats-grid" id="section-dashboard">
+      <section class="stats-grid">
         <article class="card stat-card">
           <div class="stat-header"><span>Total Centre Revenue</span></div>
           <div class="stat-value" id="total-revenue">$0.00</div>
@@ -86,192 +69,18 @@
         </article>
       </section>
 
-
       <section class="dashboard-grid">
-        <article class="card" id="section-stalls">
-          <div class="stall-list-head">
-            <h3>Stall Management</h3>
-            <button class="btn-primary" id="addStallBtn" type="button">+ Add Stall</button>
+        <article class="card" style="grid-column: 1 / -1;">
+          <h3>Centre Revenue This Week</h3>
+          <p class="subtitle">Completed orders across every stall, Monday to Sunday.</p>
+          <div style="position: relative; height: 400px;">
+            <canvas id="revenueTrendChart"></canvas>
           </div>
-
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Stall Name</th>
-                <th>Vendor</th>
-                <th>Hawker Centre</th>
-                <th>Unit No.</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="stallsBody">
-              <tr><td colspan="7" class="text-muted-center">Loading stalls...</td></tr>
-            </tbody>
-          </table>
-        </article>
-
-        <article class="card" id="section-complaints">
-          <h3>Complaints</h3>
-          <p class="subtitle">Complaints filed against vendors (excludes NEA hygiene complaints, which officers handle).</p>
-
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Type</th>
-                <th>Stall</th>
-                <th>Filed By</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="complaintsBody">
-              <tr><td colspan="6" class="text-muted-center">Loading complaints...</td></tr>
-            </tbody>
-          </table>
-        </article>
-      </section>
-
-
-      <section class="dashboard-grid">
-        <article class="card" id="section-rental">
-          <h3>Rental & Lease Overview</h3>
-          <p class="subtitle">Agreements and leases ending in the next 30 days.</p>
-
-          <div class="rental-stats">
-            <div>
-              <span class="metric-label">Active agreements</span>
-              <strong id="active-agreements">0</strong>
-            </div>
-            <div>
-              <span class="metric-label">Expiring leases</span>
-              <strong id="expiring-leases">0</strong>
-            </div>
-          </div>
-
-          <p id="rental-status" class="stat-subtext"></p>
-        </article>
-
-        <article class="card" id="section-hygiene">
-          <h3>Latest NEA Hygiene Grades</h3>
-          <p class="subtitle">Most recent completed inspection for each stall.</p>
-
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Grade</th>
-                <th>Stalls</th>
-              </tr>
-            </thead>
-            <tbody id="hygiene-grades">
-              <tr>
-                <td colspan="2" class="text-muted-center">Loading...</td>
-              </tr>
-            </tbody>
-          </table>
         </article>
       </section>
     </main>
   </div>
 
-  <!-- Add / Edit stall modal -->
-  <div id="stallModal" class="modal-overlay" hidden>
-    <div class="modal-card">
-      <div class="modal-header">
-        <h2 id="modalTitle">Add Stall</h2>
-        <button type="button" id="closeModalBtn" class="modal-close">&times;</button>
-      </div>
-
-      <form id="stallForm" class="stall-form">
-        <input type="hidden" id="stallId">
-
-        <label for="vendorId">Vendor</label>
-        <select id="vendorId" required>
-          <option value="">Loading vendors...</option>
-        </select>
-
-        <label for="hawkerCentreId">Hawker Centre</label>
-        <select id="hawkerCentreId" required>
-          <option value="">Loading hawker centres...</option>
-        </select>
-
-        <label for="stallName">Stall Name</label>
-        <input id="stallName" type="text" required maxlength="100" placeholder="e.g. Marcus Beancurd House">
-
-        <label for="unitNumber">Unit Number</label>
-        <input id="unitNumber" type="text" maxlength="20" placeholder="e.g. #01-88">
-
-        <label for="description">Description</label>
-        <textarea id="description" maxlength="255" placeholder="Optional"></textarea>
-
-        <div class="form-row-2">
-          <div>
-            <label for="operatingHours">Operating Hours</label>
-            <input id="operatingHours" type="text" maxlength="50" placeholder="e.g. 9am - 9pm">
-          </div>
-
-          <div>
-            <label for="priceRange">Price Range</label>
-            <input id="priceRange" type="text" maxlength="20" placeholder="e.g. $">
-          </div>
-        </div>
-
-        <label for="phoneNumber">Phone Number</label>
-        <input id="phoneNumber" type="text" maxlength="20" placeholder="Optional">
-
-        <label for="imageUrl">Image URL</label>
-        <input id="imageUrl" type="url" maxlength="255" placeholder="https://... (optional)">
-
-        <p id="stallFormMsg" class="form-msg" aria-live="polite"></p>
-
-        <div class="form-actions">
-          <button type="button" id="cancelBtn" class="btn-secondary">Cancel</button>
-          <button type="submit" class="btn-primary">Save Stall</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Complaint status update modal -->
-  <div id="complaintModal" class="modal-overlay" hidden>
-    <div class="modal-card">
-      <div class="modal-header">
-        <h2 id="complaintModalTitle">Update Complaint</h2>
-        <button type="button" id="closeComplaintModalBtn" class="modal-close">&times;</button>
-      </div>
-
-      <form id="complaintForm" class="stall-form">
-        <input type="hidden" id="complaintId">
-
-        <label for="complaintDescription">Complaint</label>
-        <textarea id="complaintDescription" rows="3" readonly></textarea>
-
-        <label for="complaintStatus">Status</label>
-        <select id="complaintStatus" required>
-          <option value="Open">Open</option>
-          <option value="Acknowledged">Acknowledged</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Resolved">Resolved</option>
-          <option value="Closed">Closed</option>
-        </select>
-
-        <label for="complaintNote">Resolution Note</label>
-        <textarea id="complaintNote" maxlength="500" placeholder="Optional note about how this was handled"></textarea>
-
-        <p id="complaintFormMsg" class="form-msg" aria-live="polite"></p>
-
-        <div class="form-actions">
-          <button type="button" id="cancelComplaintBtn" class="btn-secondary">Cancel</button>
-          <button type="submit" class="btn-primary">Save</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <script src="operator.js"></script>
-  <script src="OperatorStalls.js"></script>
-  <script src="OperatorComplaints.js"></script>
 </body>
 </html>

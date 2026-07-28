@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HawkerHub – Rental & Lease</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="operator.css">
+  <link rel="stylesheet" href="OperatorStalls.css">
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="/img/Logo.png" alt="HawkerHub logo" class="brand-logo">
+        <div class="brand-info">
+          <div class="brand-title">Operator Overview</div>
+          <div class="brand-subtitle" id="operator-email">Loading account...</div>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <a class="nav-item" href="operator.html">Dashboard</a>
+        <a class="nav-item" href="OperatorStalls.html">Stall Management</a>
+        <a class="nav-item active" href="OperatorRentalLease.html">Rental & Lease</a>
+        <a class="nav-item" href="OperatorComplaintsPage.html">Complaints</a>
+        <a class="nav-item" href="OperatorHygieneGrades.html">Hygiene Grades</a>
+        <button class="btn-danger" id="logoutBtn" type="button">Log Out</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="header">
+        <h1>Rental & Lease Overview</h1>
+        <p class="subtitle">All rental agreements across the centre.</p>
+      </header>
+
+      <section class="stats-grid" style="margin-bottom: 24px;">
+        <article class="card stat-card">
+          <div class="stat-header"><span>Active Agreements</span></div>
+          <div class="stat-value" id="active-agreements">0</div>
+        </article>
+
+        <article class="card stat-card">
+          <div class="stat-header"><span>Expiring in 30 Days</span></div>
+          <div class="stat-value critical-text" id="expiring-leases">0</div>
+        </article>
+      </section>
+
+      <section class="card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Stall</th>
+              <th>Vendor</th>
+              <th>Lease Start</th>
+              <th>Lease End</th>
+              <th>Monthly Rent</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="agreementsBody">
+            <tr><td colspan="7" class="text-muted-center">Loading agreements...</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script src="operator.js"></script>
+  <script src="OperatorRentalLease.js"></script>
+</body>
+</html>

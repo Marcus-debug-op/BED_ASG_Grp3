@@ -28,7 +28,27 @@ async function getMetrics(req, res) {
           grade: row.hygiene_grade,
           stallCount: Number(row.stall_count)
         }))
-      }
+      },
+      // Convert the sparse day-rows the DB returned into a fixed 7-slot
+      // Mon-Sun array (0 for any day with no completed orders), so the
+      // frontend chart can plot it directly without doing its own date math.
+      revenueTrend: (() => {
+        const monday = new Date();
+        monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+        monday.setHours(0, 0, 0, 0);
+
+        return Array.from({ length: 7 }, (_, i) => {
+          const day = new Date(monday);
+          day.setDate(monday.getDate() + i);
+          const dayKey = day.toISOString().slice(0, 10);
+
+          const match = metrics.revenueTrend.find((row) =>
+            new Date(row.order_day).toISOString().slice(0, 10) === dayKey
+          );
+
+          return match ? Number(match.day_revenue) : 0;
+        });
+      })()
     });
   } catch (error) {
     console.error("Error loading operator dashboard metrics:", error);
