@@ -1010,6 +1010,11 @@ submitBtn?.addEventListener("click", async () => {
     const fullDeliveryFee = calcDeliveryFee(info.subtotal, isDeliverySelected());
     let deliveryFeeAssigned = false;   // becomes true once one order takes the fee
 
+    // BED-130: eco is charged once for the whole checkout, so only the first
+    // order carries it (same idea as the delivery fee).
+    const ecoChosen = readEco();  // true if the eco toggle is on
+    let ecoAssigned = false;
+
     // Create ONE order per stall by POSTing each group to the order API.
     // Each POST is single-stall, so it passes the backend's stall validation.
     const createdOrders = [];
@@ -1037,7 +1042,10 @@ submitBtn?.addEventListener("click", async () => {
           payment_method: paymentMethodVal,
           delivery_address: deliveryAddressVal,
           postal_code: postalCodeVal,
-          delivery_charge: thisDeliveryCharge
+          delivery_charge: thisDeliveryCharge,
+          // BED-130: send the eco choice. Only on the first order (like the
+          // delivery fee) so a multi-stall checkout isn't charged eco twice.
+          eco_friendly_packaging: (!deliveryFeeAssigned && readEco()) ? true : false
         };
       };
 
@@ -1082,9 +1090,12 @@ submitBtn?.addEventListener("click", async () => {
       const created = await response.json();
       createdOrders.push(created);
 
+
       // Once one order has taken the delivery fee, mark it assigned so
       // the remaining stall orders in this checkout are charged 0.
       if (!deliveryFeeAssigned && fullDeliveryFee > 0) deliveryFeeAssigned = true;
+
+      if (!ecoAssigned && ecoChosen) ecoAssigned = true;
 
       if (attemptWithPromo && created.promotion) {
         promoApplied = true;

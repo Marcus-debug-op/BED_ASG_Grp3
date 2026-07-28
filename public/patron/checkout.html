@@ -154,6 +154,11 @@
           <span id="checkoutEcoFee">+$0.00</span>
         </div>
 
+        <div class="row" id="discountRow" style="display: none;">
+          <span>Discount</span>
+          <span id="discountAmount">-$0.00</span>
+        </div>
+
         <!-- Delivery fee row. Sits below eco packaging and above the promo box.
         Hidden by default; JS shows it only when Delivery is selected. -->
         <div class="row" id="checkoutDeliveryRow" style="display: none;">
@@ -164,12 +169,6 @@
         <small id="deliveryFeeNote" class="field-msg" style="color: var(--text-secondary);">
           Delivery fee: $3.00 for orders up to $10, plus $0.30 for every extra $1.
         </small>
-
-        <div class="row" id="discountRow" style="display: none;">
-          <span>Discount</span>
-          <span id="discountAmount">-$0.00</span>
-        </div>
-
 
         <div class="promo-row">
           <input id="promoCodeInput" type="text" placeholder="Promo code (optional)" autocomplete="off" />

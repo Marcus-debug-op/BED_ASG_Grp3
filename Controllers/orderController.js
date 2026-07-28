@@ -11,14 +11,14 @@ async function createOrder(req, res) {
     const {
       stall_id, items, promo_code,
       checkout_id, collection_method, delivery_address,
-      postal_code, delivery_charge, payment_method
+      postal_code, delivery_charge, payment_method, eco_friendly_packaging
     } = req.body;
 
     // Bundle the checkout details into one object to hand to the model.
     // Keeping them together keeps the createOrder() call tidy.
     const checkoutDetails = {
       checkout_id, collection_method, delivery_address,
-      postal_code, delivery_charge, payment_method
+      postal_code, delivery_charge, payment_method, eco_friendly_packaging 
     };
 
     // Ask the model to create the order. The model returns either the created
