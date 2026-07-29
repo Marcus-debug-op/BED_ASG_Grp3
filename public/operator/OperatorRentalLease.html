@@ -33,6 +33,7 @@
       <header class="header">
         <h1>Rental & Lease Overview</h1>
         <p class="subtitle">All rental agreements across the centre.</p>
+        <button type="button" id="addAgreementBtn" class="btn-primary">+ New Agreement</button>
       </header>
 
       <section class="stats-grid" style="margin-bottom: 24px;">
@@ -58,14 +59,64 @@
               <th>Lease End</th>
               <th>Monthly Rent</th>
               <th>Status</th>
+              <th>Accepted</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="agreementsBody">
-            <tr><td colspan="7" class="text-muted-center">Loading agreements...</td></tr>
+            <tr><td colspan="9" class="text-muted-center">Loading agreements...</td></tr>
           </tbody>
         </table>
       </section>
     </main>
+  </div>
+
+  <!-- Add / Edit rental agreement modal -->
+  <div id="agreementModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="agreementModalTitle">New Rental Agreement</h2>
+        <button type="button" id="closeAgreementModalBtn" class="modal-close">&times;</button>
+      </div>
+
+      <form id="agreementForm" class="stall-form">
+        <input type="hidden" id="agreementId">
+
+        <label for="agreementStallId">Stall</label>
+        <select id="agreementStallId" required>
+          <option value="">Loading stalls...</option>
+        </select>
+
+        <div class="form-row-2">
+          <div>
+            <label for="leaseStartDate">Lease Start</label>
+            <input id="leaseStartDate" type="date" required>
+          </div>
+
+          <div>
+            <label for="leaseEndDate">Lease End</label>
+            <input id="leaseEndDate" type="date" required>
+          </div>
+        </div>
+
+        <label for="monthlyRent">Monthly Rent ($)</label>
+        <input id="monthlyRent" type="number" step="0.01" min="0.01" required placeholder="e.g. 1200.00">
+
+        <label for="agreementStatus" id="agreementStatusLabel" style="display:none;">Agreement Status</label>
+        <select id="agreementStatus" style="display:none;">
+          <option value="Active">Active</option>
+          <option value="Expired">Expired</option>
+          <option value="Terminated">Terminated</option>
+        </select>
+
+        <p id="agreementFormMsg" class="form-msg" aria-live="polite"></p>
+
+        <div class="form-actions">
+          <button type="button" id="cancelAgreementBtn" class="btn-secondary">Cancel</button>
+          <button type="submit" class="btn-primary">Save Agreement</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script src="operator.js"></script>
