@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const { flushPromises, jsonResponse } = require("./frontendTestHelpers");
+const { flushPromises, jsonResponse } = require("../frontendTestHelpers.js");
 
 /*
   This file tests the patron-facing Complaint Submission frontend
@@ -53,7 +53,7 @@ function loadComplaintScript(stallIdQuery = "?id=1") {
   window.alert = jest.fn();
   window.history.back = jest.fn();
 
-  require("../public/patron/Complaint.js");
+  require("../../public/patron/Complaint.js");
 }
 
 describe("Patron Complaint Submission Frontend Tests", () => {

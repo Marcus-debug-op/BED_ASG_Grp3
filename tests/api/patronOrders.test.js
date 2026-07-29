@@ -1,10 +1,10 @@
 const request = require("supertest");
-const app = require("../app");
+const app = require("../../app");
 const {
   getPatronToken,
   getVendorToken,
   getVendorTestMenuItem
-} = require("./testHelpers");
+} = require("../testHelpers");
 
 /*
   This file tests the Patron Order features that I built.

@@ -1,5 +1,5 @@
 const request = require("supertest");
-const app = require("../app");
+const app = require("../../app");
 
 /*
   This file tests the Google OAuth sign-in flow (BED-144).

@@ -1,6 +1,6 @@
 const request = require("supertest");
-const app = require("../app");
-const { getPatronToken } = require("./testHelpers");
+const app = require("../../app");
+const { getPatronToken } = require("../testHelpers");
 
 /*
   This file tests the Profile API.

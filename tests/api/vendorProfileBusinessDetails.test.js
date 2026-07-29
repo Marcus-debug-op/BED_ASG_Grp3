@@ -1,6 +1,6 @@
 const request = require("supertest");
-const app = require("../app");
-const { getVendorToken, getPatronToken } = require("./testHelpers");
+const app = require("../../app");
+const { getVendorToken, getPatronToken } = require("../testHelpers");
 
 /*
   This file tests the Vendor Profile Business Details section.

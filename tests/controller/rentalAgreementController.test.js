@@ -1,5 +1,5 @@
-const rentalAgreementController = require("../Controllers/rentalAgreementController");
-const rentalAgreementModel = require("../Models/rentalAgreementModel");
+const rentalAgreementController = require("../../Controllers/rentalAgreementController");
+const rentalAgreementModel = require("../../Models/rentalAgreementModel");
 
 /*
   Unit tests for BED-23 (operator rental agreement management), following

@@ -1,12 +1,12 @@
 const request = require("supertest");
-const app = require("../app");
+const app = require("../../app");
 const {
   getPatronToken,
   insertTestStall,
   insertTestMenuItem,
   insertTestPromotion,
   SECOND_VENDOR_EMAIL
-} = require("./testHelpers");
+} = require("../testHelpers");
 
 /*
   This file tests the checkout "Apply" promo preview (BED-92):

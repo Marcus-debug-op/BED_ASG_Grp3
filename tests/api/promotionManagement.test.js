@@ -1,12 +1,12 @@
 const request = require("supertest");
-const app = require("../app");
+const app = require("../../app");
 const {
   getVendorToken,
   getPatronToken,
   insertTestStall,
   markPromotionAsUsed,
   SECOND_VENDOR_EMAIL
-} = require("./testHelpers");
+} = require("../testHelpers");
 
 /*
   This file tests the Vendor Promotion Code Management feature (BED-47).

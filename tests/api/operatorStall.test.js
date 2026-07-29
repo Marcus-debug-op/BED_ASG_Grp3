@@ -1,13 +1,13 @@
 const request = require("supertest");
 const sql = require("mssql");
-const dbConfig = require("../dbConfig");
-const app = require("../app");
+const dbConfig = require("../../dbConfig");
+const app = require("../../app");
 const {
   getOperatorToken,
   getVendorToken,
   getPatronToken,
   insertTestStall
-} = require("./testHelpers");
+} = require("../testHelpers");
 
 /*
   This file tests the Operator Stall Record Management API (BED-28).

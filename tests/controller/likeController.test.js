@@ -1,5 +1,5 @@
-const likeController = require("../Controllers/likeController");
-const menuItemLikeModel = require("../Models/menuItemLikeModel");
+const likeController = require("../../Controllers/likeController");
+const menuItemLikeModel = require("../../Models/menuItemLikeModel");
 
 /*
   Unit tests for the Menu Item Likes controller (BED-26).

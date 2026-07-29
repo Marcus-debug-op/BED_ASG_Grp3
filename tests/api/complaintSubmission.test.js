@@ -1,6 +1,6 @@
 const request = require("supertest");
-const app = require("../app");
-const { getPatronToken, getVendorTestMenuItem } = require("./testHelpers");
+const app = require("../../app");
+const { getPatronToken, getVendorTestMenuItem } = require("../testHelpers");
 
 /*
   This file tests the Complaint Submission feature.

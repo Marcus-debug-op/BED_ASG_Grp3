@@ -1,5 +1,5 @@
-const stallController = require("../Controllers/stallController");
-const stallModel = require("../Models/stallModel");
+const stallController = require("../../Controllers/stallController");
+const stallModel = require("../../Models/stallModel");
 
 jest.mock("../Models/stallModel");
 
