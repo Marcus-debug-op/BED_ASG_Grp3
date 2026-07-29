@@ -149,12 +149,30 @@ document.addEventListener("DOMContentLoaded", () => {
     // numbers are genuinely 0 and the tables/lists show their own
     // "no data yet" empty states instead of made-up placeholder content.
 
+   const monthSelect = document.getElementById("dashboardMonth");
+const yearSelect = document.getElementById("dashboardYear");
+
+const currentDate = new Date();
+
+monthSelect.value = currentDate.getMonth() + 1;
+
+for (let year = currentDate.getFullYear(); year >= currentDate.getFullYear() - 5; year--) {
+    const option = document.createElement("option");
+    option.value = year;
+    option.textContent = year;
+    yearSelect.appendChild(option);
+}
+
+yearSelect.value = currentDate.getFullYear();
+
     // Wrapped in its own named function (instead of a one-off fetch) so it
     // can be called both immediately on page load AND again on a timer
     // below - that's what keeps the dashboard updating on its own without
     // the vendor having to manually refresh the page.
     function loadDashboard() {
-        fetch("/api/vendor/dashboard", {
+        fetch(
+    `/api/vendor/dashboard?month=${monthSelect.value}&year=${yearSelect.value}`,
+    {
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -165,7 +183,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("todayRevenue").textContent = `$${data.todayRevenue}`;
                 document.getElementById("todayOrders").textContent = data.todayOrders;
                 document.getElementById("pendingOrders").textContent = data.pendingOrders;
-                document.getElementById("averageRating").textContent = data.averageRating;
+                const ratingElement = document.getElementById("averageRating");
+                const ratingElement = document.getElementById("averageRating");
+                if (
+                        data.averageRating === null ||
+                        data.averageRating === undefined ||
+                        Number(data.averageRating) === 0
+                    ) {
+                        ratingElement.textContent = "No ratings yet";
+                    } else {
+                        ratingElement.textContent = data.averageRating;
+                    }
 
                 // Always call these (even with an empty array) rather than only
                 // calling them "if there's data" - both render functions already
@@ -187,8 +215,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             })
             .catch((error) => {
-                console.error("Error loading dashboard metrics:", error);
-            });
+    console.error("Error loading dashboard metrics:", error);
+
+    document.getElementById("todayRevenue").textContent = "--";
+    document.getElementById("todayOrders").textContent = "--";
+    document.getElementById("pendingOrders").textContent = "--";
+    document.getElementById("averageRating").textContent = "--";
+
+    document.getElementById("ordersBody").innerHTML = `
+        <tr>
+            <td colspan="3">Unable to load dashboard data. Please try again later.</td>
+        </tr>
+    `;
+
+    alert("Unable to load dashboard data. Please try again later.");
+});
     }
 
     // Load once immediately so the vendor isn't staring at a blank
@@ -196,7 +237,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // status changes, or new reviews show up on their own - matches
     // the same auto-refresh pattern used on the operator dashboard.
     loadDashboard();
-    setInterval(loadDashboard, 30000);
+
+monthSelect.addEventListener("change", loadDashboard);
+yearSelect.addEventListener("change", loadDashboard);
+
+setInterval(loadDashboard, 30000);
 
     // Builds the "Recent Orders" table rows from scratch each time it's
     // called. Clears whatever was there before (replaceChildren) so old

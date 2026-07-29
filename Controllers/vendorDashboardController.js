@@ -4,10 +4,16 @@ const vendorDashboardModel = require("../Models/vendorDashboardModel");
 async function getDashboard(req, res) {
   try {
     const vendorId = req.user.sub;
+    const month = parseInt(req.query.month);
+    const year = parseInt(req.query.year);
     // The dashboard model uses MSSQL's shared connection. Run these queries in
     // sequence so one completed query cannot close the connection another one
     // is still using.
-    const metrics = await vendorDashboardModel.getDashboardMetrics(vendorId);
+    const metrics = await vendorDashboardModel.getDashboardMetrics(
+      vendorId,
+      month,
+      year
+    );
     const recentOrders = await vendorDashboardModel.getRecentOrders(vendorId);
     const weeklyRevenue = await vendorDashboardModel.getWeeklyRevenue(vendorId);
     const topSellingDishes = await vendorDashboardModel.getTopSellingDishes(vendorId);
