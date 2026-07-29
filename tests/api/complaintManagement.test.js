@@ -1,11 +1,11 @@
 const request = require("supertest");
-const app = require("../app");
+const app = require("../../app");
 const {
   getPatronToken,
   getVendorTestMenuItem,
   getOfficerToken,
   getOperatorToken
-} = require("./testHelpers");
+} = require("../testHelpers");
 
 /*
   This file tests the Complaint Management (review & resolution) feature.

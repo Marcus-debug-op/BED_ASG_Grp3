@@ -1,13 +1,13 @@
 const request = require("supertest");
 const sql = require("mssql");
-const app = require("../app");
-const dbConfig = require("../dbConfig");
+const app = require("../../app");
+const dbConfig = require("../../dbConfig");
 
 const {
   getOfficerToken,
   getVendorToken,
   getPatronToken
-} = require("./testHelpers");
+} = require("../testHelpers");
 
 describe("NEA Inspection Analytics API Tests", () => {
   let officerToken;

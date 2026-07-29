@@ -1,5 +1,5 @@
-const complaintController = require("../Controllers/complaintController");
-const complaintModel = require("../Models/complaintModel");
+const complaintController = require("../../Controllers/complaintController");
+const complaintModel = require("../../Models/complaintModel");
 
 /*
   Unit tests for BED-131 (complaint image upload). Only covers the new

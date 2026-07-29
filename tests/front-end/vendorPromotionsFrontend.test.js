@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const { flushPromises, jsonResponse } = require("./frontendTestHelpers");
+const { flushPromises, jsonResponse } = require("../frontendTestHelpers.js");
 
 /*
   This file tests the vendor-facing Promotion Management frontend
@@ -75,7 +75,7 @@ function loadVendorPromotionsScript() {
     return originalAddEventListener(event, handler, options);
   });
 
-  require("../public/vendor/VendorPromotions.js");
+  require("../../public/vendor/VendorPromotions.js");
 
   spy.mockRestore();
 }

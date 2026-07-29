@@ -1,5 +1,5 @@
-const vendorStallController = require("../Controllers/vendorStallController");
-const vendorStallModel = require("../Models/vendorStallModel");
+const vendorStallController = require("../../Controllers/vendorStallController");
+const vendorStallModel = require("../../Models/vendorStallModel");
 
 jest.mock("../Models/vendorStallModel");
 

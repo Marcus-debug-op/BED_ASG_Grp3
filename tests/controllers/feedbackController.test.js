@@ -1,5 +1,5 @@
-const feedbackController = require("../Controllers/feedbackController");
-const feedbackModel = require("../Models/feedbackModel");
+const feedbackController = require("../../Controllers/feedbackController");
+const feedbackModel = require("../../Models/feedbackModel");
 
 /*
   Unit tests for the Feedback controller (BED-2 create/read, BED-92

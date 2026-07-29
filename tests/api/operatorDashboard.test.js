@@ -1,12 +1,12 @@
 const request = require("supertest");
 const sql = require("mssql");
-const app = require("../app");
-const dbConfig = require("../dbConfig");
+const app = require("../../app");
+const dbConfig = require("../../dbConfig");
 const {
   getOperatorToken,
   getVendorToken,
   getPatronToken
-} = require("./testHelpers");
+} = require("../testHelpers");
 
 describe("Operator Dashboard API Tests", () => {
   let operatorToken;

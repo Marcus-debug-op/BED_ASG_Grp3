@@ -1,5 +1,5 @@
-const feedbackController = require("../Controllers/feedbackController");
-const feedbackModel = require("../Models/feedbackModel");
+const feedbackController = require("../../Controllers/feedbackController");
+const feedbackModel = require("../../Models/feedbackModel");
 
 /*
   Unit tests for BED-132 (feedback photo upload). Only covers the new
