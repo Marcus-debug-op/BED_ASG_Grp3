@@ -102,6 +102,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             // Refresh the little cart count badge in the nav.
             if (typeof updateCartDot === "function") updateCartDot();
+
+            // BED-116: notify the patron the item was added.
+            if (typeof showToast === "function") showToast(`${item.name} added to cart`)
         });
 
         // BED-26 has no "did I already like this" endpoint, so every heart

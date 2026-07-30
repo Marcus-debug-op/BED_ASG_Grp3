@@ -163,6 +163,8 @@ function updateCartDot() {
   const dot = navCart.querySelector(".cart-dot");
   if (!dot) return;
 
+  // BED-116: show the number of items in the cart, not just a dot.
+  dot.textContent = count > 0 ? String(count) : "";
   dot.style.display = count > 0 ? "inline-block" : "none";
 }
 
