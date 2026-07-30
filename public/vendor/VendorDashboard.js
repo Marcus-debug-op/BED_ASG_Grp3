@@ -177,13 +177,21 @@ yearSelect.value = currentDate.getFullYear();
                 Authorization: `Bearer ${token}`
             }
         })
-            .then((res) => res.json())
+            .then(async (res) => {
+                const data = await res.json();
+                if (!res.ok) {
+                    // Covers BED-73's validation errors (e.g. future month
+                    // requested) the same way as a network failure below -
+                    // one friendly-message path for any kind of API error.
+                    throw new Error(data.message || "Unable to load dashboard data.");
+                }
+                return data;
+            })
             .then((data) => {
                 // The 4 top summary cards.
                 document.getElementById("todayRevenue").textContent = `$${data.todayRevenue}`;
                 document.getElementById("todayOrders").textContent = data.todayOrders;
                 document.getElementById("pendingOrders").textContent = data.pendingOrders;
-                const ratingElement = document.getElementById("averageRating");
                 const ratingElement = document.getElementById("averageRating");
                 if (
                         data.averageRating === null ||
@@ -222,13 +230,13 @@ yearSelect.value = currentDate.getFullYear();
     document.getElementById("pendingOrders").textContent = "--";
     document.getElementById("averageRating").textContent = "--";
 
+    // A friendly inline message instead of a blank screen - deliberately
+    // not a blocking alert() popup, which is disruptive rather than graceful.
     document.getElementById("ordersBody").innerHTML = `
         <tr>
-            <td colspan="3">Unable to load dashboard data. Please try again later.</td>
+            <td colspan="3">${error.message || "No sales data available for this period."}</td>
         </tr>
     `;
-
-    alert("Unable to load dashboard data. Please try again later.");
 });
     }
 
