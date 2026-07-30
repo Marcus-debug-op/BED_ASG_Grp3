@@ -35,12 +35,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadHawkerCentres();
   await refreshStalls();
 
-  // 2) Hook filters - search/cuisine re-query the server, halal/veg filter client-side
+  // 2) Hook filters - search/cuisine/dietary all re-query the server now
+  // that BED-148's backend filter exists (previously halal/veg only
+  // filtered client-side against a hardcoded `false`, since the server
+  // had nothing to filter on yet).
   searchInput?.addEventListener("input", debounce(refreshStalls, 300));
   cuisineSelect?.addEventListener("change", refreshStalls);
   hawkerCentreSelect?.addEventListener("change", refreshStalls);
-  halalCheck?.addEventListener("change", applyClientOnlyFilters);
-  vegCheck?.addEventListener("change", applyClientOnlyFilters);
+  halalCheck?.addEventListener("change", refreshStalls);
+  vegCheck?.addEventListener("change", refreshStalls);
 
   async function loadHawkerCentres() {
   try {
@@ -81,10 +84,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       params.hawker_centre_id = hawkerCentreId;
     }
 
+    // BED-148: build ?dietary=Halal,Vegetarian from whichever boxes are
+    // checked. Matches the exact tag names seeded into Cuisines.
+    const dietaryTags = [];
+    if (halalCheck?.checked) dietaryTags.push("Halal");
+    if (vegCheck?.checked) dietaryTags.push("Vegetarian");
+    if (dietaryTags.length > 0) {
+      params.dietary = dietaryTags.join(",");
+    }
+
     try {
       const stalls = await loadStalls(params);
       renderStalls(stalls);
-      applyClientOnlyFilters();
+      if (countText) countText.textContent = `${stalls.length} stalls found`;
     } catch (err) {
       console.error("Failed to load stalls:", err);
       stallGrid.innerHTML = `<p style="padding:12px;">Unable to load stalls right now.</p>`;
@@ -94,7 +106,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function loadStalls(params) {
     const qs = new URLSearchParams(params).toString();
-    const res = await fetch(`/api/stalls${qs ? `?${qs}` : ""}`);
+    // no-store: without it the browser can serve a cached copy of this GET
+    // response, so a stall photo updated by a vendor (BED-147) would keep
+    // showing the old image_url until a hard refresh.
+    const res = await fetch(`/api/stalls${qs ? `?${qs}` : ""}`, { cache: "no-store" });
 
     if (!res.ok) throw new Error(`Request failed: ${res.status}`);
     return res.json();
@@ -105,11 +120,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       .map((s) => {
         const cuisine = (s.cuisine_type || "all").toLowerCase();
 
-        // NOTE: halal / vegetarian aren't in the DB yet, defaulting to false
-        // until BED-61's schema is extended (see the guide's optional migration).
-        const halal = false;
-        const vegetarian = false;
-
         const imageUrl = normalizeImageUrl(s.image_url);
         const shortDesc = s.description || "";
 
@@ -119,8 +129,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           <article class="stall-card"
             data-name="${escapeAttr((s.stall_name || "").toLowerCase())}"
             data-category="${escapeAttr(cuisine)}"
-            data-halal="${halal}"
-            data-vegetarian="${vegetarian}"
           >
             <img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(s.stall_name || "Stall")}" class="stall-img" onerror="this.src='/img/placeholder.jpg'" />
             <div class="stall-body">
@@ -142,30 +150,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         `;
       })
       .join("");
-  }
-
-  // Halal/veg checkboxes can only filter what's already on the page
-  // (client-side) since the server doesn't have that data to filter on yet.
-  function applyClientOnlyFilters() {
-    const wantHalal = !!halalCheck?.checked;
-    const wantVeg = !!vegCheck?.checked;
-
-    const cards = stallGrid.querySelectorAll(".stall-card");
-    let visible = 0;
-
-    cards.forEach((card) => {
-      const isHalal = card.dataset.halal === "true";
-      const isVeg = card.dataset.vegetarian === "true";
-
-      const okHalal = !wantHalal || isHalal;
-      const okVeg = !wantVeg || isVeg;
-
-      const show = okHalal && okVeg;
-      card.style.display = show ? "" : "none";
-      if (show) visible++;
-    });
-
-    if (countText) countText.textContent = `${visible} stalls found`;
   }
 
   function cap(s) {
@@ -203,6 +187,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Fix paths saved as img/example.jpg
   if (cleaned.startsWith("img/")) {
+    return `/${cleaned}`;
+  }
+
+  // BED-147: fix paths saved as uploads/stalls/example.jpg (no leading
+  // slash) - the vendor stall photo upload endpoint returns paths in this
+  // exact shape, which previously fell through to the final img/ fallback
+  // below and produced a broken /img/uploads/... URL.
+  if (cleaned.startsWith("uploads/")) {
     return `/${cleaned}`;
   }
 
