@@ -119,4 +119,26 @@ describe("Vendor Dashboard API Tests", () => {
 
     expect(response.statusCode).toBe(403);
   });
+
+  /*
+  Test case:
+  Vendor should be able to request dashboard metrics using
+  month/year filters.
+
+  Expected result:
+  - HTTP 200
+  - Dashboard metrics are still returned.
+*/
+test("should get dashboard metrics with month and year filters", async () => {
+  const response = await request(app)
+    .get("/api/vendor/dashboard?month=7&year=2026")
+    .set("Authorization", `Bearer ${vendorToken}`);
+
+  expect(response.statusCode).toBe(200);
+
+  expect(response.body).toHaveProperty("todayRevenue");
+  expect(response.body).toHaveProperty("todayOrders");
+  expect(response.body).toHaveProperty("pendingOrders");
+  expect(response.body).toHaveProperty("averageRating");
+});
 });
