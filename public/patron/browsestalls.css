@@ -295,10 +295,16 @@ body {
 
 /* Cart dot */
 .cart-dot{
-  width: 10px;
-  height: 10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   border-radius: 999px;
   background: #ff2b2b;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
   display: none;
   box-shadow: 0 0 0 2px rgba(255,255,255,0.6);
 }

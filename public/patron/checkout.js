@@ -1137,6 +1137,10 @@ submitBtn?.addEventListener("click", async () => {
     const lastOrder = createdOrders[createdOrders.length - 1];
     localStorage.setItem(LAST_ORDER_NO_KEY, String(lastOrder.order.order_id));
 
+    // BED-93: save the checkout id too, so the success page can fetch every
+    // order in this checkout and show them as one combined receipt.
+    localStorage.setItem("last_checkout_id", checkoutId);
+
     // All stall orders saved -> clear the local cart, eco toggle and card details.
     localStorage.removeItem(getCartKey());
     localStorage.removeItem(ECO_KEY);

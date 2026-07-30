@@ -55,44 +55,19 @@
           </div>
         </div>
       </section>
+      <!-- BED-93: the full order receipt is rendered here by the script below -->
+      <section class="receipt-wrap" id="receiptWrap">
+        <p id="receiptLoading">Loading your receipt...</p>
+      </section>
+
+      <div class="success-actions">
+        <a class="success-btn" href="/patron/history.html">View order history</a>
+        <a class="success-btn ghost" href="/patron/browsestalls.html">Continue shopping</a>
+      </div>
     </main>
 
     
     <script type="module" src="/shared/navbar-init.js"></script>
-
-    <script>
-      const queueEl = document.getElementById("queueNumber");
-
-      const LAST_ORDER_NO_KEY = "hawkerhub_last_order_no";
-      const HISTORY_KEY = "hawkerhub_order_history";
-
-      function formatQueueNo(n) {
-        const num = Number(n);
-        if (!Number.isFinite(num)) return "--";
-        return String(num).padStart(2, "0"); 
-      }
-
-      function setQueueNo(n) {
-        if (!queueEl) return;
-        queueEl.textContent = formatQueueNo(n);
-      }
-
-      // 1) Best source: last order no saved by checkout.js
-      const lastNo = localStorage.getItem(LAST_ORDER_NO_KEY);
-      if (lastNo != null && String(lastNo).trim() !== "") {
-        setQueueNo(lastNo);
-      } else {
-        // 2) Fallback: old local history
-        try {
-          const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
-          if (Array.isArray(history) && history.length > 0) {
-            const latest = history[history.length - 1];
-            if (latest && latest.orderNo != null) setQueueNo(latest.orderNo);
-          }
-        } catch (e) {
-          setQueueNo("--");
-        }
-      }
-    </script>
+    <script src="/patron/paymentSuccess.js"></script>
   </body>
 </html>
