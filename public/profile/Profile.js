@@ -196,7 +196,7 @@ if (deactivateAccountBtn) {
 
     try {
       const response = await fetch("/api/account/deactivate", {
-        method: "PATCH",
+        method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -211,10 +211,7 @@ if (deactivateAccountBtn) {
 
       alert("Your account has been deactivated successfully.");
 
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("user");
-
+      clearLoginSession();
       window.location.href = "/index.html";
     } catch (error) {
       console.error("Deactivate account error:", error);
