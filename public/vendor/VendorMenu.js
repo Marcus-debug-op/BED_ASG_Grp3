@@ -347,15 +347,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ===========================
-    // Logout
-    // ===========================
-
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-        localStorage.clear();
-        window.location.href = "/auth/signup.html";
-    });
-
-    // ===========================
     // Init
     // ===========================
 
