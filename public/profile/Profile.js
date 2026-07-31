@@ -223,6 +223,60 @@ if (deactivateAccountBtn) {
 const discountContainer = document.getElementById("discount-container");
 
 if (discountContainer) {
-  discountContainer.innerHTML =
-    "<p>Discount codes will be loaded from the backend soon.</p>";
+  loadAvailableDiscounts();
+}
+
+async function loadAvailableDiscounts() {
+  try {
+    const response = await fetch("/api/promotions/available", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      discountContainer.innerHTML = "<p class='loading-text'>Unable to load discounts right now.</p>";
+      return;
+    }
+
+    const promotions = await response.json();
+
+    if (!promotions.length) {
+      discountContainer.innerHTML = "<p class='loading-text'>No discount codes available right now.</p>";
+      return;
+    }
+
+    discountContainer.innerHTML = promotions.map(renderDiscountCard).join("");
+  } catch (error) {
+    console.error("Error loading available discounts:", error);
+    discountContainer.innerHTML = "<p class='loading-text'>Unable to load discounts right now.</p>";
+  }
+}
+
+function renderDiscountCard(promo) {
+  const minSpendText = promo.min_spend_amount
+    ? `Min. spend $${Number(promo.min_spend_amount).toFixed(2)}`
+    : "No minimum spend";
+
+  const expiryText = new Date(promo.end_date).toLocaleDateString("en-SG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+
+  return `
+    <div class="discount-card">
+      <div class="discount-code">${escapeHtml(promo.promo_code)}</div>
+      <div class="discount-stall">${escapeHtml(promo.stall_name)}</div>
+      <div class="discount-percent">${Number(promo.discount_percent)}% off</div>
+      <div class="discount-meta">${minSpendText} · Valid till ${expiryText}</div>
+      ${promo.description ? `<div class="discount-description">${escapeHtml(promo.description)}</div>` : ""}
+    </div>
+  `;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text ?? "";
+  return div.innerHTML;
 }
