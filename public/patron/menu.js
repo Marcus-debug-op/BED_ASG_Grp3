@@ -208,6 +208,12 @@ function normalizeImageUrl(imageUrl) {
     return `/${cleaned}`;
   }
 
+  // BED-147 / BED-132: uploaded photos are stored as "uploads/..." with no
+  // leading slash; without this they became a broken "/img/uploads/..." URL.
+  if (cleaned.startsWith("uploads/")) {
+    return `/${cleaned}`;
+  }
+
   return `/img/${cleaned}`;
 }   
 

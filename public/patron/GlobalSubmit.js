@@ -58,8 +58,60 @@ document.addEventListener("DOMContentLoaded", () => {
   const ratingHidden = document.getElementById("rating-value");
   const commentBox = document.querySelector(".main-complaint");
   const stars = document.querySelectorAll(".star");
+  const importBtn = document.getElementById("import-btn");
+  const fileInput = document.getElementById("real-file-input");
 
   const { stallId, returnUrl, editId, editRating, editComment } = getParams();
+
+  // BED-132: wire the existing "Add Photo" button (previously dead - it
+  // rendered but never did anything) to the hidden file input.
+  //
+  // feedback.html already ships a properly styled preview area
+  // (#photo-preview-wrapper > #image-preview + #remove-photo-btn), so this
+  // reuses it rather than injecting its own <img>. An earlier version
+  // created a second, unstyled preview next to the button, which rendered
+  // full-size and broke the form layout.
+  let selectedPhotoFile = null;
+
+  const photoWrapper = document.getElementById("photo-preview-wrapper");
+  const imagePreview = document.getElementById("image-preview");
+  const removePhotoBtn = document.getElementById("remove-photo-btn");
+
+  function clearSelectedPhoto() {
+    selectedPhotoFile = null;
+    if (fileInput) fileInput.value = "";
+    if (imagePreview) imagePreview.src = "";
+    if (photoWrapper) photoWrapper.classList.remove("show");
+    if (importBtn) importBtn.textContent = "Add Photo";
+  }
+
+  // Hidden until a photo is actually chosen - Forms.css shows the area via
+  // the .show class (.photo-preview-area is display:none by default).
+  if (photoWrapper) photoWrapper.classList.remove("show");
+
+  if (importBtn && fileInput) {
+    importBtn.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      selectedPhotoFile = file;
+      importBtn.textContent = `📷 ${file.name}`;
+
+      try {
+        const dataUrl = await fileToCompressedDataUrl(file);
+        if (imagePreview) imagePreview.src = dataUrl;
+        if (photoWrapper) photoWrapper.classList.add("show");
+      } catch (err) {
+        console.error("Error previewing photo:", err);
+      }
+    });
+  }
+
+  if (removePhotoBtn) {
+    removePhotoBtn.addEventListener("click", clearSelectedPhoto);
+  }
 
   // BED-92 edit mode: pre-fill the form with the existing review and relabel
   // the page so it's clear this updates rather than creates a new one.
@@ -142,18 +194,32 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // 3. Build exact payload for Joi validation (ignoring Name and Photo)
-    const payload = {
-      stall_id: parseInt(stallId, 10),
-      rating: rating,
-      comment: comment
-    };
-
-    // BED-92: editing an existing review updates it in place (PUT) instead
-    // of creating a new one (POST).
+    // 3. Build the request. Only the create (POST) route accepts a photo
+    // (uploadFeedbackImage is only wired into POST /api/feedback) - editing
+    // (PUT) stays JSON, unaffected by BED-132.
     const isEdit = Boolean(editId);
     const url = isEdit ? `/api/feedback/${editId}` : "/api/feedback";
     const method = isEdit ? "PUT" : "POST";
+
+    let requestBody;
+    let requestHeaders = { Authorization: `Bearer ${token}` };
+
+    if (!isEdit && selectedPhotoFile) {
+      const formData = new FormData();
+      formData.append("stall_id", parseInt(stallId, 10));
+      formData.append("rating", rating);
+      formData.append("comment", comment);
+      formData.append("image", selectedPhotoFile);
+      requestBody = formData;
+      // No Content-Type set - the browser fills in the multipart boundary.
+    } else {
+      requestHeaders["Content-Type"] = "application/json";
+      requestBody = JSON.stringify({
+        stall_id: parseInt(stallId, 10),
+        rating: rating,
+        comment: comment
+      });
+    }
 
     try {
       submitBtn.disabled = true;
@@ -162,11 +228,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // 4. Send to your Express API
       const response = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` 
-        },
-        body: JSON.stringify(payload)
+        headers: requestHeaders,
+        body: requestBody
       });
 
       const responseData = await response.json();

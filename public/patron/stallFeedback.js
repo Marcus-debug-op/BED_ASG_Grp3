@@ -66,7 +66,12 @@ function renderReviews(reviews) {
     const reviewComment = r.comment || "";
     const reviewRating = r.rating || 0;
 
-    const hasPhoto = r.photo && typeof r.photo === "string" && r.photo.trim().length > 0;
+    // BED-132: the API returns this as photo_path (matching the Feedbacks
+    // column). An earlier version read r.photo, which never exists, so an
+    // uploaded review photo silently never rendered.
+    const rawPhoto = r.photo_path || r.photo || "";
+    const hasPhoto = typeof rawPhoto === "string" && rawPhoto.trim().length > 0;
+    const photoSrc = hasPhoto ? normalizeImageUrl(rawPhoto) : "";
 
     // Only the patron who wrote this review sees a delete button on it -
     // the backend also enforces this (403 on mismatch), this is just UI.
@@ -97,7 +102,7 @@ function renderReviews(reviews) {
 
         ${hasPhoto ? `
           <div class="review-photo-wrap">
-            <img class="review-photo" src="${r.photo}" alt="Review Photo">
+            <img class="review-photo" src="${photoSrc}" alt="Review Photo">
           </div>
         ` : ""}
       </div>
@@ -220,7 +225,10 @@ function updateStats(reviews) {
 // Rewritten to use Express SQL API instead of Firebase
 async function loadStallInfo(stallId) {
   try {
-    const response = await fetch('/api/stalls');
+    // no-store: the browser can otherwise serve a cached copy of this GET,
+    // so a stall photo a vendor just updated (BED-147) would keep showing
+    // the previous image_url until a hard refresh.
+    const response = await fetch('/api/stalls', { cache: "no-store" });
     const allStalls = await response.json();
     
     // Find stall by snake_case stall_id
@@ -237,7 +245,12 @@ async function loadStallInfo(stallId) {
     if (nameEl) nameEl.textContent = stallDisplayName;
 
     const imgEl = document.getElementById("stallHeroImg");
-    if (imgEl) imgEl.src = normalizeImageUrl(s.image_url); // Adjust for DB columns
+    if (imgEl) {
+      // Falls back to the placeholder if the file behind image_url is
+      // missing, rather than rendering a broken-image icon.
+      imgEl.onerror = () => { imgEl.onerror = null; imgEl.src = "/img/placeholder.jpg"; };
+      imgEl.src = normalizeImageUrl(s.image_url);
+    }
 
     const closeBtn = document.querySelector(".btn-close-modal");
     if (closeBtn) closeBtn.addEventListener("click", () => window.history.back());
@@ -343,6 +356,14 @@ function normalizeImageUrl(imageUrl) {
   }
 
   if (cleaned.startsWith("img/")) {
+    return `/${cleaned}`;
+  }
+
+  // BED-147 / BED-132: uploaded stall photos and review photos are stored
+  // as "uploads/stalls/x.jpg" / "uploads/feedback/x.jpg" with no leading
+  // slash. Without this branch they fell through to the /img/ fallback
+  // below and produced a broken "/img/uploads/..." URL that 404s.
+  if (cleaned.startsWith("uploads/")) {
     return `/${cleaned}`;
   }
 
