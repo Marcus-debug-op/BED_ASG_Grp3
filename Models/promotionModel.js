@@ -402,6 +402,48 @@ async function recordRedemption(transaction, promotionId, orderId, patronId, dis
   `);
 }
 
+// Patron-facing: lists every promotion this specific patron could still apply
+// right now, across all stalls. Reuses the same eligibility rules as checkout
+// (active, within date range, stall active, not already redeemed by this
+// patron, redemption cap not hit) so nothing shown here could actually fail
+// if the patron tried to use it at checkout.
+async function getAvailablePromotionsForPatron(patronId) {
+  let connection;
+
+  try {
+    connection = await sql.connect(dbConfig);
+
+    const request = connection.request();
+    request.input("patron_id", sql.Int, patronId);
+
+    const result = await request.query(`
+      SELECT p.promotion_id, p.promo_code, p.description, p.discount_percent,
+             p.min_spend_amount, p.max_redemptions, p.start_date, p.end_date,
+             s.stall_id, s.stall_name
+      FROM Promotions p
+      INNER JOIN Stalls s ON p.stall_id = s.stall_id
+      WHERE p.is_active = 1
+        AND s.is_active = 1
+        AND CAST(GETDATE() AS DATE) BETWEEN p.start_date AND p.end_date
+        AND NOT EXISTS (
+          SELECT 1 FROM PromotionRedemptions pr
+          WHERE pr.promotion_id = p.promotion_id AND pr.patron_id = @patron_id
+        )
+        AND (
+          p.max_redemptions IS NULL
+          OR (SELECT COUNT(*) FROM PromotionRedemptions pr2 WHERE pr2.promotion_id = p.promotion_id) < p.max_redemptions
+        )
+      ORDER BY p.end_date ASC;
+    `);
+
+    return result.recordset;
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) await connection.close();
+  }
+}
 
 module.exports = {
   getPromotionsByStall,
@@ -411,5 +453,6 @@ module.exports = {
   deletePromotion,
   validateAndApplyPromotion,
   previewPromotion,
-  recordRedemption
+  recordRedemption,
+  getAvailablePromotionsForPatron
 };

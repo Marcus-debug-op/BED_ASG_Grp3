@@ -1,4 +1,3 @@
-
 * {
     box-sizing: border-box;
     margin: 0;
@@ -286,6 +285,50 @@ body {
 
 /* DISCOUNT SECTION */
 .discount-section { flex-grow: 1; }
+
+.discount-card {
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    background: white;
+}
+
+.discount-code {
+    display: inline-block;
+    background: #fff3e0;
+    color: #e65100;
+    border: 1px solid #ffcc80;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.discount-stall {
+    font-weight: bold;
+    font-size: 1.05rem;
+    margin-bottom: 4px;
+}
+
+.discount-percent {
+    color: var(--btn-red);
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+}
+
+.discount-meta {
+    color: #777;
+    font-size: 0.85rem;
+}
+
+.discount-description {
+    margin-top: 8px;
+    font-size: 0.9rem;
+    color: #555;
+}
 
 .section-title {
     font-size: 1.5rem;
