@@ -21,16 +21,41 @@ CREATE TABLE Users (
     role VARCHAR(20) NOT NULL CHECK (role IN ('patron', 'vendor', 'officer', 'operator')),
     phone_number VARCHAR(20),
     created_at DATETIME DEFAULT GETDATE(),
-    profile_image_url VARCHAR(255) NULL /* merged from migration/003_Marcus_Add_profilepic_attrribute.sql */
+
+    -- Profile picture support
+    profile_image_url VARCHAR(255) NULL,
+
+    -- Soft account deactivation
+    is_active BIT NOT NULL DEFAULT 1,
+    deactivated_at DATETIME NULL,
+
+    -- Password reset support
+    reset_token VARCHAR(255) NULL,
+    token_expiry DATETIME NULL,
+
+    -- Officer login badge verification
+    badge_id VARCHAR(20) NULL
 );
 
+-- =====================================================================
+-- Cuisines + MenuItemCuisines (many-to-many: a dish can belong to
+-- more than one cuisine, e.g. "Nasi Lemak" = Malay + Halal)
+-- merged from migration/004_damien_migration_menu_cuisines_and_complaint_notes.sql
+-- =====================================================================
+CREATE TABLE Cuisines (
+    cuisine_id INT IDENTITY(1,1) PRIMARY KEY,
+    cuisine_name VARCHAR(50) NOT NULL UNIQUE
+);
+GO
 
 
 CREATE TABLE Stalls (
     stall_id INT IDENTITY(1,1) PRIMARY KEY,
     vendor_id INT NOT NULL, /* This is "user_id" from Users, I used vendor_id to make the naming consistent so vendor_id = user_id */
     stall_name VARCHAR(100) NOT NULL,
-    cuisine_type VARCHAR(50),
+    -- New cuisine lookup link.
+    -- Keep cuisine_type for old seed data compatibility first.
+    cuisine_id INT NULL,
     description VARCHAR(255),
     unit_number VARCHAR(20) UNIQUE,
     is_active BIT DEFAULT 1,
@@ -41,8 +66,15 @@ CREATE TABLE Stalls (
     phone_number VARCHAR(20),
     image_url VARCHAR(255),
 
+    -- Latest hygiene grade from completed NEA inspection
+    current_hygiene_grade VARCHAR(5) NULL,
+
+   
+
+
     CONSTRAINT FK_Stalls_Vendor FOREIGN KEY (vendor_id) REFERENCES Users(user_id),
-    CONSTRAINT FK_Stalls_HawkerCentre FOREIGN KEY (hawker_centre_id) REFERENCES HawkerCentres(hawker_centre_id)
+    CONSTRAINT FK_Stalls_HawkerCentre FOREIGN KEY (hawker_centre_id) REFERENCES HawkerCentres(hawker_centre_id),
+    CONSTRAINT FK_Stalls_Cuisines FOREIGN KEY (cuisine_id) REFERENCES Cuisines(cuisine_id)
 );
 
 
@@ -54,6 +86,10 @@ CREATE TABLE RentalAgreements (
     monthly_rent DECIMAL(10,2) NOT NULL,
     agreement_status VARCHAR(20) NOT NULL DEFAULT 'Active',
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
+
+    -- Vendor acknowledgement
+    is_accepted BIT NOT NULL DEFAULT 0,
+    acceptance_timestamp DATETIME NULL,
 
     CONSTRAINT CK_RentalAgreements_Dates
         CHECK (lease_end_date >= lease_start_date),
@@ -90,18 +126,6 @@ CREATE TABLE Promotions (
 );
 
 
-/* Dont use this yet, its been created but I planning to use this to store the profiles so its abit unupdated*/
-CREATE TABLE VendorProfiles (
-    vendor_profile_id INT IDENTITY(1,1) PRIMARY KEY,
-    user_id INT NOT NULL UNIQUE,
-    stall_name VARCHAR(100) NOT NULL,
-    cuisine_type VARCHAR(50),
-    stall_description VARCHAR(255),
-    unit_number VARCHAR(20),
-    created_at DATETIME DEFAULT GETDATE(),
-
-    FOREIGN KEY (user_id) REFERENCES Users(user_id)
-);
 
 CREATE TABLE MenuItems (
     menu_item_id INT IDENTITY(1,1) PRIMARY KEY,
@@ -128,12 +152,36 @@ CREATE TABLE Orders (
     total_amount DECIMAL(10,2) NOT NULL,
     order_date DATETIME NOT NULL DEFAULT GETDATE(),
 
+    -- Checkout details
+    checkout_id VARCHAR(30) NULL,
+    collection_method VARCHAR(20) NULL,
+    delivery_address VARCHAR(255) NULL,
+    postal_code VARCHAR(6) NULL,
+    delivery_charge DECIMAL(10,2) NULL,
+    payment_method VARCHAR(20) NULL,
+
+    -- Eco-friendly packaging option
+    eco_friendly_packaging BIT NOT NULL DEFAULT 0,
+
     CONSTRAINT CK_Orders_Status CHECK (order_status IN ('Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled')),
     CONSTRAINT FK_Orders_Patron FOREIGN KEY (patron_id) REFERENCES Users(user_id),
     CONSTRAINT FK_Orders_Stall FOREIGN KEY (stall_id) REFERENCES Stalls(stall_id),
     CONSTRAINT FK_Orders_Promotion FOREIGN KEY (promotion_id) REFERENCES Promotions(promotion_id)
 );
 
+CREATE TABLE SavedAddresses (
+    address_id INT IDENTITY(1,1) PRIMARY KEY,
+    patron_id INT NOT NULL,
+    address VARCHAR(255) NOT NULL,
+    postal_code VARCHAR(6) NOT NULL,
+    contact_name VARCHAR(100) NULL,
+    contact_phone VARCHAR(20) NULL,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_SavedAddresses_Patron
+        FOREIGN KEY (patron_id) REFERENCES Users(user_id)
+);
+GO
 
 CREATE TABLE OrderItems (
     order_item_id INT IDENTITY(1,1) PRIMARY KEY,
@@ -142,6 +190,9 @@ CREATE TABLE OrderItems (
     quantity INT NOT NULL,
     unit_price DECIMAL(10,2) NOT NULL,
     subtotal DECIMAL(10,2) NOT NULL,
+
+    -- Snapshot of item name at the time of order
+    item_name VARCHAR(100) NULL,
 
     CONSTRAINT CK_OrderItems_Quantity CHECK (quantity > 0),
     CONSTRAINT FK_OrderItems_Order FOREIGN KEY (order_id) REFERENCES Orders(order_id),
@@ -155,6 +206,7 @@ CREATE TABLE Feedbacks (
     rating INT NOT NULL,
     comment VARCHAR(500) NULL,
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    photo_path VARCHAR(255) NULL,
 
     CONSTRAINT CK_Feedbacks_Rating CHECK (rating BETWEEN 1 AND 5),
     CONSTRAINT FK_Feedbacks_Patron FOREIGN KEY (patron_id) REFERENCES Users(user_id),
@@ -171,6 +223,7 @@ CREATE TABLE Complaints (
     handled_by_officer_id INT NULL,
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
     resolved_at DATETIME NULL,
+    image_path VARCHAR(255) NULL,
 
     /* 'Acknowledged' added by migration/004_damien_migration_menu_cuisines_and_complaint_notes.sql
        (Open -> Acknowledged is the vendor's action; officers then move it through In Progress -> Resolved/Closed) */
@@ -189,9 +242,20 @@ CREATE TABLE Inspections (
     inspection_date DATETIME NOT NULL DEFAULT GETDATE(),
     hygiene_grade CHAR(1) NULL,
     remarks VARCHAR(500) NULL,
-    inspection_status VARCHAR(30) NOT NULL DEFAULT 'Completed',
+    
+      -- New inspections should start as Scheduled
+    inspection_status VARCHAR(30) NOT NULL DEFAULT 'Scheduled',
+
+    -- Result fields after officer completes inspection
+    score INT NULL,
+    result VARCHAR(50) NULL,
+    completed_at DATETIME NULL,
 
     CONSTRAINT CK_Inspections_Grade CHECK (hygiene_grade IN ('A', 'B', 'C', 'D')),
+    CONSTRAINT CK_Inspections_Status CHECK (inspection_status IN ('Scheduled', 'Completed', 'Cancelled')),
+    CONSTRAINT CK_Inspections_Score CHECK (score IS NULL OR score BETWEEN 0 AND 100),
+    CONSTRAINT CK_Inspections_Result CHECK (result IS NULL OR result IN ('Pass', 'Fail', 'Needs Follow-up')),
+
     CONSTRAINT FK_Inspections_Stall FOREIGN KEY (stall_id) REFERENCES Stalls(stall_id),
     CONSTRAINT FK_Inspections_Officer FOREIGN KEY (officer_id) REFERENCES Users(user_id)
 );
@@ -211,17 +275,7 @@ CREATE TABLE UserLikesMenuItem (
 );
 GO
 
--- =====================================================================
--- Cuisines + MenuItemCuisines (many-to-many: a dish can belong to
--- more than one cuisine, e.g. "Nasi Lemak" = Malay + Halal)
--- merged from migration/004_damien_migration_menu_cuisines_and_complaint_notes.sql
--- =====================================================================
-CREATE TABLE Cuisines (
-    cuisine_id INT IDENTITY(1,1) PRIMARY KEY,
-    cuisine_name VARCHAR(50) NOT NULL UNIQUE
-);
-GO
-
+/* Not in used so I commented this off
 CREATE TABLE MenuItemCuisines (
     menu_item_id INT NOT NULL,
     cuisine_id INT NOT NULL,
@@ -231,6 +285,7 @@ CREATE TABLE MenuItemCuisines (
     CONSTRAINT FK_MIC_Cuisines FOREIGN KEY (cuisine_id) REFERENCES Cuisines(cuisine_id)
 );
 GO
+*/
 
 -- =====================================================================
 -- ComplaintNotes (one-to-many: every status change / resolution
