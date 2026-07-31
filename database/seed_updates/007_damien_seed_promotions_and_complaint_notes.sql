@@ -105,26 +105,37 @@ GO
 -- ---------------------------------------------------------------------
 
 INSERT INTO Orders
-(patron_id, stall_id, promotion_id, order_status, total_amount)
+(patron_id, stall_id, promotion_id, order_status, total_amount, order_date,
+    checkout_id, collection_method, delivery_address, postal_code, delivery_charge,
+    payment_method, eco_friendly_packaging) /*added more attributes from "order_date" to eco packaging */
 VALUES
 (
     (SELECT user_id FROM Users WHERE email = 'marcusisapatron@gmail.com'),
     (SELECT stall_id FROM Stalls WHERE stall_name = 'Lao Ban Soya Beancurd'),
     (SELECT promotion_id FROM Promotions WHERE promo_code = 'BEANCURD10' AND stall_id = (SELECT stall_id FROM Stalls WHERE stall_name = 'Lao Ban Soya Beancurd')),
-    'Completed',
-    5.40
+    'Completed', 
+    6.20,
+    GETDATE(),
+    'SEED-OLD-1',
+    'Pickup',
+    NULL,
+    NULL,
+    0.00,
+    'Cash',
+    1
 );
 GO
 
 INSERT INTO OrderItems
-(order_id, menu_item_id, quantity, unit_price, subtotal)
+(order_id, menu_item_id, quantity, unit_price, subtotal, item_name)/*added item_name, to show what items came from Orders table*/
 VALUES
 (
-    (SELECT TOP 1 order_id FROM Orders WHERE total_amount = 5.40 ORDER BY order_id DESC),
-    (SELECT menu_item_id FROM MenuItems WHERE item_name = 'Traditional Beancurd'),
+    (SELECT TOP 1 order_id FROM Orders WHERE checkout_id = 'SEED-OLD-1'),
+    (SELECT TOP 1 menu_item_id FROM MenuItems WHERE item_name = 'Traditional Beancurd'),
     4,
     1.50,
-    6.00
+    6.00,
+    (SELECT TOP 1 item_name FROM MenuItems WHERE item_name = 'Traditional Beancurd')
 );
 GO
 
@@ -139,7 +150,7 @@ INSERT INTO PromotionRedemptions
 VALUES
 (
     (SELECT promotion_id FROM Promotions WHERE promo_code = 'BEANCURD10' AND stall_id = (SELECT stall_id FROM Stalls WHERE stall_name = 'Lao Ban Soya Beancurd')),
-    (SELECT TOP 1 order_id FROM Orders WHERE total_amount = 5.40 ORDER BY order_id DESC),
+    (SELECT TOP 1 order_id FROM Orders WHERE checkout_id = 'SEED-OLD-1'),
     (SELECT user_id FROM Users WHERE email = 'marcusisapatron@gmail.com'),
     0.60
 );
