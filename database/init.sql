@@ -275,7 +275,6 @@ CREATE TABLE UserLikesMenuItem (
 );
 GO
 
-/* Not in used so I commented this off
 CREATE TABLE MenuItemCuisines (
     menu_item_id INT NOT NULL,
     cuisine_id INT NOT NULL,
@@ -285,7 +284,7 @@ CREATE TABLE MenuItemCuisines (
     CONSTRAINT FK_MIC_Cuisines FOREIGN KEY (cuisine_id) REFERENCES Cuisines(cuisine_id)
 );
 GO
-*/
+
 
 -- =====================================================================
 -- ComplaintNotes (one-to-many: every status change / resolution

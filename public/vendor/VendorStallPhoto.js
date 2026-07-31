@@ -23,7 +23,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function showMsg(text, isError = false) {
         msgEl.textContent = text || "";
-        msgEl.style.color = isError ? "#c0392b" : "#2e7d32";
+        // Colours live in VendorStallPhoto.css (.is-success / .is-error)
+        // rather than being set inline here.
+        msgEl.classList.remove("is-success", "is-error");
+        if (text) msgEl.classList.add(isError ? "is-error" : "is-success");
+    }
+
+    // Toggles the preview via a CSS class (.is-visible, defined in
+    // VendorStallPhoto.css) instead of writing inline styles, so all the
+    // visual rules for this page stay in the stylesheet.
+    function showPreview(visible) {
+        stallImagePreview.classList.toggle("is-visible", visible);
+        cameraIcon.hidden = visible;
+        uploadHint.hidden = visible;
     }
 
     // Same normalisation the patron pages use - the DB stores paths like
@@ -51,13 +63,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (url) {
             stallImagePreview.src = `${url}?t=${Date.now()}`;
-            stallImagePreview.style.display = "block";
-            cameraIcon.style.visibility = "hidden";
-            uploadHint.style.visibility = "hidden";
+            showPreview(true);
         } else {
-            stallImagePreview.style.display = "none";
-            cameraIcon.style.visibility = "visible";
-            uploadHint.style.visibility = "visible";
+            showPreview(false);
         }
     }
 
@@ -104,9 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const reader = new FileReader();
         reader.onload = (ev) => {
             stallImagePreview.src = ev.target.result;
-            stallImagePreview.style.display = "block";
-            cameraIcon.style.visibility = "hidden";
-            uploadHint.style.visibility = "hidden";
+            showPreview(true);
         };
         reader.readAsDataURL(file);
     });
