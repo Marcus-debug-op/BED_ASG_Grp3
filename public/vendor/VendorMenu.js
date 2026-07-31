@@ -71,6 +71,28 @@ document.addEventListener("DOMContentLoaded", () => {
             .replaceAll("'", "&#039;");
     }
 
+    function normalizeImageUrl(imageUrl) {
+        if (!imageUrl) {
+            return "/img/placeholder.jpg";
+        }
+
+        const cleaned = String(imageUrl).trim();
+
+        if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
+            return cleaned;
+        }
+
+        if (cleaned.startsWith("/img/") || cleaned.startsWith("/uploads/")) {
+            return cleaned;
+        }
+
+        if (cleaned.startsWith("img/")) {
+            return `/${cleaned}`;
+        }
+
+        return `/img/${cleaned}`;
+    }
+
     function openModal(item = null) {
         itemForm.reset();
         showFormMsg("");
@@ -109,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         menuGrid.innerHTML = currentItems.map((item) => {
             const image = item.image_url
-                ? `<img class="menu-item-image" src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.item_name)}" onerror="this.replaceWith(Object.assign(document.createElement('div'), {className: 'menu-item-image-placeholder', innerHTML: '<i class=\\'fa-solid fa-utensils\\'></i>'}))">`
+                ? `<img class="menu-item-image" src="${escapeHtml(normalizeImageUrl(item.image_url))}" alt="${escapeHtml(item.item_name)}" onerror="this.replaceWith(Object.assign(document.createElement('div'), {className: 'menu-item-image-placeholder', innerHTML: '<i class=\\'fa-solid fa-utensils\\'></i>'}))">`
                 : `<div class="menu-item-image-placeholder"><i class="fa-solid fa-utensils"></i></div>`;
 
             const available = !!item.is_available;
@@ -344,15 +366,6 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Error saving item:", error);
             showFormMsg(error.message || "Unable to save menu item.");
         }
-    });
-
-    // ===========================
-    // Logout
-    // ===========================
-
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-        localStorage.clear();
-        window.location.href = "/auth/signup.html";
     });
 
     // ===========================

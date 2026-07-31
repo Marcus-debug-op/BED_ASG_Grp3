@@ -136,10 +136,29 @@ async function deletePromotion(req, res) {
   }
 }
 
+// GET /api/promotions/available - patron-facing, shows promos this patron
+// could still apply right now, across all stalls (not scoped to one stall).
+async function getAvailablePromotions(req, res) {
+  try {
+    const patronId = req.user.sub;
+
+    const promotions = await promotionModel.getAvailablePromotionsForPatron(patronId);
+
+    res.status(200).json(promotions);
+  } catch (error) {
+    console.error("Error getting available promotions:", error);
+
+    res.status(500).json({
+      message: "Unable to load available discounts."
+    });
+  }
+}
+
 module.exports = {
   getPromotionsByStall,
   getPromotion,
   createPromotion,
   updatePromotion,
-  deletePromotion
+  deletePromotion,
+  getAvailablePromotions
 };
