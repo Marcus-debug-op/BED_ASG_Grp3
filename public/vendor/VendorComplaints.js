@@ -112,7 +112,7 @@ async function loadComplaints() {
       complaintsList.innerHTML = `
         <div class="state-message success-state">
             <h3>No complaints here</h3>
-            <p>Good job keeping your customers happy! 🎉</p>
+            <p>Good job keeping your customers happy!</p>
         </div>`;
       return;
     }
