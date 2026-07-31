@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HawkerHub – Stall Photo</title>
+  <link rel="stylesheet" href="VendorAccount.css">
+  <link rel="stylesheet" href="/shared/topnav.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <section class="banner">
+    <div class="container">
+      <div class="banner-tabs">
+        <a href="Profile(Patron & Vendor).html">Profile</a>
+        <span>|</span>
+        <a href="/vendor/VendorComplaints.html">Complaints</a>
+        <span>|</span>
+        <a href="VenderAccount.html">Stall</a>
+      </div>
+
+      <div class="banner-text">
+        <h1>Stall Photo</h1>
+        <p>Update the profile picture patrons see when browsing your stall</p>
+      </div>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="toolbar">
+      <div class="dropdown-container">
+        <div class="dropdown-trigger">
+          Menu <span class="dropdown-arrow">▾</span>
+        </div>
+        <ul class="dropdown-menu">
+          <li><a href="VenderAccount.html">Menu</a></li>
+          <li><a href="VenderAccountRentalStatus.html">Rental Status</a></li>
+          <li><a href="VendorStallPhoto.html" class="active">Stall Photo</a></li>
+          <li><a href="analytics.html">Analytics</a></li>
+          <li><a href="VendorLikes.html">Customer Likes</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- BED-147 -->
+    <section class="upload-section" style="max-width: 480px; margin: 24px auto;">
+      <label for="stallSelect" style="display:block; margin-bottom: 8px; font-weight: 600;">Stall</label>
+      <select id="stallSelect" style="width:100%; margin-bottom: 20px; padding: 8px; border-radius: 8px;">
+        <option value="">Loading your stalls...</option>
+      </select>
+
+      <div class="upload-box" id="uploadBox" style="overflow: hidden;">
+        <img id="stallImagePreview" src="" alt="" style="display:none; max-width:100%; max-height:100%; object-fit:contain; border-radius: 8px;">
+        <i class="fa-solid fa-camera camera-icon" id="cameraIcon"></i>
+        <p id="uploadHint">Click to select a photo for the selected stall</p>
+      </div>
+      <input type="file" id="stallImageInput" accept="image/*" hidden>
+
+      <button type="button" id="saveStallImageBtn" class="add-btn" style="width:100%; margin-top: 16px;" disabled>
+        Save Photo
+      </button>
+
+      <p id="stallPhotoMsg" style="margin-top: 12px;" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script src="VendorStallPhoto.js"></script>
+
+</body>
+</html>

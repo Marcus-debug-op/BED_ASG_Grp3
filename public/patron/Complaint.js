@@ -8,6 +8,24 @@ const submitBtn = document.getElementById("submit-btn");
 const complaintTypeSelect = document.getElementById("complaint-type");
 const complaintInput = document.getElementById("complaint-text");
 const improvementInput = document.getElementById("improvement-text");
+const imageInput = document.getElementById("complaint-image-input");
+const imagePreview = document.getElementById("complaint-image-preview");
+
+// BED-131: preview the selected photo before submitting.
+imageInput.addEventListener("change", () => {
+    const file = imageInput.files[0];
+    if (!file) {
+        imagePreview.style.display = "none";
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        imagePreview.src = e.target.result;
+        imagePreview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+});
 
 // 1. Load stall name for the page header, via the public stall/menu endpoint
 // (there's no dedicated single-stall endpoint, but this one includes stall_name).
@@ -64,18 +82,27 @@ submitBtn.addEventListener("click", async () => {
     submitBtn.innerText = "Submitting...";
     submitBtn.disabled = true;
 
+    // BED-131: FormData (not JSON) since the route now uses multer to
+    // optionally accept an image. multer passes JSON requests through
+    // untouched too, but sending FormData unconditionally means one code
+    // path works whether or not a photo was attached.
+    const formData = new FormData();
+    formData.append("stall_id", stallId);
+    formData.append("complaint_type", complaintTypeSelect.value);
+    formData.append("description", description);
+    if (imageInput.files[0]) {
+        formData.append("image", imageInput.files[0]);
+    }
+
     try {
         const response = await fetch("/api/complaints", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
+                // No Content-Type here - the browser sets the correct
+                // multipart boundary itself when the body is FormData.
                 Authorization: `Bearer ${token}`
             },
-            body: JSON.stringify({
-                stall_id: stallId,
-                complaint_type: complaintTypeSelect.value,
-                description
-            })
+            body: formData
         });
 
         const data = await response.json();

@@ -7,7 +7,7 @@ async function getStallsByVendorId(vendorId) {
   try {
     connection = await sql.connect(dbConfig);
     const sqlQuery = `
-        SELECT s.stall_id, s.stall_name, c.cuisine_name AS cuisine_type, s.description, s.unit_number, s.is_active, s.current_hygiene_grade, h.centre_name
+        SELECT s.stall_id, s.stall_name, c.cuisine_name AS cuisine_type, s.description, s.unit_number, s.is_active, s.current_hygiene_grade, s.image_url, h.centre_name
         FROM Stalls s INNER JOIN HawkerCentres h ON s.hawker_centre_id = h.hawker_centre_id
         LEFT JOIN Cuisines c ON s.cuisine_id = c.cuisine_id
         WHERE s.vendor_id = @vendor_id
