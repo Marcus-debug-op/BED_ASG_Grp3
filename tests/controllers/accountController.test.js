@@ -1,20 +1,18 @@
-// This test file checks the account controller logic.
-// It focuses on the patron account deactivation feature.
-
-// Import the controller we want to test.
+// Import the account controller.
+// This controller contains the account deactivation logic.
 const accountController = require("../../Controllers/accountController");
 
-// Import the model used by the controller.
-// We will mock this model so the test does not touch the real SQL database.
+// Import the account model.
+// The model normally talks to SQL Server, but in this test we mock it.
 const accountModel = require("../../Models/accountModel");
 
-// Replace the real accountModel with a mocked version.
-// This allows us to control what the model returns during each test.
+// Mock the account model so the test does not touch the real database.
+// This lets us control what the model returns.
 jest.mock("../../Models/accountModel");
 
 // Create a fake Express response object.
-// In a real Express route, res.status() and res.json() are provided by Express.
-// In unit testing, we create fake versions using jest.fn().
+// In real Express, res.status() and res.json() are provided automatically.
+// In unit testing, we fake them using jest.fn().
 function mockResponse() {
   const res = {};
 
@@ -27,15 +25,17 @@ function mockResponse() {
 }
 
 describe("Account Controller", () => {
+  // Clear all mock data before each test.
+  // This prevents one test's mock calls from affecting another test.
   beforeEach(() => {
-    // Clear previous mock calls before every test.
-    // This prevents one test result from affecting another.
     jest.clearAllMocks();
   });
 
-  test("deactivateOwnAccount should deactivate the logged-in user's account", async () => {
+  test("deactivateOwnAccount should soft deactivate logged-in patron account", async () => {
     // Fake request object.
-    // req.user.sub comes from the JWT token and represents the logged-in user's ID.
+    // req.user.sub comes from the JWT token after authentication.
+    // This means the backend deactivates the logged-in user,
+    // not a user ID sent from the frontend.
     const req = {
       user: {
         sub: 3,
@@ -45,39 +45,42 @@ describe("Account Controller", () => {
 
     const res = mockResponse();
 
-    // Simulate the model successfully soft-deactivating the user.
-    // In the real database, this means is_active becomes 0.
-    accountModel.deactivateOwnAccount.mockResolvedValue({
+    // Fake user returned by the model after soft deactivation.
+    // In the real database, the model updates:
+    // is_active = 0
+    // deactivated_at = current date/time
+    const mockDeactivatedUser = {
       user_id: 3,
-      full_name: "Marcus Patron",
-      email: "marcusisapatron@gmail.com",
+      full_name: "Test Patron",
+      email: "patron@test.com",
       role: "patron",
-      is_active: false
-    });
+      is_active: false,
+      deactivated_at: "2026-07-30T12:00:00.000Z"
+    };
 
-    // Call the actual controller function.
+    // Simulate the model successfully deactivating the account.
+    accountModel.deactivateOwnAccount.mockResolvedValue(mockDeactivatedUser);
+
+    // Call the controller function directly.
     await accountController.deactivateOwnAccount(req, res);
 
-    // The controller should use the user ID from the JWT token,
-    // not from the request body.
+    // Check that the controller passed the logged-in user's ID to the model.
+    // This confirms that the controller uses req.user.sub.
     expect(accountModel.deactivateOwnAccount).toHaveBeenCalledWith(3);
 
-    // A successful deactivation should return HTTP 200.
+    // Check that successful deactivation returns HTTP 200.
     expect(res.status).toHaveBeenCalledWith(200);
 
-    // The response should contain a success message and the deactivated user.
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: "Account deactivated successfully.",
-        user: expect.objectContaining({
-          user_id: 3,
-          role: "patron"
-        })
-      })
-    );
+    // Check that the controller returns the success message and updated user.
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Account deactivated successfully.",
+      user: mockDeactivatedUser
+    });
   });
 
   test("deactivateOwnAccount should return 404 when account is not found or already deactivated", async () => {
+    // Fake request for a user that either does not exist
+    // or already has is_active = 0.
     const req = {
       user: {
         sub: 999,
@@ -87,25 +90,26 @@ describe("Account Controller", () => {
 
     const res = mockResponse();
 
-    // Simulate the model finding no active account to deactivate.
+    // Simulate the model returning null.
+    // This means no active account was updated.
     accountModel.deactivateOwnAccount.mockResolvedValue(null);
 
     await accountController.deactivateOwnAccount(req, res);
 
-    // The controller should still pass the logged-in user ID to the model.
+    // Controller should still try to deactivate the logged-in user ID.
     expect(accountModel.deactivateOwnAccount).toHaveBeenCalledWith(999);
 
-    // If nothing was updated, the controller should return 404.
+    // If no account was updated, return 404.
     expect(res.status).toHaveBeenCalledWith(404);
 
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: "Account not found or already deactivated."
-      })
-    );
+    // Check the 404 response message.
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Account not found or already deactivated."
+    });
   });
 
-  test("deactivateOwnAccount should return 500 when model throws an error", async () => {
+  test("deactivateOwnAccount should return 500 when the model throws an error", async () => {
+    // Fake request for a logged-in patron.
     const req = {
       user: {
         sub: 3,
@@ -115,20 +119,22 @@ describe("Account Controller", () => {
 
     const res = mockResponse();
 
-    // Simulate database/model error.
+    // Simulate a database/model error.
     accountModel.deactivateOwnAccount.mockRejectedValue(
       new Error("Database error")
     );
 
     await accountController.deactivateOwnAccount(req, res);
 
-    // Controller should handle the error and return HTTP 500.
+    // Controller should call the model using the logged-in user's ID.
+    expect(accountModel.deactivateOwnAccount).toHaveBeenCalledWith(3);
+
+    // Server/database errors should return HTTP 500.
     expect(res.status).toHaveBeenCalledWith(500);
 
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: "Unable to deactivate account."
-      })
-    );
+    // Check the error response message.
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Unable to deactivate account."
+    });
   });
 });

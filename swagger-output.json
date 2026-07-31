@@ -510,6 +510,54 @@
         }
       }
     },
+    "/api/vendor/stalls/{stallId}/profile-picture": {
+      "patch": {
+        "tags": [
+          "Vendor Stalls"
+        ],
+        "description": "BED-147: Vendor uploads/replaces the profile picture for a stall they own. Returns 403 if the stall belongs to a different vendor, 404 if the stall does not exist.",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "stallId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "stallImage",
+            "in": "formData",
+            "type": "file",
+            "required": true,
+            "description": "The new stall profile picture."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/vendor/menu/cuisines": {
       "get": {
         "description": "",
@@ -684,6 +732,11 @@
         "parameters": [
           {
             "name": "hawker_centre_id",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "dietary",
             "in": "query",
             "type": "string"
           },
@@ -926,6 +979,9 @@
                   "example": "any"
                 },
                 "payment_method": {
+                  "example": "any"
+                },
+                "eco_friendly_packaging": {
                   "example": "any"
                 }
               }
@@ -1273,11 +1329,11 @@
       }
     },
     "/api/account/deactivate": {
-      "patch": {
+      "delete": {
         "tags": [
           "Account"
         ],
-        "description": "Deactivate the logged-in user account without deleting historical records",
+        "description": "Soft deactivate the logged-in patron account without deleting historical records",
         "responses": {
           "200": {
             "description": "Account deactivated successfully"
@@ -1286,7 +1342,7 @@
             "description": "Missing or invalid token"
           },
           "403": {
-            "description": "Forbidden"
+            "description": "Only patron accounts can use this route"
           },
           "404": {
             "description": "Account not found or already deactivated"
@@ -1307,8 +1363,18 @@
         "tags": [
           "Feedback"
         ],
-        "description": "BED-2: Submit a rating and comment for a stall. Registered patrons only - guests are rejected.",
+        "description": "BED-2/BED-132: Submit a rating, comment, and optional photo for a stall. Registered patrons only - guests are rejected. Returns 413 if the photo exceeds 5MB.",
+        "consumes": [
+          "multipart/form-data"
+        ],
         "parameters": [
+          {
+            "name": "image",
+            "in": "formData",
+            "type": "file",
+            "required": false,
+            "description": "Optional photo to attach to the review."
+          },
           {
             "name": "body",
             "in": "body",
@@ -1341,6 +1407,9 @@
           },
           "403": {
             "description": "Forbidden"
+          },
+          "413": {
+            "description": "Payload Too Large"
           },
           "500": {
             "description": "Internal Server Error"
@@ -1475,8 +1544,18 @@
         "tags": [
           "Complaints"
         ],
-        "description": "A registered user submits a complaint against a stall (details, date, complaint text). On success, a unique tracking id is generated and the complaint is created with a default \"Open\" status, so the user knows their complaint was officially received.",
+        "description": "A registered user submits a complaint against a stall, or a General Facility complaint with no specific stall (details, date, complaint text, optional image). On success, a unique tracking id is generated and the complaint is created with a default \"Open\" status, so the user knows their complaint was officially received.",
+        "consumes": [
+          "multipart/form-data"
+        ],
         "parameters": [
+          {
+            "name": "image",
+            "in": "formData",
+            "type": "file",
+            "required": false,
+            "description": "Optional photo evidence for the complaint."
+          },
           {
             "name": "body",
             "in": "body",
@@ -1916,9 +1995,24 @@
     "/api/vendor/dashboard/": {
       "get": {
         "description": "",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "type": "string"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
           },
           "403": {
             "description": "Forbidden"
@@ -2361,6 +2455,244 @@
         }
       }
     },
+    "/api/operator/stalls/": {
+      "post": {
+        "tags": [
+          "Operator Stalls"
+        ],
+        "description": "BED-28: Operator creates a new stall record.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "vendor_id": {
+                  "type": "number",
+                  "example": 1
+                },
+                "stall_name": {
+                  "type": "string",
+                  "example": "Marcus Beancurd House"
+                },
+                "hawker_centre_id": {
+                  "type": "number",
+                  "example": 1
+                },
+                "cuisine_type": {
+                  "type": "string",
+                  "example": "Chinese"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "Silky homemade beancurd."
+                },
+                "unit_number": {
+                  "type": "string",
+                  "example": "#01-88"
+                },
+                "operating_hours": {
+                  "type": "string",
+                  "example": "9am - 9pm"
+                },
+                "price_range": {
+                  "type": "string",
+                  "example": "$"
+                },
+                "phone_number": {
+                  "type": "string",
+                  "example": "91234567"
+                },
+                "image_url": {
+                  "type": "string",
+                  "example": "https://example.com/stall.jpg"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Stall created"
+          },
+          "400": {
+            "description": "Validation failed / invalid vendor or hawker centre"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Not an operator"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Operator Stalls"
+        ],
+        "description": "BED-28: Operator views all stall records (active and inactive).",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/operator/stalls/vendors": {
+      "get": {
+        "tags": [
+          "Operator Stalls"
+        ],
+        "description": "BED-28: List of vendors for the stall assignment dropdown.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/operator/stalls/{stallId}": {
+      "get": {
+        "tags": [
+          "Operator Stalls"
+        ],
+        "description": "BED-28: Operator views a single stall record by id.",
+        "parameters": [
+          {
+            "name": "stallId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Stall not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Operator Stalls"
+        ],
+        "description": "BED-28: Operator updates an existing stall record.",
+        "parameters": [
+          {
+            "name": "stallId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stall updated"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Stall not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Operator Stalls"
+        ],
+        "description": "BED-28: Operator deactivates a stall (soft delete - sets is_active = 0, does not remove the record).",
+        "parameters": [
+          {
+            "name": "stallId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Stall not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/addresses/": {
       "post": {
         "tags": [
@@ -2526,6 +2858,305 @@
             "bearerAuth": []
           }
         ]
+      }
+    },
+    "/api/operator/rental-agreements/": {
+      "post": {
+        "tags": [
+          "Rental Agreements"
+        ],
+        "description": "BED-23: Operator creates a rental agreement for a stall. Fails with 404 if the stall does not exist.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "stall_id": {
+                  "type": "number",
+                  "example": 1
+                },
+                "lease_start_date": {
+                  "type": "string",
+                  "example": "2026-01-01"
+                },
+                "lease_end_date": {
+                  "type": "string",
+                  "example": "2026-12-31"
+                },
+                "monthly_rent": {
+                  "type": "number",
+                  "example": 1200
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Rental Agreements"
+        ],
+        "description": "BED-23: Operator retrieves all rental agreements across every vendor and stall.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/operator/rental-agreements/{agreementId}": {
+      "get": {
+        "tags": [
+          "Rental Agreements"
+        ],
+        "description": "BED-23: Operator retrieves one rental agreement by ID.",
+        "parameters": [
+          {
+            "name": "agreementId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Rental Agreements"
+        ],
+        "description": "BED-23: Operator updates rental period, fee, and/or agreement status.",
+        "parameters": [
+          {
+            "name": "agreementId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "lease_start_date": {
+                  "type": "string",
+                  "example": "2026-01-01"
+                },
+                "lease_end_date": {
+                  "type": "string",
+                  "example": "2027-01-31"
+                },
+                "monthly_rent": {
+                  "type": "number",
+                  "example": 1300
+                },
+                "agreement_status": {
+                  "type": "string",
+                  "example": "Active"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/vendor/rental-agreements/": {
+      "get": {
+        "tags": [
+          "Vendor Rental Agreements"
+        ],
+        "description": "BED-74: Vendor retrieves rental agreements for their own stalls only.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/vendor/rental-agreements/{agreementId}": {
+      "get": {
+        "tags": [
+          "Vendor Rental Agreements"
+        ],
+        "description": "BED-74: Vendor retrieves one rental agreement belonging to their own stall.",
+        "parameters": [
+          {
+            "name": "agreementId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/vendor/rental-agreements/{agreementId}/accept": {
+      "patch": {
+        "tags": [
+          "Vendor Rental Agreements"
+        ],
+        "description": "BED-74: Vendor accepts a pending rental agreement for their own stall. Returns 409 if already accepted.",
+        "parameters": [
+          {
+            "name": "agreementId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/nea/analytics": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
       }
     }
   }
