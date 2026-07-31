@@ -2,6 +2,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const emailEl = document.getElementById("email");
   const passwordEl = document.getElementById("password");
+  const badgeIdEl = document.getElementById("badgeId");
   const submitBtn = document.getElementById("submitBtn");
 
   const passwordFields = document.getElementById("password-fields");
@@ -10,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const otpBtn = document.getElementById("otpSubmitBtn");
   const devOtpHint = document.getElementById("dev-otp-hint");
 
-  if (!emailEl || !passwordEl || !submitBtn) return;
+  if (!emailEl || !passwordEl || !badgeIdEl || !submitBtn) return;
 
   // Step 1: email + password -> triggers OTP, does not log the user in yet.
   submitBtn.addEventListener("click", handleLogin);
@@ -21,9 +22,15 @@ document.addEventListener("DOMContentLoaded", () => {
   async function handleLogin() {
     const email = emailEl.value.trim();
     const password = passwordEl.value;
+    const badgeId = badgeIdEl.value.trim();
 
     if (!email || !password) {
       alert("Please enter both email and password.");
+      return;
+    }
+
+    if (!badgeId) {
+      alert("Please enter your badge ID.");
       return;
     }
 
@@ -33,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/api/auth/login/operator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, badgeId })
       });
 
       const data = await response.json();

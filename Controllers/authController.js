@@ -48,10 +48,10 @@ async function loginWithRole(req, res, requiredRole) {
       });
     }
 
-    // Officers must additionally confirm their badge ID matches what's on
-    // file - an extra identity check on top of email/password, specific
-    // to officer accounts (enforcement/inspection authority).
-    if (requiredRole === "officer") {
+    // Officers and operators must additionally confirm their badge ID
+    // matches what's on file - an extra identity check on top of
+    // email/password, specific to these two enforcement/oversight roles.
+    if (requiredRole === "officer" || requiredRole === "operator") {
       if (!badgeId) {
         return res.status(400).json({
           message: "Badge ID is required."
@@ -101,7 +101,8 @@ async function loginWithRole(req, res, requiredRole) {
         user_id: user.user_id,
         full_name: user.full_name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        badge_id: user.badge_id
       }
     });
   } catch (err) {
@@ -160,7 +161,8 @@ async function verifyOtp(req, res) {
         user_id: user.user_id,
         full_name: user.full_name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        badge_id: user.badge_id
       }
     });
   } catch (err) {

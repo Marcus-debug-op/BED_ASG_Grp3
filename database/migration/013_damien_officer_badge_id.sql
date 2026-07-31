@@ -14,3 +14,5 @@ END;
 GO
 
 UPDATE Users SET badge_id = 'NEA-0042' WHERE email = 'tanisanofficer@example.com';
+
+UPDATE Users SET badge_id = 'NEA-OPS-01' WHERE email = 'limisanoperator@example.com';
