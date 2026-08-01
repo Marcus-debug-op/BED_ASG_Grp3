@@ -228,9 +228,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
 
-            const initialStall = stalls[0];
+            // The Stalls tab links here as /vendor/VendorMenu.html?stallId=<id>
+            // when the vendor picks a specific stall - honor that instead of
+            // always defaulting to the first stall alphabetically.
+            const requestedStallId = Number(new URLSearchParams(window.location.search).get("stallId"));
+            const requestedStall = stalls.find((s) => s.stall_id === requestedStallId);
+            const initialStall = requestedStall || stalls[0];
+
             currentStallId = initialStall.stall_id;
             stallLabel.textContent = `${initialStall.stall_name} · ${initialStall.centre_name}`;
+
+            if (stalls.length > 1) {
+                stallSelect.value = String(currentStallId);
+            }
 
             await loadMenu(currentStallId);
         } catch (error) {

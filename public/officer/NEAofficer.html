@@ -7,6 +7,7 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="officer.css">
+    <link rel="stylesheet" href="OfficerComplaints.css">
 </head>
 <body>
 
@@ -36,6 +37,10 @@
 
                 <button class="nav-item" type="button" onclick="switchPage('settings', this)">
                     Settings
+                </button>
+
+                <button class="nav-item" type="button" onclick="switchPage('complaints', this)">
+                    Complaints
                 </button>
 
                 <button class="btn-danger" type="button" onclick="logoutOfficer()">
@@ -142,6 +147,74 @@
                     <p>Badge ID: <strong id="display-badge-id">Loading...</strong></p>
                     
                     <button class="btn-secondary" onclick="logoutOfficer()">Log Out</button>
+                </div>
+            </div>
+
+            <div id="page-complaints" class="hidden">
+                <header class="header">
+                    <h1>Complaint Management</h1>
+                    <p class="subtitle">Review, filter and resolve complaints filed against vendors</p>
+                </header>
+
+                <div class="card">
+                    <div class="list-header">
+                        <div>
+                            <h2>Complaints</h2>
+                            <p id="queueLabel" class="hint"></p>
+                        </div>
+                        <select id="statusFilter">
+                            <option value="">All statuses</option>
+                            <option value="Open">Open</option>
+                            <option value="Acknowledged">Acknowledged</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+
+                    <p id="listLoading" class="hint">Loading complaints...</p>
+                    <p id="listEmpty" class="hint hidden">No complaints match this filter.</p>
+
+                    <div id="complaintsList" class="complaints-list"></div>
+                </div>
+
+                <div id="detailPanel" class="card detail-panel hidden">
+                    <button id="closeDetailBtn" class="close-btn" type="button">&times;</button>
+
+                    <span id="detailStatusBadge" class="status-badge"></span>
+                    <h2 id="detailType"></h2>
+                    <p class="meta">
+                        Filed by <strong id="detailPatron"></strong>
+                        against <strong id="detailStall"></strong>
+                        on <span id="detailDate"></span>
+                    </p>
+
+                    <p id="detailDescription" class="description"></p>
+
+                    <div class="handled-by">
+                        Handled by: <span id="detailOfficer">Unassigned</span>
+                    </div>
+
+                    <h3>Resolution Notes</h3>
+                    <div id="notesList" class="notes-list"></div>
+                    <p id="notesEmpty" class="hint hidden">No notes yet.</p>
+
+                    <form id="updateForm" class="update-form">
+                        <label for="statusSelect">Update Status</label>
+                        <select id="statusSelect">
+                            <option value="Open">Open</option>
+                            <option value="Acknowledged">Acknowledged</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+
+                        <label for="noteInput">Add a Note (optional)</label>
+                        <textarea id="noteInput" rows="3" placeholder="e.g. Spoke to the vendor, reminded them of hygiene SOP."></textarea>
+
+                        <button type="submit" id="updateBtn">Save Update</button>
+                        <p id="updateError" class="error-text hidden"></p>
+                    </form>
                 </div>
             </div>
 
@@ -256,6 +329,7 @@
         </div>
     </div>
 
+    <script src="OfficerComplaintsTab.js"></script>
     <script type="module" src="NEAofficer.js"></script>
 </body>
 </html>

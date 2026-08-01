@@ -1,98 +1,58 @@
-import { saveSession, getSession, clearSession, authFetch } from "../shared/authStorage";
+// Complaints tab for the NEA Officer Portal.
+// Auth/session is already handled by NEAofficer.js (which redirects to the
+// sign-in page if there's no valid officer token), so this file only contains
+// the complaint list/detail logic - no login form, no OTP flow.
 
 let currentComplaintId = null;
 let currentStatusFilter = "";
 
-const loginView = document.getElementById("loginView");
-const dashboardView = document.getElementById("dashboardView");
-const logoutBtn = document.getElementById("logoutBtn");
+function authFetch(url, options = {}) {
+  const authToken = localStorage.getItem("token");
+  const headers = {
+    ...(options.headers || {}),
+    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+  };
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("loginForm").addEventListener("submit", handleLogin);
-  document.getElementById("statusFilter").addEventListener("change", handleFilterChange);
-  document.getElementById("closeDetailBtn").addEventListener("click", closeDetail);
-  document.getElementById("updateForm").addEventListener("submit", handleUpdateSubmit);
-  logoutBtn.addEventListener("click", handleLogout);
+  return fetch(url, { ...options, headers });
+}
 
-  const session = getSession();
+// Called by NEAofficer.js's switchPage() when the Complaints tab is opened.
+function initComplaintsTab() {
+  const statusFilter = document.getElementById("statusFilter");
+  const closeDetailBtn = document.getElementById("closeDetailBtn");
+  const updateForm = document.getElementById("updateForm");
 
-  if (session?.token && (session.user?.role === "officer" || session.user?.role === "operator")) {
-    enterDashboard();
-  } else {
-    showLogin();
+  // Only wire the listeners up once, even if the tab is opened repeatedly.
+  if (!statusFilter.dataset.bound) {
+    statusFilter.addEventListener("change", handleFilterChange);
+    closeDetailBtn.addEventListener("click", closeDetail);
+    updateForm.addEventListener("submit", handleUpdateSubmit);
+    statusFilter.dataset.bound = "true";
   }
-});
 
-function updateQueueLabel() {
-  const session = getSession();
-  const label = document.getElementById("queueLabel");
-  if (!session?.user) return;
-
-  label.textContent =
-    session.user.role === "officer"
-      ? "Showing Hygiene complaints (your queue)"
-      : "Showing Service, Food Quality, Overcharging & Other complaints (your queue)";
-}
-
-function showLogin() {
-  loginView.classList.remove("hidden");
-  dashboardView.classList.add("hidden");
-  logoutBtn.classList.add("hidden");
-}
-
-function enterDashboard() {
-  loginView.classList.add("hidden");
-  dashboardView.classList.remove("hidden");
-  logoutBtn.classList.remove("hidden");
   updateQueueLabel();
   loadComplaints();
 }
 
-async function handleLogin(e) {
-  e.preventDefault();
+function updateQueueLabel() {
+  const label = document.getElementById("queueLabel");
+  const role = localStorage.getItem("role");
+  if (!label) return;
 
-  const role = document.getElementById("roleSelect").value;
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
-  const loginBtn = document.getElementById("loginBtn");
-  const errorEl = document.getElementById("loginError");
-
-  errorEl.classList.add("hidden");
-  loginBtn.disabled = true;
-  loginBtn.textContent = "Signing In...";
-
-  try {
-    const response = await fetch(`/api/auth/login/${role}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      errorEl.textContent = data.message || "Unable to sign in.";
-      errorEl.classList.remove("hidden");
-      return;
-    }
-
-    saveSession({ token: data.token, user: data.user });
-    enterDashboard();
-  } catch (error) {
-    console.error("Login failed:", error);
-    errorEl.textContent = "Something went wrong. Please try again.";
-    errorEl.classList.remove("hidden");
-  } finally {
-    loginBtn.disabled = false;
-    loginBtn.textContent = "Sign In";
-  }
+  label.textContent =
+    role === "officer"
+      ? "Showing Hygiene complaints (your queue)"
+      : "Showing Service, Food Quality, Overcharging & Other complaints (your queue)";
 }
 
+// A 401/403 here means the session died - hand back to the shared logout.
 function handleLogout() {
-  clearSession();
-  currentComplaintId = null;
-  closeDetail();
-  showLogin();
+  if (typeof logoutOfficer === "function") {
+    logoutOfficer();
+  } else {
+    localStorage.clear();
+    window.location.href = "/officer/SignInOfficer.html";
+  }
 }
 
 function handleFilterChange(e) {
