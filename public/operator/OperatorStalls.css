@@ -46,6 +46,7 @@
 .row-actions {
   display: flex;
   gap: 8px;
+  justify-content: flex-end;
 }
 
 .row-actions button {
@@ -179,4 +180,37 @@
   .form-row-2 {
     grid-template-columns: 1fr;
   }
+}
+
+/* Resolution notes history inside the complaint update modal */
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 180px;
+  overflow-y: auto;
+  margin-bottom: 4px;
+}
+
+.notes-list:empty {
+  display: none;
+}
+
+.note-item {
+  background: var(--orange-soft);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.note-item .note-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.notes-empty {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 4px 0 0 0;
 }
