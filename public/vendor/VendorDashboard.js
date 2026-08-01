@@ -108,30 +108,70 @@ document.addEventListener("DOMContentLoaded", () => {
         },
 
         options: {
+    responsive: true,
+    maintainAspectRatio: false,
 
-            responsive: true,
-
-            maintainAspectRatio: false,
-
-            plugins: {
-
-                legend: {
-
-                    display: false
-
+    plugins: {
+        legend: {
+            display: false
+        },
+        tooltip: {
+            callbacks: {
+                title: function(context) {
+                    return `Day ${context[0].label}`;
+                },
+                label: function(context) {
+                    return `Revenue: $${context.raw}`;
                 }
-
-            },
-
-            scales: {
-
-                y: {
-
-                    beginAtZero: true
-
-                }
-
             }
+        }
+    },
+
+    scales: {
+        x: {
+            title: {
+                display: true,
+                text: "Day"
+            },
+            ticks: {
+                autoSkip: true,
+                maxTicksLimit: 8,
+                maxRotation: 0,
+                minRotation: 0
+            },
+            grid: {
+                display: false
+            }
+        },
+
+        y: {
+            beginAtZero: true,
+            title: {
+                display: true,
+                text: "Revenue ($)"
+            },
+            ticks: {
+                callback: function(value) {
+                    return "$" + value;
+                }
+            }
+        }
+    },
+
+    interaction: {
+        mode: "index",
+        intersect: false
+    },
+
+    elements: {
+        point: {
+            radius: 4,
+            hoverRadius: 7
+        },
+        line: {
+            tension: 0.35
+        }
+    }
 
         }
 
@@ -213,6 +253,20 @@ yearSelect.value = currentDate.getFullYear();
                 if (Array.isArray(data.weeklyRevenue) && data.weeklyRevenue.length) {
                     const weeklyRevenue = data.weeklyRevenue.map(Number);
                     const hasRevenue = weeklyRevenue.some((amount) => amount > 0);
+
+                    // Labels change shape between "Mon-Sun" (no filter) and
+                    // "1, 2, 3...daysInMonth" (month filter active) - both
+                    // must update together or the axis and the data mismatch.
+                    if (Array.isArray(data.chartLabels)) {
+                        revenueChart.data.labels = data.chartLabels;
+
+                        revenueChart.options.scales.x.ticks.autoSkip = true;
+                        revenueChart.options.scales.x.ticks.maxTicksLimit = 8;
+                        revenueChart.options.scales.x.title.text = "Day of Month";
+                    } else {
+                        revenueChart.data.labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+                        revenueChart.options.scales.x.title.text = "Day of Week";
+                    }
 
                     // Always plot the real numbers - including real zeros. No fake
                     // fallback data; the empty-state message (not fabricated
