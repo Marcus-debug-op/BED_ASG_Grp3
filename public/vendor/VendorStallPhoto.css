@@ -1,0 +1,70 @@
+/* BED-147: Vendor stall profile picture page.
+   Kept in its own file rather than inline on the elements, and separate
+   from VendorAccount.css so it doesn't affect the other vendor pages that
+   share that stylesheet. */
+
+.stall-photo-section {
+  max-width: 480px;
+  margin: 24px auto;
+}
+
+.stall-photo-section .field-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.stall-photo-section .stall-select {
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font: inherit;
+}
+
+/* Explicit height so the box is bounded by this stylesheet alone, rather
+   than depending on .upload-box's height coming from VendorAccount.css. */
+.stall-photo-section .upload-box {
+  overflow: hidden;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hidden until a photo is chosen; VendorStallPhoto.js toggles .is-visible.
+   object-fit: contain keeps the whole photo visible inside the box rather
+   than cropping it. The explicit max-height (not just 100%) means the
+   preview stays bounded even if the parent's height is ever removed. */
+.stall-photo-preview {
+  display: none;
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.stall-photo-preview.is-visible {
+  display: block;
+}
+
+.stall-photo-section .save-photo-btn {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.stall-photo-msg {
+  margin-top: 12px;
+  min-height: 1.2em;
+}
+
+/* Set by VendorStallPhoto.js instead of an inline colour, so the success
+   and error states are defined here with the rest of the page's styling. */
+.stall-photo-msg.is-success {
+  color: #2e7d32;
+}
+
+.stall-photo-msg.is-error {
+  color: #c0392b;
+}

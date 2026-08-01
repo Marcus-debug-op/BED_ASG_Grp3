@@ -2285,7 +2285,6 @@ VALUES
 );
 GO
 
-/* Not in used, but I'll just comment it off
 -- =========================================================
 -- Seed MenuItemCuisines
 -- Links menu items to cuisine categories.
@@ -2293,22 +2292,99 @@ GO
 -- =========================================================
 
 INSERT INTO MenuItemCuisines (menu_item_id, cuisine_id)
-SELECT 
-    mi.menu_item_id,
-    c.cuisine_id
-FROM MenuItems mi
-INNER JOIN Stalls s
-    ON mi.stall_id = s.stall_id
+SELECT v.menu_item_id, c.cuisine_id
+FROM (VALUES
+    (4, 'Vegetarian'),
+    (5, 'Vegetarian'),
+    (6, 'Vegetarian'),
+    (7, 'Halal'),
+    (8, 'Halal'),
+    (9, 'Halal'),
+    (13, 'Halal'),
+    (14, 'Halal'),
+    (15, 'Halal'),
+    (15, 'Vegetarian'),
+    (16, 'Halal'),
+    (17, 'Halal'),
+    (18, 'Halal'),
+    (18, 'Vegetarian'),
+    (19, 'Halal'),
+    (19, 'Vegetarian'),
+    (20, 'Halal'),
+    (21, 'Halal'),
+    (27, 'Halal'),
+    (29, 'Halal'),
+    (31, 'Halal'),
+    (31, 'Vegetarian'),
+    (32, 'Halal'),
+    (32, 'Vegetarian'),
+    (33, 'Halal'),
+    (33, 'Vegetarian'),
+    (34, 'Halal'),
+    (34, 'Vegetarian'),
+    (35, 'Halal'),
+    (35, 'Vegetarian'),
+    (36, 'Halal'),
+    (36, 'Vegetarian'),
+    (37, 'Halal'),
+    (37, 'Vegetarian'),
+    (38, 'Halal'),
+    (38, 'Vegetarian'),
+    (39, 'Halal'),
+    (39, 'Vegetarian'),
+    (40, 'Halal'),
+    (40, 'Vegetarian'),
+    (41, 'Halal'),
+    (41, 'Vegetarian'),
+    (42, 'Halal'),
+    (42, 'Vegetarian'),
+    (43, 'Halal'),
+    (43, 'Vegetarian'),
+    (44, 'Halal'),
+    (44, 'Vegetarian'),
+    (45, 'Halal'),
+    (45, 'Vegetarian'),
+    (46, 'Halal'),
+    (46, 'Vegetarian'),
+    (49, 'Halal'),
+    (49, 'Vegetarian'),
+    (50, 'Halal'),
+    (50, 'Vegetarian'),
+    (51, 'Halal'),
+    (51, 'Vegetarian'),
+    (52, 'Halal'),
+    (52, 'Vegetarian'),
+    (53, 'Halal'),
+    (53, 'Vegetarian'),
+    (54, 'Halal'),
+    (54, 'Vegetarian'),
+    (57, 'Vegetarian'),
+    (58, 'Halal'),
+    (59, 'Halal'),
+    (60, 'Halal'),
+    (60, 'Vegetarian'),
+    (64, 'Vegetarian'),
+    (65, 'Vegetarian'),
+    (66, 'Vegetarian'),
+    (85, 'Halal'),
+    (86, 'Halal'),
+    (88, 'Halal'),
+    (89, 'Halal'),
+    (90, 'Halal')
+) AS v(menu_item_id, cuisine_name)
 INNER JOIN Cuisines c
-    ON s.cuisine_id = c.cuisine_id
+    ON c.cuisine_name = v.cuisine_name
+-- Only tag menu items that actually exist, so a partially seeded
+-- MenuItems table can't cause a foreign key error here.
+INNER JOIN MenuItems mi
+    ON mi.menu_item_id = v.menu_item_id
 WHERE NOT EXISTS (
     SELECT 1
-    FROM MenuItemCuisines mic
-    WHERE mic.menu_item_id = mi.menu_item_id
-      AND mic.cuisine_id = c.cuisine_id
+    FROM MenuItemCuisines existing
+    WHERE existing.menu_item_id = v.menu_item_id
+      AND existing.cuisine_id = c.cuisine_id
 );
 GO
-*/ 
 
 -- =====================================================================
 -- merged from seed_updates/007_damien_seed_promotions_and_complaint_notes.sql

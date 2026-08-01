@@ -11,11 +11,17 @@ async function getAllStalls(filters = {}) {
     connection = await sql.connect(dbConfig);   
     const request = connection.request();
 
+    // All three are LEFT JOINs on purpose. With INNER JOIN, a stall whose
+    // hawker_centre_id / vendor_id / cuisine_id has no matching row is
+    // silently dropped from the results - the stall simply never appears
+    // when browsing, with no error anywhere. LEFT JOIN keeps every active
+    // stall visible; a missing lookup just shows as a blank centre name,
+    // vendor name, or cuisine instead of losing the whole stall.
     let sqlQuery = `
   SELECT s.stall_id, s.stall_name,c.cuisine_name AS cuisine_type,s.description,s.unit_number,s.operating_hours,s.price_range,s.phone_number,s.image_url,s.current_hygiene_grade,h.hawker_centre_id,h.centre_name,h.area,u.full_name AS vendor_name FROM Stalls s
-  INNER JOIN HawkerCentres h ON s.hawker_centre_id = h.hawker_centre_id
-  INNER JOIN Users u ON s.vendor_id = u.user_id
-  INNER JOIN Cuisines c ON s.cuisine_id = c.cuisine_id
+  LEFT JOIN HawkerCentres h ON s.hawker_centre_id = h.hawker_centre_id
+  LEFT JOIN Users u ON s.vendor_id = u.user_id
+  LEFT JOIN Cuisines c ON s.cuisine_id = c.cuisine_id
   WHERE s.is_active = 1`;
 
 
@@ -49,14 +55,22 @@ async function getAllStalls(filters = {}) {
         request.input(`dietary${index}`, sql.NVarChar, value);
       });
 
+      // A stall matches if EITHER its own cuisine is the requested tag
+      // (Stalls.cuisine_id -> Cuisines, e.g. a stall categorised "Halal"),
+      // OR any of its menu items carry that tag via MenuItemCuisines.
+      // Checking both means the filter works whether the tag is recorded
+      // at stall level or item level.
       sqlQuery += `
-        AND EXISTS (
-          SELECT 1
-          FROM MenuItems mi
-          INNER JOIN MenuItemCuisines mic ON mi.menu_item_id = mic.menu_item_id
-          INNER JOIN Cuisines dc ON mic.cuisine_id = dc.cuisine_id
-          WHERE mi.stall_id = s.stall_id
-            AND dc.cuisine_name IN (${dietaryParams.join(", ")})
+        AND (
+          c.cuisine_name IN (${dietaryParams.join(", ")})
+          OR EXISTS (
+            SELECT 1
+            FROM MenuItems mi
+            INNER JOIN MenuItemCuisines mic ON mi.menu_item_id = mic.menu_item_id
+            INNER JOIN Cuisines dc ON mic.cuisine_id = dc.cuisine_id
+            WHERE mi.stall_id = s.stall_id
+              AND dc.cuisine_name IN (${dietaryParams.join(", ")})
+          )
         )
       `;
     }
@@ -162,7 +176,7 @@ async function getStallReviewsSummary(stallId) {
     recentRequest.input("stall_id", sql.Int, stallId);
 
     const recentResult = await recentRequest.query(`
-      SELECT TOP (5) f.feedback_id, f.patron_id, f.rating, f.comment, f.created_at, u.full_name AS reviewer_name
+      SELECT TOP (5) f.feedback_id, f.patron_id, f.rating, f.comment, f.photo_path, f.created_at, u.full_name AS reviewer_name
       FROM Feedbacks f
       INNER JOIN Users u ON f.patron_id = u.user_id
       WHERE f.stall_id = @stall_id

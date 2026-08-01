@@ -26,6 +26,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const searchInput = document.querySelector(".search-input");
   const cuisineSelect = document.getElementById("cuisineSelect");
+  // Declared here, not next to populateCuisineOptions() below: refreshStalls()
+  // is called near the top of this file, and a `let` is in the temporal dead
+  // zone until its own line runs - declaring it later threw a ReferenceError
+  // that the try/catch reported as "Unable to load stalls right now".
+  let cuisineOptionsLoaded = false;
   const hawkerCentreSelect = document.getElementById("hawkerCentreSelect");
   const halalCheck = document.getElementById("halalCheck");
   const vegCheck = document.getElementById("vegCheck");
@@ -95,6 +100,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       const stalls = await loadStalls(params);
+      populateCuisineOptions(stalls);
       renderStalls(stalls);
       if (countText) countText.textContent = `${stalls.length} stalls found`;
     } catch (err) {
@@ -102,6 +108,32 @@ document.addEventListener("DOMContentLoaded", async () => {
       stallGrid.innerHTML = `<p style="padding:12px;">Unable to load stalls right now.</p>`;
       if (countText) countText.textContent = "0 stalls found";
     }
+  }
+
+  // The cuisine names in the dropdown must match Cuisines.cuisine_name
+  // exactly, since the backend filters on `c.cuisine_name = @cuisine`.
+  // These used to be hardcoded as "Chinese Cuisine" / "Malay Cuisine" /
+  // "Indian Cuisine", which stopped matching once cuisines moved into the
+  // Cuisines lookup table ("Chinese", "Malay", ...) - so selecting one
+  // always returned zero stalls. Building the list from the API response
+  // keeps it correct automatically, and covers every cuisine in use
+  // rather than just three of them.
+  function populateCuisineOptions(stalls) {
+    if (cuisineOptionsLoaded || !cuisineSelect) return;
+
+    const names = [...new Set(
+      stalls.map((s) => s.cuisine_type).filter(Boolean)
+    )].sort();
+
+    if (names.length === 0) return;
+
+    const current = cuisineSelect.value;
+    cuisineSelect.innerHTML =
+      `<option value="${CUISINE_ALL}">All Cuisines</option>` +
+      names.map((n) => `<option value="${escapeAttr(n)}">${escapeAttr(n)}</option>`).join("");
+    cuisineSelect.value = current || CUISINE_ALL;
+
+    cuisineOptionsLoaded = true;
   }
 
   async function loadStalls(params) {
