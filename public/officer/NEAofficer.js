@@ -83,6 +83,10 @@ function switchPage(page, clickedItem) {
   if (page === "stalls") {
     loadStalls();
   }
+
+  if (page === "complaints") {
+    initComplaintsTab();
+  }
 }
 
 /*
@@ -739,5 +743,3 @@ window.logoutOfficer = logoutOfficer;
 window.openCompleteInspectionModal = openCompleteInspectionModal;
 window.calculateLiveGrade = calculateLiveGrade;
 window.submitInspection = submitInspection;
-
-
