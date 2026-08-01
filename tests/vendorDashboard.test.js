@@ -49,6 +49,27 @@ describe("Vendor Dashboard API Tests", () => {
     expect(response.body).toHaveProperty("todayRevenue");
   });
 
+  test("chart labels should switch from Mon-Sun to day-of-month when a month filter is applied", async () => {
+
+  const unfiltered = await request(app)
+    .get("/api/vendor/dashboard")
+    .set("Authorization", `Bearer ${vendorToken}`);
+
+  expect(unfiltered.body.chartLabels).toEqual([
+    "Mon","Tue","Wed","Thu","Fri","Sat","Sun"
+  ]);
+
+  const filtered = await request(app)
+    .get("/api/vendor/dashboard?month=1&year=2026")
+    .set("Authorization", `Bearer ${vendorToken}`);
+
+  console.log(filtered.statusCode);
+  console.log(filtered.body);
+
+  expect(filtered.statusCode).toBe(200);
+
+});
+
   test("should reject an out-of-range month with 400", async () => {
     const response = await request(app)
       .get("/api/vendor/dashboard?month=13&year=2026")

@@ -123,22 +123,39 @@ WHERE s.vendor_id = @vendor_id;
 }
 
 // Last 5 orders across every stall owned by this vendor, newest first.
-async function getRecentOrders(vendorId, limit = 5) {
+// Last 5 orders across every stall owned by this vendor, newest first.
+// If a month/year filter is supplied (BED-73), only return orders from that month.
+async function getRecentOrders(vendorId, limit = 5, month = null, year = null) {
   let connection;
 
   try {
     connection = await sql.connect(dbConfig);
+
     const request = connection.request();
     request.input("vendor_id", sql.Int, vendorId);
     request.input("limit", sql.Int, limit);
+    request.input("month", sql.Int, month);
+    request.input("year", sql.Int, year);
 
     const result = await request.query(`
-      SELECT TOP (@limit) o.order_id, o.order_status, o.order_date,
+      SELECT TOP (@limit)
+        o.order_id,
+        o.order_status,
+        o.order_date,
         u.full_name AS customer_name
       FROM Orders o
-      INNER JOIN Stalls s ON o.stall_id = s.stall_id
-      INNER JOIN Users u ON o.patron_id = u.user_id
+      INNER JOIN Stalls s
+        ON o.stall_id = s.stall_id
+      INNER JOIN Users u
+        ON o.patron_id = u.user_id
       WHERE s.vendor_id = @vendor_id
+        AND (
+          @month IS NULL
+          OR (
+            MONTH(o.order_date) = @month
+            AND YEAR(o.order_date) = @year
+          )
+        )
       ORDER BY o.order_date DESC;
     `);
 
@@ -171,6 +188,41 @@ async function getWeeklyRevenue(vendorId) {
       WHERE s.vendor_id = @vendor_id
         AND o.order_date >= @monday AND o.order_date < @nextMonday
       GROUP BY CAST(o.order_date AS DATE);
+    `);
+
+    return result.recordset;
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) await connection.close();
+  }
+}
+
+// Revenue per day for a selected month (BED-73)
+async function getMonthlyRevenue(vendorId, month, year) {
+  let connection;
+
+  try {
+    connection = await sql.connect(dbConfig);
+
+    const request = connection.request();
+    request.input("vendor_id", sql.Int, vendorId);
+    request.input("month", sql.Int, month);
+    request.input("year", sql.Int, year);
+
+    const result = await request.query(`
+      SELECT
+        DAY(o.order_date) AS day_of_month,
+        SUM(o.total_amount) AS day_revenue
+      FROM Orders o
+      INNER JOIN Stalls s
+        ON o.stall_id = s.stall_id
+      WHERE s.vendor_id = @vendor_id
+        AND MONTH(o.order_date) = @month
+        AND YEAR(o.order_date) = @year
+      GROUP BY DAY(o.order_date)
+      ORDER BY DAY(o.order_date);
     `);
 
     return result.recordset;
@@ -216,5 +268,6 @@ module.exports = {
   getDashboardMetrics,
   getRecentOrders,
   getWeeklyRevenue,
+  getMonthlyRevenue,
   getTopSellingDishes
 };
