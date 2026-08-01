@@ -60,13 +60,14 @@ router.post("/login/vendor", validateLogin, authController.loginVendor
 router.post("/login/officer", validateLogin, authController.loginOfficer
      /*
     #swagger.tags = ['Auth']
-    #swagger.description = 'Step 1 of officer login. Verifies email/password, then sends an OTP and returns a short-lived pendingToken to use with /verify-otp.'
+    #swagger.description = 'Step 1 of officer login. Verifies email/password and badge ID, then sends an OTP and returns a short-lived pendingToken to use with /verify-otp.'
     #swagger.parameters['body'] = {
       in: 'body',
       required: true,
       schema: {
         email: 'officer@example.com',
-        password: 'Password123!'
+        password: 'Password123!',
+        badgeId: 'NEA-0042'
       }
     }
     #swagger.responses[200] = {
@@ -76,7 +77,7 @@ router.post("/login/officer", validateLogin, authController.loginOfficer
       description: 'Validation failed'
     }
     #swagger.responses[401] = {
-      description: 'Invalid email or password'
+      description: 'Invalid email/password, or badge ID does not match our records'
     }
   */
 );
@@ -84,13 +85,14 @@ router.post("/login/officer", validateLogin, authController.loginOfficer
 router.post("/login/operator", validateLogin, authController.loginOperator
       /*
     #swagger.tags = ['Auth']
-    #swagger.description = 'Step 1 of operator login. Verifies email/password, then sends an OTP and returns a short-lived pendingToken to use with /verify-otp.'
+    #swagger.description = 'Step 1 of operator login. Verifies email/password and badge ID, then sends an OTP and returns a short-lived pendingToken to use with /verify-otp.'
     #swagger.parameters['body'] = {
       in: 'body',
       required: true,
       schema: {
         email: 'operator@example.com',
-        password: 'Password123!'
+        password: 'Password123!',
+        badgeId: 'OPS-001'
       }
     }
     #swagger.responses[200] = {
@@ -100,7 +102,7 @@ router.post("/login/operator", validateLogin, authController.loginOperator
       description: 'Validation failed'
     }
     #swagger.responses[401] = {
-      description: 'Invalid email or password'
+      description: 'Invalid email/password, or badge ID does not match our records'
     }
   */
 );
