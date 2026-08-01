@@ -142,9 +142,35 @@ async function updateAgreement(req, res) {
   }
 }
 
+// DELETE /api/operator/rental-agreements/:agreementId
+async function deleteAgreement(req, res) {
+  try {
+    const agreementId = Number(req.params.agreementId);
+
+    if (Number.isNaN(agreementId)) {
+      return res.status(400).json({ message: "Invalid agreement ID." });
+    }
+
+    const deleted = await rentalAgreementModel.deleteAgreement(agreementId);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Rental agreement not found." });
+    }
+
+    res.status(200).json({ message: "Rental agreement deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting rental agreement:", error);
+
+    res.status(500).json({
+      message: "Unable to delete rental agreement."
+    });
+  }
+}
+
 module.exports = {
   createAgreement,
   listAgreements,
   getAgreement,
-  updateAgreement
+  updateAgreement,
+  deleteAgreement
 };

@@ -67,6 +67,18 @@
   color: var(--danger);
 }
 
+/* BED-23: delete a rental agreement. Mirrors .btn-deactivate-row so
+   destructive actions look consistent across the operator tables. */
+.btn-delete-row {
+  background: #fdecea;
+  color: var(--danger);
+}
+
+.btn-delete-row:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn-deactivate-row:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -179,4 +191,11 @@
   .form-row-2 {
     grid-template-columns: 1fr;
   }
+}
+
+/* BED-23: rental agreements page. The status field is only shown when
+   editing an existing agreement (new ones always start Active), toggled
+   by OperatorRentalLease.js via the `hidden` attribute. */
+.rental-stats {
+  margin-bottom: 24px;
 }
