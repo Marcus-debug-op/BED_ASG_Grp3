@@ -83,7 +83,7 @@ async function uploadMyProfileImage(req, res) {
 
     // Store the image path that will be saved in the database.
     // The actual file is stored in public/uploads/profile.
-    const profileImageUrl = `uploads/profile/${req.file.filename}`;
+    const profileImageUrl = `/uploads/profile/${req.file.filename}`;
 
     // Update the user's profile image URL in the database.
     const rowsAffected = await profileModel.updateProfileImage(
