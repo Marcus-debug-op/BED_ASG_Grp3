@@ -55,4 +55,11 @@ router.put("/:agreementId", requireRole("operator"), rentalAgreementController.u
   }
 */);
 
+router.delete("/:agreementId", requireRole("operator"), rentalAgreementController.deleteAgreement
+/*
+  #swagger.tags = ['Rental Agreements']
+  #swagger.description = 'BED-23: Operator permanently deletes a rental agreement. Returns 404 if the agreement does not exist.'
+  #swagger.security = [{ "bearerAuth": [] }]
+*/);
+
 module.exports = router;

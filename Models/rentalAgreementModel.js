@@ -285,12 +285,36 @@ async function acceptAgreement(agreementId, vendorId) {
   }
 }
 
+// BED-23: operator permanently deletes a rental agreement.
+// Returns true if a row was removed, false if the id didn't exist - lets
+// the controller answer 404 rather than reporting a successful delete of
+// something that was never there.
+async function deleteAgreement(agreementId) {
+  let connection;
+
+  try {
+    connection = await sql.connect(dbConfig);
+    const request = connection.request();
+    request.input("id", sql.Int, agreementId);
+
+    const result = await request.query(`
+      DELETE FROM RentalAgreements
+      WHERE rental_agreement_id = @id;
+    `);
+
+    return result.rowsAffected[0] > 0;
+  } finally {
+    if (connection) await connection.close();
+  }
+}
+
 module.exports = {
   stallExists,
   createAgreement,
   getAllAgreements,
   getAgreementById,
   updateAgreement,
+  deleteAgreement,
   getAgreementsForVendor,
   getAgreementByIdForVendor,
   acceptAgreement

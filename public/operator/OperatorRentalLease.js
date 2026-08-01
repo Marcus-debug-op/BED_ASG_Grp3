@@ -82,14 +82,14 @@ document.addEventListener("DOMContentLoaded", () => {
             leaseEndField.value = toDateInputValue(agreement.lease_end_date);
             monthlyRentField.value = agreement.monthly_rent;
             statusField.value = agreement.agreement_status;
-            statusField.style.display = "";
-            statusLabel.style.display = "";
+            statusField.hidden = false;
+            statusLabel.hidden = false;
         } else {
             modalTitle.textContent = "New Rental Agreement";
             agreementIdField.value = "";
             stallIdField.disabled = false;
-            statusField.style.display = "none";
-            statusLabel.style.display = "none";
+            statusField.hidden = true;
+            statusLabel.hidden = true;
         }
 
         modal.hidden = false;
@@ -134,6 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>
                     <div class="row-actions">
                         <button type="button" class="btn-edit-row" data-action="edit">Edit</button>
+                        <button type="button" class="btn-delete-row" data-action="delete">Delete</button>
                     </div>
                 </td>
             </tr>
@@ -181,6 +182,42 @@ document.addEventListener("DOMContentLoaded", () => {
         const agreementId = row.dataset.id;
         const agreement = currentAgreements.find((a) => String(a.rental_agreement_id) === agreementId);
         if (agreement) openModal(agreement);
+    });
+
+    // Delete is permanent (no soft-delete column on RentalAgreements), so
+    // confirm first and name the stall so the operator can see exactly
+    // which agreement they're about to remove.
+    agreementsBody.addEventListener("click", async (e) => {
+        const btn = e.target.closest("button[data-action='delete']");
+        if (!btn) return;
+
+        const row = btn.closest("tr");
+        const agreementId = row.dataset.id;
+        const agreement = currentAgreements.find((a) => String(a.rental_agreement_id) === agreementId);
+        const stallName = agreement ? agreement.stall_name : `#${agreementId}`;
+
+        if (!confirm(`Delete the rental agreement for ${stallName}? This cannot be undone.`)) return;
+
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(`/api/operator/rental-agreements/${agreementId}`, {
+                method: "DELETE",
+                headers: authHeaders()
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Unable to delete rental agreement.");
+            }
+
+            await loadAgreements();
+        } catch (error) {
+            console.error("Error deleting rental agreement:", error);
+            alert(error.message || "Unable to delete rental agreement.");
+            btn.disabled = false;
+        }
     });
 
     addAgreementBtn.addEventListener("click", () => openModal());
