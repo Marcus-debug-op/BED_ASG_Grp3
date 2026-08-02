@@ -11,21 +11,21 @@ const router = express.Router();
 // patrons may like menu items.
 router.post("/:id/likes", blockGuests, likeController.likeItem
   /*
-    #swagger.tags = ['Likes']
+    #swagger.tags = ['Patron - Likes']
     #swagger.description = 'BED-26: Like a menu item. Registered patrons only - guests are rejected.'
     #swagger.security = [{ "bearerAuth": [] }]
   */
 );
 router.delete("/:id/likes", blockGuests, likeController.unlikeItem
   /*
-    #swagger.tags = ['Likes']
+    #swagger.tags = ['Patron - Likes']
     #swagger.description = 'BED-26: Remove your like from a menu item.'
     #swagger.security = [{ "bearerAuth": [] }]
   */
 );
 router.get("/:id/likes/count", likeController.getLikeCount
   /*
-    #swagger.tags = ['Likes']
+    #swagger.tags = ['Patron - Likes']
     #swagger.description = 'BED-26: Get the total like count for a menu item. Public - no auth required.'
   */
 ); // public, no middleware

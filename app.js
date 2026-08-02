@@ -40,7 +40,21 @@ app.use(express.json());
 app.use(passport.initialize());
 
 // Swagger 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocument, {
+    customSiteTitle: "HawkerHub API Documentation",
+
+    swaggerOptions: {
+      docExpansion: "none",
+      filter: true,
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      deepLinking: true
+    }
+  })
+);
 
 
 // Serve frontend files from public folder
@@ -72,6 +86,7 @@ app.use("/api/nea", neaAnalyticsRoute);
 
 // Test API route
 app.get("/api/test", (req, res) => {
+   // #swagger.ignore = true
   res.json({ message: "Backend is working" });
 });
 

@@ -36,13 +36,6 @@ function applyRoleBasedNav(role) {
 }
 
 
-
-async function fetchUserProfile(uid) {
-  const snap = await getDoc(doc(fs, "users", uid));
-  return snap.exists() ? snap.data() : null;
-}
-
-
 function initMenuUI() {
   const menuBtn = document.getElementById("menu-btn");
   const dashboard = document.getElementById("dashboard");
@@ -111,6 +104,37 @@ export function initNavbarAuth() {
 
   const role = String(user.role || "patron").toLowerCase();
   const fullName = user.full_name || "My Profile";
+
+  // Guests can browse and order, but they do not have a profile page.
+if (role === "guest") {
+  const goToSignIn = () => {
+    // Remove only the guest login details while keeping the cart.
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("user");
+    localStorage.removeItem("hawkerhub_auth");
+
+    window.location.href = "/auth/signup.html";
+  };
+
+  if (logoLink) {
+    logoLink.href = "/index.html";
+  }
+
+  if (signinBtn) {
+    signinBtn.textContent = "Sign in";
+    signinBtn.removeAttribute("href");
+    signinBtn.onclick = goToSignIn;
+  }
+
+  if (dashboardAuthBtn) {
+    dashboardAuthBtn.textContent = "Sign in";
+    dashboardAuthBtn.onclick = goToSignIn;
+  }
+
+  applyRoleBasedNav("guest");
+  return;
+}
 
   let targetUrl = "/profile/PatronProfile.html";
 

@@ -5,7 +5,14 @@ const { requireRole } = require("../Middlewares/authMiddleware");
 
 const router = express.Router();
 
-router.get("/my-stalls", requireRole("vendor"), vendorStallController.getMyStalls);
+router.get("/my-stalls", requireRole("vendor"), vendorStallController.getMyStalls
+  /*
+    #swagger.tags = ['Vendor - Stalls']
+    #swagger.summary = 'Get vendor-owned stalls'
+    #swagger.description = 'Returns all stalls belonging to the authenticated vendor.'
+    #swagger.security = [{ "bearerAuth": [] }]
+  */
+);
 
 // BED-147: vendor-only, ownership-checked in the controller (403 if the
 // stall belongs to a different vendor).
@@ -15,7 +22,7 @@ router.patch(
   uploadStallImage.single("stallImage"),
   vendorStallController.uploadStallProfilePicture
   /*
-    #swagger.tags = ['Vendor Stalls']
+    #swagger.tags = ['Vendor - Stalls']
     #swagger.description = 'BED-147: Vendor uploads/replaces the profile picture for a stall they own. Returns 403 if the stall belongs to a different vendor, 404 if the stall does not exist.'
     #swagger.security = [{ "bearerAuth": [] }]
     #swagger.consumes = ['multipart/form-data']

@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.post("/", requireRole("officer"),validateScheduleInspection,inspectionController.scheduleInspection
   /*
-    #swagger.tags = ['Inspections']
+    #swagger.tags = ['NEA - Inspections']
     #swagger.description = 'NEA officer schedules an inspection for a valid stall'
     #swagger.security = [{ "bearerAuth": [] }]
     #swagger.parameters['body'] = {
@@ -35,7 +35,7 @@ router.get("/scheduled", requireRole("officer"), inspectionController.getUpcomin
 
 router.put("/:inspectionId", requireRole("officer"), validateRescheduleInspection, inspectionController.rescheduleInspection
   /*
-    #swagger.tags = ['Inspections']
+    #swagger.tags = ['NEA - Inspections']
     #swagger.description = 'NEA officer reschedules an existing scheduled inspection'
     #swagger.security = [{ "bearerAuth": [] }]
     #swagger.parameters['inspectionId'] = {
@@ -56,7 +56,7 @@ router.put("/:inspectionId", requireRole("officer"), validateRescheduleInspectio
 
 router.patch("/:inspectionId/cancel", requireRole("officer"), inspectionController.cancelInspection
   /*
-    #swagger.tags = ['Inspections']
+    #swagger.tags = ['NEA - Inspections']
     #swagger.description = 'NEA officer cancels a scheduled inspection'
     #swagger.security = [{ "bearerAuth": [] }]
     #swagger.parameters['inspectionId'] = {
@@ -71,7 +71,7 @@ router.patch("/:inspectionId/cancel", requireRole("officer"), inspectionControll
 // It cancels the inspection instead of permanently removing the row from SQL Server.
 router.delete("/:inspectionId", requireRole("officer"), inspectionController.cancelInspection
   /*
-    #swagger.tags = ['Inspections']
+    #swagger.tags = ['NEA - Inspections']
     #swagger.description = 'NEA officer deletes/cancels a scheduled inspection using soft delete'
     #swagger.security = [{ "bearerAuth": [] }]
     #swagger.parameters['inspectionId'] = {
@@ -85,7 +85,7 @@ router.delete("/:inspectionId", requireRole("officer"), inspectionController.can
 
 router.get("/", requireRole("officer"), inspectionController.getInspectionRecords
   /*
-    #swagger.tags = ['Inspections']
+    #swagger.tags = ['NEA - Inspections']
     #swagger.description = 'NEA officer views inspection records, optionally filtered by stall ID'
     #swagger.security = [{ "bearerAuth": [] }]
     #swagger.parameters['stall_id'] = {
@@ -101,7 +101,7 @@ router.get("/", requireRole("officer"), inspectionController.getInspectionRecord
 // Records the completed inspection result and updates the stall hygiene grade.
 router.patch("/:inspectionId/result",requireRole("officer"),validateCompleteInspection,inspectionController.completeInspectionResult
   /*
-    #swagger.tags = ['Inspections']
+    #swagger.tags = ['NEA - Inspections']
     #swagger.description = 'NEA officer records inspection result and hygiene grade'
     #swagger.security = [{ "bearerAuth": [] }]
     #swagger.parameters['inspectionId'] = {

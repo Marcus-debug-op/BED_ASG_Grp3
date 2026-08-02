@@ -2,11 +2,117 @@
   "swagger": "2.0",
   "info": {
     "title": "HawkerHub API",
-    "description": "API documentation for HawkerHub backend system",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "description": "API documentation for the HawkerHub backend system. Endpoints are grouped according to user role and functionality."
   },
   "host": "localhost:3000",
   "basePath": "/",
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Registration, login, OTP, Google authentication and password reset"
+    },
+    {
+      "name": "Profile",
+      "description": "View and update the logged-in user's profile"
+    },
+    {
+      "name": "Account",
+      "description": "User account management"
+    },
+    {
+      "name": "Public - Hawker Centres",
+      "description": "Public hawker centre information"
+    },
+    {
+      "name": "Public - Stalls",
+      "description": "Public stall, menu and review information"
+    },
+    {
+      "name": "Patron - Orders",
+      "description": "Patron checkout, order history and order tracking"
+    },
+    {
+      "name": "Patron - Addresses",
+      "description": "Patron saved delivery address management"
+    },
+    {
+      "name": "Patron - Feedback",
+      "description": "Patron feedback and review management"
+    },
+    {
+      "name": "Patron - Complaints",
+      "description": "Patron complaint submission"
+    },
+    {
+      "name": "Patron - Likes",
+      "description": "Patron menu-item likes"
+    },
+    {
+      "name": "Patron - Promotions",
+      "description": "Promotions available to patrons"
+    },
+    {
+      "name": "Vendor - Dashboard",
+      "description": "Vendor dashboard metrics"
+    },
+    {
+      "name": "Vendor - Stalls",
+      "description": "Vendor stall information and images"
+    },
+    {
+      "name": "Vendor - Menu",
+      "description": "Vendor menu-item management"
+    },
+    {
+      "name": "Vendor - Orders",
+      "description": "Vendor order processing and status updates"
+    },
+    {
+      "name": "Vendor - Feedback",
+      "description": "Feedback received by vendor stalls"
+    },
+    {
+      "name": "Vendor - Promotions",
+      "description": "Vendor promotion-code management"
+    },
+    {
+      "name": "Vendor - Complaints",
+      "description": "Complaints received by vendor stalls"
+    },
+    {
+      "name": "Vendor - Rental Agreements",
+      "description": "Vendor rental-agreement acknowledgement"
+    },
+    {
+      "name": "Operator - Dashboard",
+      "description": "Operator dashboard metrics"
+    },
+    {
+      "name": "Operator - Stalls",
+      "description": "Operator stall-record management"
+    },
+    {
+      "name": "Operator - Rental Agreements",
+      "description": "Operator rental-agreement management"
+    },
+    {
+      "name": "Operator - Stall Assignments",
+      "description": "Assign and remove vendors from stalls"
+    },
+    {
+      "name": "Staff - Complaint Management",
+      "description": "Officer and operator complaint handling"
+    },
+    {
+      "name": "NEA - Inspections",
+      "description": "NEA inspection scheduling and results"
+    },
+    {
+      "name": "NEA - Analytics",
+      "description": "NEA hygiene and inspection analytics"
+    }
+  ],
   "schemes": [
     "http"
   ],
@@ -15,20 +121,16 @@
       "type": "apiKey",
       "name": "Authorization",
       "in": "header",
-      "description": "Enter JWT token in this format: Bearer <token>"
+      "description": "Enter the JWT token in this format: Bearer <token>"
     }
   },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
   "paths": {
-    "/api/test": {
-      "get": {
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/auth/register/patron": {
       "post": {
         "tags": [
@@ -240,7 +342,7 @@
         "tags": [
           "Auth"
         ],
-        "description": "Step 1 of officer login. Verifies email/password, then sends an OTP and returns a short-lived pendingToken to use with /verify-otp.",
+        "description": "Step 1 of officer login. Verifies email/password and badge ID, then sends an OTP and returns a short-lived pendingToken to use with /verify-otp.",
         "parameters": [
           {
             "name": "body",
@@ -256,6 +358,10 @@
                 "password": {
                   "type": "string",
                   "example": "Password123!"
+                },
+                "badgeId": {
+                  "type": "string",
+                  "example": "NEA-0042"
                 }
               }
             }
@@ -269,7 +375,7 @@
             "description": "Validation failed"
           },
           "401": {
-            "description": "Invalid email or password"
+            "description": "Invalid email/password, or badge ID does not match our records"
           }
         }
       }
@@ -279,7 +385,7 @@
         "tags": [
           "Auth"
         ],
-        "description": "Step 1 of operator login. Verifies email/password, then sends an OTP and returns a short-lived pendingToken to use with /verify-otp.",
+        "description": "Step 1 of operator login. Verifies email/password and badge ID, then sends an OTP and returns a short-lived pendingToken to use with /verify-otp.",
         "parameters": [
           {
             "name": "body",
@@ -295,6 +401,10 @@
                 "password": {
                   "type": "string",
                   "example": "Password123!"
+                },
+                "badgeId": {
+                  "type": "string",
+                  "example": "OPS-001"
                 }
               }
             }
@@ -308,7 +418,7 @@
             "description": "Validation failed"
           },
           "401": {
-            "description": "Invalid email or password"
+            "description": "Invalid email/password, or badge ID does not match our records"
           }
         }
       }
@@ -357,7 +467,11 @@
     },
     "/api/auth/google": {
       "get": {
-        "description": "",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Start Google authentication",
+        "description": "Redirects the patron to Google for authentication.",
         "responses": {
           "default": {
             "description": ""
@@ -367,7 +481,11 @@
     },
     "/api/auth/google/callback": {
       "get": {
-        "description": "",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Handle Google authentication callback",
+        "description": "Processes the response returned by Google authentication.",
         "responses": {
           "default": {
             "description": ""
@@ -454,7 +572,11 @@
     },
     "/api/auth/guest": {
       "post": {
-        "description": "",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Create guest session",
+        "description": "Creates a temporary guest session without requiring credentials.",
         "responses": {
           "201": {
             "description": "Created"
@@ -467,7 +589,11 @@
     },
     "/api/auth/me": {
       "get": {
-        "description": "",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get current authenticated session",
+        "description": "Returns information about the currently authenticated non-guest user.",
         "responses": {
           "200": {
             "description": "OK"
@@ -478,12 +604,21 @@
           "403": {
             "description": "Forbidden"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/hawkercentres/": {
       "get": {
-        "description": "",
+        "tags": [
+          "Public - Hawker Centres"
+        ],
+        "summary": "List hawker centres",
+        "description": "Returns all available hawker centres.",
         "responses": {
           "200": {
             "description": "OK"
@@ -496,7 +631,11 @@
     },
     "/api/vendor/my-stalls": {
       "get": {
-        "description": "",
+        "tags": [
+          "Vendor - Stalls"
+        ],
+        "summary": "Get vendor-owned stalls",
+        "description": "Returns all stalls belonging to the authenticated vendor.",
         "responses": {
           "200": {
             "description": "OK"
@@ -507,13 +646,18 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/vendor/stalls/{stallId}/profile-picture": {
       "patch": {
         "tags": [
-          "Vendor Stalls"
+          "Vendor - Stalls"
         ],
         "description": "BED-147: Vendor uploads/replaces the profile picture for a stall they own. Returns 403 if the stall belongs to a different vendor, 404 if the stall does not exist.",
         "consumes": [
@@ -560,6 +704,10 @@
     },
     "/api/vendor/menu/cuisines": {
       "get": {
+        "tags": [
+          "Vendor - Menu"
+        ],
+        "summary": "Get available cuisine categories",
         "description": "",
         "responses": {
           "200": {
@@ -571,11 +719,20 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/vendor/menu/stall/{stallId}": {
       "get": {
+        "tags": [
+          "Vendor - Menu"
+        ],
+        "summary": "Get menu items for a vendor stall",
         "description": "",
         "parameters": [
           {
@@ -595,9 +752,18 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       },
       "post": {
+        "tags": [
+          "Vendor - Menu"
+        ],
+        "summary": "Create a menu item",
         "description": "",
         "parameters": [
           {
@@ -620,11 +786,20 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/vendor/menu/{menuItemId}": {
       "put": {
+        "tags": [
+          "Vendor - Menu"
+        ],
+        "summary": "Update a menu item",
         "description": "",
         "parameters": [
           {
@@ -650,9 +825,18 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       },
       "delete": {
+        "tags": [
+          "Vendor - Menu"
+        ],
+        "summary": "Delete a menu item",
         "description": "",
         "parameters": [
           {
@@ -678,11 +862,20 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/vendor/menu/{menuItemId}/availability": {
       "patch": {
+        "tags": [
+          "Vendor - Menu"
+        ],
+        "summary": "Update menu-item availability",
         "description": "",
         "parameters": [
           {
@@ -720,13 +913,18 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/stalls/": {
       "get": {
         "tags": [
-          "Stalls"
+          "Public - Stalls"
         ],
         "description": "BED-61: List all active hawker stalls. Supports optional search and cuisine query params for BED-49 browse/filter.",
         "parameters": [
@@ -768,7 +966,7 @@
     "/api/stalls/{stallId}/menu": {
       "get": {
         "tags": [
-          "Stalls"
+          "Public - Stalls"
         ],
         "description": "BED-62: Get a specific stall\\'s menu items (dishes, prices, descriptions).",
         "parameters": [
@@ -798,7 +996,7 @@
     "/api/stalls/{stallId}/reviews/summary": {
       "get": {
         "tags": [
-          "Stalls"
+          "Public - Stalls"
         ],
         "description": "BED-85: Get the aggregated average rating, total review count, and most recent reviews for a stall.",
         "parameters": [
@@ -828,7 +1026,7 @@
     "/api/orders/vendor/my-orders": {
       "get": {
         "tags": [
-          "Orders"
+          "Vendor - Orders"
         ],
         "description": "Vendor retrieves orders from stalls they own",
         "responses": {
@@ -852,7 +1050,7 @@
     "/api/orders/vendor/my-orders/{orderId}": {
       "get": {
         "tags": [
-          "Orders"
+          "Vendor - Orders"
         ],
         "description": "Vendor retrieves details of one order from their own stall",
         "parameters": [
@@ -891,7 +1089,7 @@
     "/api/orders/vendor/my-orders/{orderId}/status": {
       "put": {
         "tags": [
-          "Orders"
+          "Vendor - Orders"
         ],
         "description": "Vendor updates the status of an order from their own stall",
         "parameters": [
@@ -944,7 +1142,7 @@
     "/api/orders/": {
       "post": {
         "tags": [
-          "Orders"
+          "Patron - Orders"
         ],
         "description": "Patron creates an order for a single stall. If a promo_code is supplied, the backend validates its active status, expiry date and minimum spend, calculates the exact discount server-side, applies it to the order total, and records a redemption linked to this order - preventing the same code from being reused. Invalid/expired/ineligible codes return a clear error reason instead of failing the order.",
         "parameters": [
@@ -1012,7 +1210,7 @@
     "/api/orders/preview-promo": {
       "post": {
         "tags": [
-          "Orders"
+          "Patron - Orders"
         ],
         "description": "Patron previews what a promo code would do to their current cart (for one stall) without submitting an order. Returns the same validation reasons as order creation (NOT_FOUND, INACTIVE, EXPIRED, MIN_SPEND_NOT_MET, ALREADY_REDEEMED, LIMIT_REACHED) if invalid, or the calculated discount if valid. No order is created and no redemption is recorded.",
         "parameters": [
@@ -1059,7 +1257,7 @@
     "/api/orders/history": {
       "get": {
         "tags": [
-          "Orders"
+          "Patron - Orders"
         ],
         "description": "Patron retrieves their own past orders, newest first",
         "responses": {
@@ -1083,7 +1281,7 @@
     "/api/orders/checkout/{checkoutId}": {
       "get": {
         "tags": [
-          "Orders"
+          "Patron - Orders"
         ],
         "description": "Patron retrieves all their orders that share one checkout id (combined receipt)",
         "parameters": [
@@ -1121,7 +1319,7 @@
     "/api/orders/{id}/status": {
       "get": {
         "tags": [
-          "Orders"
+          "Patron - Orders"
         ],
         "description": "Patron retrieves the status of one of their own orders",
         "parameters": [
@@ -1159,7 +1357,7 @@
     "/api/orders/{id}": {
       "get": {
         "tags": [
-          "Orders"
+          "Patron - Orders"
         ],
         "description": "Patron retrieves one of their own orders with its line items",
         "parameters": [
@@ -1224,7 +1422,11 @@
         ]
       },
       "put": {
-        "description": "",
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Update user profile",
+        "description": "Updates the logged-in user profile.",
         "parameters": [
           {
             "name": "body",
@@ -1261,11 +1463,20 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/profile/profile-picture": {
       "put": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Update profile picture URL",
         "description": "",
         "parameters": [
           {
@@ -1300,12 +1511,33 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/profile/profile-picture-upload": {
       "put": {
-        "description": "",
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Upload profile picture",
+        "description": "Uploads and replaces the logged-in user profile picture.",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "profileImage",
+            "in": "formData",
+            "type": "file",
+            "required": true,
+            "description": "Profile image file"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1325,7 +1557,12 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/account/deactivate": {
@@ -1361,7 +1598,7 @@
     "/api/feedback": {
       "post": {
         "tags": [
-          "Feedback"
+          "Patron - Feedback"
         ],
         "description": "BED-2/BED-132: Submit a rating, comment, and optional photo for a stall. Registered patrons only - guests are rejected. Returns 413 if the photo exceeds 5MB.",
         "consumes": [
@@ -1425,7 +1662,7 @@
     "/api/vendor/feedback": {
       "get": {
         "tags": [
-          "Feedback"
+          "Vendor - Feedback"
         ],
         "description": "BED-2: Vendor retrieves feedback left for their own stall(s) only.",
         "responses": {
@@ -1449,7 +1686,7 @@
     "/api/feedback/{feedbackId}": {
       "put": {
         "tags": [
-          "Feedback"
+          "Patron - Feedback"
         ],
         "description": "BED-92: Edit your own feedback. Returns 403 if the feedback belongs to a different patron.",
         "parameters": [
@@ -1507,7 +1744,7 @@
       },
       "delete": {
         "tags": [
-          "Feedback"
+          "Patron - Feedback"
         ],
         "description": "BED-92: Delete your own feedback. Returns 403 if the feedback belongs to a different patron.",
         "parameters": [
@@ -1542,7 +1779,7 @@
     "/api/complaints/": {
       "post": {
         "tags": [
-          "Complaints"
+          "Patron - Complaints"
         ],
         "description": "A registered user submits a complaint against a stall, or a General Facility complaint with no specific stall (details, date, complaint text, optional image). On success, a unique tracking id is generated and the complaint is created with a default \"Open\" status, so the user knows their complaint was officially received.",
         "consumes": [
@@ -1597,7 +1834,7 @@
       },
       "get": {
         "tags": [
-          "Complaint Management"
+          "Staff - Complaint Management"
         ],
         "description": "Officer/operator retrieves the list of complaints they are responsible for (officers see Hygiene complaints, operators see every other type), with optional filtering by status or stall.",
         "parameters": [
@@ -1633,7 +1870,7 @@
     "/api/complaints/{complaintId}": {
       "get": {
         "tags": [
-          "Complaint Management"
+          "Staff - Complaint Management"
         ],
         "description": "Officer/operator retrieves the full detail of a single complaint they are responsible for, including its resolution notes.",
         "parameters": [
@@ -1666,7 +1903,7 @@
       },
       "patch": {
         "tags": [
-          "Complaint Management"
+          "Staff - Complaint Management"
         ],
         "description": "Officer/operator updates a complaint they are responsible for - moving its status (e.g. Open -> In Progress -> Resolved) and appending a resolution note - closing the loop from initial submission to final resolution.",
         "parameters": [
@@ -1719,7 +1956,7 @@
     "/api/vendor/complaints/": {
       "get": {
         "tags": [
-          "Vendor Complaints"
+          "Vendor - Complaints"
         ],
         "description": "Vendor lists complaints that have been filed against their own stalls, so they can stay aware of open issues.",
         "parameters": [
@@ -1750,7 +1987,7 @@
     "/api/vendor/complaints/{complaintId}": {
       "get": {
         "tags": [
-          "Vendor Complaints"
+          "Vendor - Complaints"
         ],
         "description": "Vendor retrieves the detail of one complaint filed against their own stall.",
         "parameters": [
@@ -1785,7 +2022,7 @@
     "/api/vendor/complaints/{complaintId}/acknowledge": {
       "patch": {
         "tags": [
-          "Vendor Complaints"
+          "Vendor - Complaints"
         ],
         "description": "Vendor acknowledges a complaint filed against their own stall, confirming they have seen it. This does not change the complaint status or resolution, which remain under officer/operator control.",
         "parameters": [
@@ -1823,7 +2060,7 @@
     "/api/vendor/promotions/stall/{stallId}": {
       "get": {
         "tags": [
-          "Vendor Promotions"
+          "Vendor - Promotions"
         ],
         "description": "Vendor lists all promotion codes for one of their own stalls, so they can review what is currently running before creating or editing a code.",
         "parameters": [
@@ -1853,7 +2090,7 @@
       },
       "post": {
         "tags": [
-          "Vendor Promotions"
+          "Vendor - Promotions"
         ],
         "description": "Vendor creates a new promotion code for their own stall (code, discount percentage, validity dates). The code only needs to be unique within that stall - a duplicate code is rejected with a validation error, but two different stalls may use the same code.",
         "parameters": [
@@ -1888,7 +2125,7 @@
     "/api/vendor/promotions/{promotionId}": {
       "get": {
         "tags": [
-          "Vendor Promotions"
+          "Vendor - Promotions"
         ],
         "description": "Vendor retrieves a single promotion code belonging to them, including its current active status and validity dates.",
         "parameters": [
@@ -1921,7 +2158,7 @@
       },
       "put": {
         "tags": [
-          "Vendor Promotions"
+          "Vendor - Promotions"
         ],
         "description": "Vendor updates one of their own promotion codes, e.g. toggling it active/inactive. This never deletes the promotion record - historical promotion data is always preserved.",
         "parameters": [
@@ -1957,7 +2194,7 @@
       },
       "delete": {
         "tags": [
-          "Vendor Promotions"
+          "Vendor - Promotions"
         ],
         "description": "Vendor deletes one of their own promotion codes, but ONLY if it was never actually redeemed by a patron. Once a promo has real order/redemption history attached, it can only be deactivated via the update route, never deleted.",
         "parameters": [
@@ -1992,27 +2229,15 @@
         ]
       }
     },
-    "/api/vendor/dashboard/": {
+    "/api/promotions/available": {
       "get": {
-        "description": "",
-        "parameters": [
-          {
-            "name": "month",
-            "in": "query",
-            "type": "string"
-          },
-          {
-            "name": "year",
-            "in": "query",
-            "type": "string"
-          }
+        "tags": [
+          "Patron - Promotions"
         ],
+        "description": "Patron views every promotion code they could still apply right now, across all stalls. Only includes promos that are active, within their date range, on an active stall, not already redeemed by this patron, and under any redemption cap - so anything shown here is guaranteed to still work if the patron tries to use it at checkout.",
         "responses": {
           "200": {
             "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
           },
           "403": {
             "description": "Forbidden"
@@ -2020,13 +2245,67 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/vendor/dashboard/": {
+      "get": {
+        "tags": [
+          "Vendor - Dashboard"
+        ],
+        "summary": "Get vendor dashboard metrics",
+        "description": "Returns dashboard statistics for the authenticated vendor. Month and year may be supplied to filter the results.",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Month used to filter dashboard results"
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Year used to filter dashboard results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendor dashboard retrieved successfully"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Vendor access required"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/inspections/": {
       "post": {
         "tags": [
-          "Inspections"
+          "NEA - Inspections"
         ],
         "description": "NEA officer schedules an inspection for a valid stall",
         "parameters": [
@@ -2074,7 +2353,7 @@
       },
       "get": {
         "tags": [
-          "Inspections"
+          "NEA - Inspections"
         ],
         "description": "NEA officer views inspection records, optionally filtered by stall ID",
         "parameters": [
@@ -2134,7 +2413,7 @@
     "/api/inspections/{inspectionId}": {
       "put": {
         "tags": [
-          "Inspections"
+          "NEA - Inspections"
         ],
         "description": "NEA officer reschedules an existing scheduled inspection",
         "parameters": [
@@ -2188,7 +2467,7 @@
       },
       "delete": {
         "tags": [
-          "Inspections"
+          "NEA - Inspections"
         ],
         "description": "NEA officer deletes/cancels a scheduled inspection using soft delete",
         "parameters": [
@@ -2226,7 +2505,7 @@
     "/api/inspections/{inspectionId}/cancel": {
       "patch": {
         "tags": [
-          "Inspections"
+          "NEA - Inspections"
         ],
         "description": "NEA officer cancels a scheduled inspection",
         "parameters": [
@@ -2264,7 +2543,7 @@
     "/api/inspections/{inspectionId}/result": {
       "patch": {
         "tags": [
-          "Inspections"
+          "NEA - Inspections"
         ],
         "description": "NEA officer records inspection result and hygiene grade",
         "parameters": [
@@ -2328,7 +2607,7 @@
     "/api/menu-items/{id}/likes": {
       "post": {
         "tags": [
-          "Likes"
+          "Patron - Likes"
         ],
         "description": "BED-26: Like a menu item. Registered patrons only - guests are rejected.",
         "parameters": [
@@ -2364,7 +2643,7 @@
       },
       "delete": {
         "tags": [
-          "Likes"
+          "Patron - Likes"
         ],
         "description": "BED-26: Remove your like from a menu item.",
         "parameters": [
@@ -2399,7 +2678,7 @@
     "/api/menu-items/{id}/likes/count": {
       "get": {
         "tags": [
-          "Likes"
+          "Patron - Likes"
         ],
         "description": "BED-26: Get the total like count for a menu item. Public - no auth required.",
         "parameters": [
@@ -2423,25 +2702,13 @@
         }
       }
     },
-    "/api/operator/dashboard/": {
-      "get": {
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
     "/api/operator/dashboard/metrics": {
       "get": {
-        "description": "",
+        "tags": [
+          "Operator - Dashboard"
+        ],
+        "summary": "Get operator dashboard metrics",
+        "description": "Returns summary statistics for the operator dashboard.",
         "responses": {
           "200": {
             "description": "OK"
@@ -2452,13 +2719,18 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/operator/stalls/": {
       "post": {
         "tags": [
-          "Operator Stalls"
+          "Operator - Stalls"
         ],
         "description": "BED-28: Operator creates a new stall record.",
         "parameters": [
@@ -2538,7 +2810,7 @@
       },
       "get": {
         "tags": [
-          "Operator Stalls"
+          "Operator - Stalls"
         ],
         "description": "BED-28: Operator views all stall records (active and inactive).",
         "responses": {
@@ -2562,7 +2834,7 @@
     "/api/operator/stalls/vendors": {
       "get": {
         "tags": [
-          "Operator Stalls"
+          "Operator - Stalls"
         ],
         "description": "BED-28: List of vendors for the stall assignment dropdown.",
         "responses": {
@@ -2586,7 +2858,7 @@
     "/api/operator/stalls/{stallId}": {
       "get": {
         "tags": [
-          "Operator Stalls"
+          "Operator - Stalls"
         ],
         "description": "BED-28: Operator views a single stall record by id.",
         "parameters": [
@@ -2622,7 +2894,7 @@
       },
       "put": {
         "tags": [
-          "Operator Stalls"
+          "Operator - Stalls"
         ],
         "description": "BED-28: Operator updates an existing stall record.",
         "parameters": [
@@ -2658,7 +2930,7 @@
       },
       "delete": {
         "tags": [
-          "Operator Stalls"
+          "Operator - Stalls"
         ],
         "description": "BED-28: Operator deactivates a stall (soft delete - sets is_active = 0, does not remove the record).",
         "parameters": [
@@ -2696,7 +2968,7 @@
     "/api/addresses/": {
       "post": {
         "tags": [
-          "Saved Addresses"
+          "Patron - Saved Addresses"
         ],
         "description": "Patron saves a new delivery address",
         "parameters": [
@@ -2744,7 +3016,7 @@
       },
       "get": {
         "tags": [
-          "Saved Addresses"
+          "Patron - Saved Addresses"
         ],
         "description": "Patron retrieves all of their saved delivery addresses",
         "responses": {
@@ -2768,7 +3040,7 @@
     "/api/addresses/{id}": {
       "put": {
         "tags": [
-          "Saved Addresses"
+          "Patron - Saved Addresses"
         ],
         "description": "Patron updates one of their saved delivery addresses",
         "parameters": [
@@ -2825,7 +3097,7 @@
       },
       "delete": {
         "tags": [
-          "Saved Addresses"
+          "Patron - Saved Addresses"
         ],
         "description": "Patron deletes one of their saved delivery addresses",
         "parameters": [
@@ -2863,7 +3135,7 @@
     "/api/operator/rental-agreements/": {
       "post": {
         "tags": [
-          "Rental Agreements"
+          "Operator - Rental Agreements"
         ],
         "description": "BED-23: Operator creates a rental agreement for a stall. Fails with 404 if the stall does not exist.",
         "parameters": [
@@ -2919,7 +3191,7 @@
       },
       "get": {
         "tags": [
-          "Rental Agreements"
+          "Operator - Rental Agreements"
         ],
         "description": "BED-23: Operator retrieves all rental agreements across every vendor and stall.",
         "responses": {
@@ -2943,7 +3215,7 @@
     "/api/operator/rental-agreements/{agreementId}": {
       "get": {
         "tags": [
-          "Rental Agreements"
+          "Operator - Rental Agreements"
         ],
         "description": "BED-23: Operator retrieves one rental agreement by ID.",
         "parameters": [
@@ -2979,7 +3251,7 @@
       },
       "put": {
         "tags": [
-          "Rental Agreements"
+          "Operator - Rental Agreements"
         ],
         "description": "BED-23: Operator updates rental period, fee, and/or agreement status.",
         "parameters": [
@@ -3038,12 +3310,48 @@
             "bearerAuth": []
           }
         ]
+      },
+      "delete": {
+        "tags": [
+          "Operator - Rental Agreements"
+        ],
+        "description": "BED-23: Operator permanently deletes a rental agreement. Returns 404 if the agreement does not exist.",
+        "parameters": [
+          {
+            "name": "agreementId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/vendor/rental-agreements/": {
       "get": {
         "tags": [
-          "Vendor Rental Agreements"
+          "Vendor - Rental Agreements"
         ],
         "description": "BED-74: Vendor retrieves rental agreements for their own stalls only.",
         "responses": {
@@ -3067,7 +3375,7 @@
     "/api/vendor/rental-agreements/{agreementId}": {
       "get": {
         "tags": [
-          "Vendor Rental Agreements"
+          "Vendor - Rental Agreements"
         ],
         "description": "BED-74: Vendor retrieves one rental agreement belonging to their own stall.",
         "parameters": [
@@ -3105,7 +3413,7 @@
     "/api/vendor/rental-agreements/{agreementId}/accept": {
       "patch": {
         "tags": [
-          "Vendor Rental Agreements"
+          "Vendor - Rental Agreements"
         ],
         "description": "BED-74: Vendor accepts a pending rental agreement for their own stall. Returns 409 if already accepted.",
         "parameters": [
@@ -3143,9 +3451,64 @@
         ]
       }
     },
-    "/api/nea/analytics": {
+    "/api/operator/stall-assignments/": {
+      "post": {
+        "tags": [
+          "Operator - Stall Assignments"
+        ],
+        "description": "BED-145: Operator assigns a vendor to a stall. If the stall is already occupied, returns 400 unless reassign=true is supplied, in which case the current vendor is vacated and the new vendor assigned.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "stall_id": {
+                  "type": "number",
+                  "example": 1
+                },
+                "vendor_id": {
+                  "type": "number",
+                  "example": 3
+                },
+                "reassign": {
+                  "type": "boolean",
+                  "example": false
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Vendor assigned"
+          },
+          "400": {
+            "description": "Stall already occupied (reassign not requested)"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Stall or vendor not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
       "get": {
-        "description": "",
+        "tags": [
+          "Operator - Stall Assignments"
+        ],
+        "description": "BED-145: Operator views the current vendor occupying every stall.",
         "responses": {
           "200": {
             "description": "OK"
@@ -3156,7 +3519,149 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/operator/stall-assignments/{stallId}/history": {
+      "get": {
+        "tags": [
+          "Stall Assignments"
+        ],
+        "description": "BED-145: Operator views the full assignment history of one stall.",
+        "parameters": [
+          {
+            "name": "stallId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/operator/stall-assignments/{stallId}": {
+      "get": {
+        "tags": [
+          "Operator - Stall Assignments"
+        ],
+        "description": "BED-145: Operator views the current vendor assigned to one stall.",
+        "parameters": [
+          {
+            "name": "stallId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Stall not found or currently unoccupied"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Operator - Stall Assignments"
+        ],
+        "description": "BED-145: Operator vacates the current vendor from a stall, leaving it unoccupied.",
+        "parameters": [
+          {
+            "name": "stallId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Stall not found or already unoccupied"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/nea/analytics": {
+      "get": {
+        "tags": [
+          "NEA - Analytics"
+        ],
+        "summary": "Get NEA analytics",
+        "description": "Returns hygiene-grade and inspection analytics for an authenticated NEA officer.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     }
   }
