@@ -97,20 +97,12 @@
       "description": "Operator rental-agreement management"
     },
     {
-      "name": "Operator - Stall Assignments",
-      "description": "Assign and remove vendors from stalls"
-    },
-    {
       "name": "Staff - Complaint Management",
       "description": "Officer and operator complaint handling"
     },
     {
       "name": "NEA - Inspections",
       "description": "NEA inspection scheduling and results"
-    },
-    {
-      "name": "NEA - Analytics",
-      "description": "NEA hygiene and inspection analytics"
     }
   ],
   "schemes": [
@@ -2389,7 +2381,7 @@
     "/api/inspections/scheduled": {
       "get": {
         "tags": [
-          "Inspections"
+          "NEA - Inspections"
         ],
         "description": "NEA officer views upcoming scheduled inspections",
         "responses": {
@@ -2968,7 +2960,7 @@
     "/api/addresses/": {
       "post": {
         "tags": [
-          "Patron - Saved Addresses"
+          "Patron - Addresses"
         ],
         "description": "Patron saves a new delivery address",
         "parameters": [
@@ -3016,7 +3008,7 @@
       },
       "get": {
         "tags": [
-          "Patron - Saved Addresses"
+          "Patron - Addresses"
         ],
         "description": "Patron retrieves all of their saved delivery addresses",
         "responses": {
@@ -3040,7 +3032,7 @@
     "/api/addresses/{id}": {
       "put": {
         "tags": [
-          "Patron - Saved Addresses"
+          "Patron - Addresses"
         ],
         "description": "Patron updates one of their saved delivery addresses",
         "parameters": [
@@ -3097,7 +3089,7 @@
       },
       "delete": {
         "tags": [
-          "Patron - Saved Addresses"
+          "Patron - Addresses"
         ],
         "description": "Patron deletes one of their saved delivery addresses",
         "parameters": [
@@ -3451,198 +3443,10 @@
         ]
       }
     },
-    "/api/operator/stall-assignments/": {
-      "post": {
-        "tags": [
-          "Operator - Stall Assignments"
-        ],
-        "description": "BED-145: Operator assigns a vendor to a stall. If the stall is already occupied, returns 400 unless reassign=true is supplied, in which case the current vendor is vacated and the new vendor assigned.",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "stall_id": {
-                  "type": "number",
-                  "example": 1
-                },
-                "vendor_id": {
-                  "type": "number",
-                  "example": 3
-                },
-                "reassign": {
-                  "type": "boolean",
-                  "example": false
-                }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Vendor assigned"
-          },
-          "400": {
-            "description": "Stall already occupied (reassign not requested)"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "404": {
-            "description": "Stall or vendor not found"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      },
-      "get": {
-        "tags": [
-          "Operator - Stall Assignments"
-        ],
-        "description": "BED-145: Operator views the current vendor occupying every stall.",
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/operator/stall-assignments/{stallId}/history": {
-      "get": {
-        "tags": [
-          "Stall Assignments"
-        ],
-        "description": "BED-145: Operator views the full assignment history of one stall.",
-        "parameters": [
-          {
-            "name": "stallId",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "404": {
-            "description": "Not Found"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/operator/stall-assignments/{stallId}": {
-      "get": {
-        "tags": [
-          "Operator - Stall Assignments"
-        ],
-        "description": "BED-145: Operator views the current vendor assigned to one stall.",
-        "parameters": [
-          {
-            "name": "stallId",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "404": {
-            "description": "Stall not found or currently unoccupied"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      },
-      "delete": {
-        "tags": [
-          "Operator - Stall Assignments"
-        ],
-        "description": "BED-145: Operator vacates the current vendor from a stall, leaving it unoccupied.",
-        "parameters": [
-          {
-            "name": "stallId",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "404": {
-            "description": "Stall not found or already unoccupied"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
     "/api/nea/analytics": {
       "get": {
         "tags": [
-          "NEA - Analytics"
+          "NEA - Inspections"
         ],
         "summary": "Get NEA analytics",
         "description": "Returns hygiene-grade and inspection analytics for an authenticated NEA officer.",

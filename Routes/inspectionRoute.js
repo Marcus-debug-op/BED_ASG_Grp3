@@ -27,7 +27,7 @@ router.post("/", requireRole("officer"),validateScheduleInspection,inspectionCon
 
 router.get("/scheduled", requireRole("officer"), inspectionController.getUpcomingScheduledInspections
   /*
-    #swagger.tags = ['Inspections']
+    #swagger.tags = ['NEA - Inspections']
     #swagger.description = 'NEA officer views upcoming scheduled inspections'
     #swagger.security = [{ "bearerAuth": [] }]
   */
