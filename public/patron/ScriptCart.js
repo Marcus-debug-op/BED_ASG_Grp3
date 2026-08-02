@@ -20,7 +20,9 @@ const DOT_ALLOWED_PAGES = new Set([
   "WokMasterMenu.html",
   "MeeRebusMenu.html",
   "SpringLeafMenu.html",
-  "NasiLemakMenu.html"
+  "NasiLemakMenu.html",
+  "browsestalls.html",
+  "history.html"
 ]);
 
 function currentFileName() {
