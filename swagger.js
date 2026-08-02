@@ -116,10 +116,7 @@ const doc = {
       name: "NEA - Inspections",
       description: "NEA inspection scheduling and results"
     },
-    {
-      name: "NEA - Analytics",
-      description: "NEA hygiene and inspection analytics"
-    }
+ 
   ],
 
   securityDefinitions: {

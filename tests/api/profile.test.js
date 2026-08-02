@@ -1,6 +1,6 @@
 const request = require("supertest");
 const app = require("../../app");
-const { getPatronToken } = require("../testHelpers");
+const { getPatronToken, getVendorToken } = require("../testHelpers");
 
 /*
   This file tests the Profile API.
@@ -18,16 +18,31 @@ const { getPatronToken } = require("../testHelpers");
 
 describe("Profile API Tests", () => {
   let patronToken;
+  let vendorToken;
 
   /*
     beforeAll runs once before all tests in this file.
 
     Purpose:
-    - Get a valid patron JWT token.
+    - Get a valid patron & vendor JWT token.
     - The profile APIs require authentication.
   */
-  beforeAll(async () => {
-    patronToken = await getPatronToken();
+    beforeAll(async () => {
+      patronToken = await getPatronToken();
+      vendorToken = await getVendorToken();
+    });
+
+
+    test("should get logged-in vendor profile", async () => {
+    const response = await request(app)
+      .get("/api/profile/my-profile")
+      .set("Authorization", `Bearer ${vendorToken}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toHaveProperty("full_name");
+    expect(response.body).toHaveProperty("email");
+    expect(response.body).toHaveProperty("phone_number");
+    expect(response.body.role).toBe("vendor");
   });
 
   /*

@@ -40,22 +40,7 @@ app.use(express.json());
 app.use(passport.initialize());
 
 // Swagger 
-app.use(
-  "/api-docs",
-  swaggerUi.serve,
-  swaggerUi.setup(swaggerDocument, {
-    customSiteTitle: "HawkerHub API Documentation",
-
-    swaggerOptions: {
-      docExpansion: "none",
-      filter: true,
-      persistAuthorization: true,
-      displayRequestDuration: true,
-      deepLinking: true
-    }
-  })
-);
-
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Serve frontend files from public folder
 app.use(express.static(path.join(__dirname, "public")));
