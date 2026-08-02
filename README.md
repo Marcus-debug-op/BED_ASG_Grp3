@@ -14,7 +14,7 @@ The project uses a Node.js and Express backend with Microsoft SQL Server as the 
 | Ryan Ng | Login Authentication (Patron & Vendor), Google Sign In, Guest Login, Session Management and Role Based Access Control |
 | Damien Tan | Vendor Promotion Code Management, Complaint Management, Role-Based Complaint Management, Vendor Item Management |
 | Ben Goh| Stall Listing and Browsing, Feedback and Ratings, Menu Item likes |
-| Ryan Tan | Order creation and checkout integration, order status, order history (API + page), order details with line items, checkout input validation  |
+| Ryan Tan | Order creation and checkout integration, order status, order history (API + page), order details with line items, saved delivery addresses (CRUD), eco-friendly packaging option, checkout input  validation, add-to-cart cart notifications, and checkout receipt |
 
 ---
 

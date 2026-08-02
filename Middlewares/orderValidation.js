@@ -1,5 +1,8 @@
 const Joi = require("joi");
 
+// Validates the place-order request body (stall, items, quantities, payment,
+// checkout details) before it reaches the controller. Rejects invalid input
+// with a 400 and clear messages so bad orders never hit the database.
 function validateOrder(req, res, next) {
   const schema = Joi.object({
     // ----- existing fields (unchanged) -----
@@ -85,6 +88,8 @@ function validatePromoPreview(req, res, next) {
   next();
 }
 
+// Validates the order-status request (e.g. the status value and order id)
+// before the controller runs, returning a 400 if the input is invalid.
 function validateOrderStatus(req, res, next) {
   const schema = Joi.object({
     order_status: Joi.string()

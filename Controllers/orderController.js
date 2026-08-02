@@ -1,5 +1,8 @@
 const orderModel = require("../Models/orderModel");
 
+// Creates a new order for the logged-in patron. Reads the cart, stall, promo
+// code and checkout details from the request, calls the model to insert the
+// order into SQL Server, and returns the created order (or an error).
 async function createOrder(req, res) {
   try {
     // The patron's id comes from their login token (set by the auth middleware),
