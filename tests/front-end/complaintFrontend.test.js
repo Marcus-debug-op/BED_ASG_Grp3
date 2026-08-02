@@ -38,6 +38,8 @@ function renderComplaintPageFixture() {
     </select>
     <textarea id="complaint-text"></textarea>
     <textarea id="improvement-text"></textarea>
+    <input type="file" id="complaint-image-input" />
+    <img id="complaint-image-preview" />
     <button id="submit-btn">Submit</button>
   `;
 }
@@ -176,24 +178,28 @@ describe("Patron Complaint Submission Frontend Tests", () => {
     document.getElementById("submit-btn").click();
     await flushPromises();
 
+    // BED-131 added photo upload, so the page now submits FormData rather
+    // than JSON. Content-Type is deliberately NOT set here - the browser
+    // has to set it itself so it can include the multipart boundary.
     expect(global.fetch).toHaveBeenCalledWith(
       "/api/complaints",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
-          Authorization: "Bearer fake-jwt-token",
-          "Content-Type": "application/json"
+          Authorization: "Bearer fake-jwt-token"
         })
       })
     );
 
     const [, options] = global.fetch.mock.calls[0];
-    const body = JSON.parse(options.body);
+    expect(options.headers["Content-Type"]).toBeUndefined();
 
-    expect(body.stall_id).toBe(1);
-    expect(body.complaint_type).toBe("Food Quality");
-    expect(body.description).toContain("The soup was cold");
-    expect(body.description).toContain("Please reheat before serving.");
+    const body = options.body;
+
+    expect(Number(body.get("stall_id"))).toBe(1);
+    expect(body.get("complaint_type")).toBe("Food Quality");
+    expect(body.get("description")).toContain("The soup was cold");
+    expect(body.get("description")).toContain("Please reheat before serving.");
 
     expect(window.alert).toHaveBeenCalledWith(expect.stringContaining("CMP-12345"));
     expect(window.history.back).toHaveBeenCalled();
