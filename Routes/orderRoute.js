@@ -11,7 +11,7 @@ const router = express.Router();
   The backend uses req.user.sub from the JWT token to know which vendor is logged in.*/
 router.get("/vendor/my-orders", requireRole("vendor"), orderController.getVendorOrders
 /*
-    #swagger.tags = ['Orders']
+    #swagger.tags = ['Vendor - Orders']
     #swagger.description = 'Vendor retrieves orders from stalls they own'
     #swagger.security = [{ "bearerAuth": [] }]
   */
@@ -21,7 +21,7 @@ router.get("/vendor/my-orders", requireRole("vendor"), orderController.getVendor
   This also checks that the order belongs to the vendor's stall. */
 router.get("/vendor/my-orders/:orderId", requireRole("vendor"), orderController.getVendorOrderDetails
   /*
-    #swagger.tags = ['Orders']
+    #swagger.tags = ['Vendor - Orders']
     #swagger.description = 'Vendor retrieves details of one order from their own stall'
     #swagger.security = [{ "bearerAuth": [] }]
     #swagger.parameters['orderId'] = {
@@ -36,7 +36,7 @@ router.get("/vendor/my-orders/:orderId", requireRole("vendor"), orderController.
 /*UPDATE order status. Vendor uses this route to update the order status.*/
 router.put("/vendor/my-orders/:orderId/status", requireRole("vendor"), orderController.updateVendorOrderStatus
  /*
-    #swagger.tags = ['Orders']
+    #swagger.tags = ['Vendor - Orders']
     #swagger.description = 'Vendor updates the status of an order from their own stall'
     #swagger.security = [{ "bearerAuth": [] }]
     #swagger.parameters['orderId'] = {
@@ -71,7 +71,7 @@ router.put("/vendor/my-orders/:orderId/status", requireRole("vendor"), orderCont
 // Both order routes are restricted to logged-in patrons.
 router.post("/", requireRole("patron"), validateOrder, orderController.createOrder
 /*
-  #swagger.tags = ['Orders']
+  #swagger.tags = ['Patron - Orders']
   #swagger.description = 'Patron creates an order for a single stall. If a promo_code is supplied, the backend validates its active status, expiry date and minimum spend, calculates the exact discount server-side, applies it to the order total, and records a redemption linked to this order - preventing the same code from being reused. Invalid/expired/ineligible codes return a clear error reason instead of failing the order.'
   #swagger.security = [{ "bearerAuth": [] }]
 */);
@@ -83,7 +83,7 @@ router.post("/", requireRole("patron"), validateOrder, orderController.createOrd
 // or records a redemption.
 router.post("/preview-promo", requireRole("patron"), validatePromoPreview, orderController.previewPromoCode
 /*
-  #swagger.tags = ['Orders']
+  #swagger.tags = ['Patron - Orders']
   #swagger.description = 'Patron previews what a promo code would do to their current cart (for one stall) without submitting an order. Returns the same validation reasons as order creation (NOT_FOUND, INACTIVE, EXPIRED, MIN_SPEND_NOT_MET, ALREADY_REDEEMED, LIMIT_REACHED) if invalid, or the calculated discount if valid. No order is created and no redemption is recorded.'
   #swagger.security = [{ "bearerAuth": [] }]
 */);
@@ -92,7 +92,7 @@ router.post("/preview-promo", requireRole("patron"), validatePromoPreview, order
 // mistaken for an :id value.
 router.get("/history", requireRole("patron"), orderController.getOrderHistory
 /*
-    #swagger.tags = ['Orders']
+    #swagger.tags = ['Patron - Orders']
     #swagger.description = "Patron retrieves their own past orders, newest first"
     #swagger.security = [{ "bearerAuth": [] }]
   */);
@@ -107,14 +107,14 @@ router.get("/history", requireRole("patron"), orderController.getOrderHistory
 // ============================================================================
 router.get("/checkout/:checkoutId", requireRole("patron"), orderController.getOrdersByCheckout
 /*
-    #swagger.tags = ['Orders']
+    #swagger.tags = ['Patron - Orders']
     #swagger.description = "Patron retrieves all their orders that share one checkout id (combined receipt)"
     #swagger.security = [{ "bearerAuth": [] }]
   */);
 
 router.get("/:id/status", requireRole("patron"), orderController.getOrderStatus
 /*
-    #swagger.tags = ['Orders']
+    #swagger.tags = ['Patron - Orders']
     #swagger.description = "Patron retrieves the status of one of their own orders"
     #swagger.security = [{ "bearerAuth": [] }]
   */);
@@ -124,7 +124,7 @@ router.get("/:id/status", requireRole("patron"), orderController.getOrderStatus
 // "/:id/status" — otherwise Express would treat the word "history" as an :id.
 router.get("/:id", requireRole("patron"), orderController.getOrderDetails
 /*
-    #swagger.tags = ['Orders']
+    #swagger.tags = ['Patron - Orders']
     #swagger.description = "Patron retrieves one of their own orders with its line items"
     #swagger.security = [{ "bearerAuth": [] }]
   */);

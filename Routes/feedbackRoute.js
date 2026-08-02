@@ -14,7 +14,7 @@ const router = express.Router();
 // photo itself is optional (a text-only review still succeeds).
 router.post("/feedback", blockGuests, uploadFeedbackImage, validateFeedback, feedbackController.submitFeedback
   /*
-    #swagger.tags = ['Feedback']
+    #swagger.tags = ['Patron - Feedback']
     #swagger.description = 'BED-2/BED-132: Submit a rating, comment, and optional photo for a stall. Registered patrons only - guests are rejected. Returns 413 if the photo exceeds 5MB.'
     #swagger.security = [{ "bearerAuth": [] }]
     #swagger.consumes = ['multipart/form-data']
@@ -32,7 +32,7 @@ router.post("/feedback", blockGuests, uploadFeedbackImage, validateFeedback, fee
 );
 router.get("/vendor/feedback", requireRole("vendor"), feedbackController.getVendorFeedback
   /*
-    #swagger.tags = ['Feedback']
+    #swagger.tags = ['Vendor - Feedback']
     #swagger.description = 'BED-2: Vendor retrieves feedback left for their own stall(s) only.'
     #swagger.security = [{ "bearerAuth": [] }]
   */
@@ -41,7 +41,7 @@ router.get("/vendor/feedback", requireRole("vendor"), feedbackController.getVend
 // BED-92: same reasoning - only a registered patron can edit/delete their own feedback.
 router.put("/feedback/:feedbackId", blockGuests, validateFeedback, feedbackController.updateFeedback
   /*
-    #swagger.tags = ['Feedback']
+    #swagger.tags = ['Patron - Feedback']
     #swagger.description = 'BED-92: Edit your own feedback. Returns 403 if the feedback belongs to a different patron.'
     #swagger.security = [{ "bearerAuth": [] }]
     #swagger.parameters['body'] = {
@@ -57,7 +57,7 @@ router.put("/feedback/:feedbackId", blockGuests, validateFeedback, feedbackContr
 );
 router.delete("/feedback/:feedbackId", blockGuests, feedbackController.deleteFeedback
   /*
-    #swagger.tags = ['Feedback']
+    #swagger.tags = ['Patron - Feedback']
     #swagger.description = 'BED-92: Delete your own feedback. Returns 403 if the feedback belongs to a different patron.'
     #swagger.security = [{ "bearerAuth": [] }]
   */

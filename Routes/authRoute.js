@@ -134,8 +134,21 @@ router.post("/verify-otp", authController.verifyOtp
 );
 
 // Google OAuth 2.0 sign-in/sign-up for patrons (BED-144), via Passport's Google strategy.
-router.get("/google", passport.authenticate("google", { scope: ["profile", "email"], session: false }));
-router.get("/google/callback", authController.googleAuthCallback);
+router.get("/google", passport.authenticate("google", { scope: ["profile", "email"], session: false })
+ /*
+    #swagger.tags = ['Auth']
+    #swagger.summary = 'Start Google authentication'
+    #swagger.description = 'Redirects the patron to Google for authentication.'
+  */
+ );
+
+router.get("/google/callback", authController.googleAuthCallback
+    /*
+    #swagger.tags = ['Auth']
+    #swagger.summary = 'Handle Google authentication callback'
+    #swagger.description = 'Processes the response returned by Google authentication.'
+  */
+);
 
 // Password reset (BED-142) - works for any role (patron/vendor/officer/operator).
 router.post("/forgot-password", validateForgotPassword, passwordResetController.forgotPassword
@@ -183,10 +196,23 @@ router.patch("/reset-password", validateResetPassword, passwordResetController.r
 );
 
 // Guest session - no credentials required.
-router.post("/guest", authController.createGuestSession);
+router.post("/guest", authController.createGuestSession
+    /*
+    #swagger.tags = ['Auth']
+    #swagger.summary = 'Create guest session'
+    #swagger.description = 'Creates a temporary guest session without requiring credentials.'
+  */
+);
 
 // Example of a protected, non-guest-accessible route (e.g. profile / order history
 // style endpoints should use blockGuests the same way).
-router.get("/me", requireAuth, blockGuests, authController.getCurrentSession);
+router.get("/me", requireAuth, blockGuests, authController.getCurrentSession
+  /*
+    #swagger.tags = ['Auth']
+    #swagger.summary = 'Get current authenticated session'
+    #swagger.description = 'Returns information about the currently authenticated non-guest user.'
+    #swagger.security = [{ "bearerAuth": [] }]
+  */
+);
 
 module.exports = router;

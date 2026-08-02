@@ -8,6 +8,11 @@ router.get(
   "/",
   optionalAuth,
   hawkerCentreController.getAllHawkerCentres
+  /*
+    #swagger.tags = ['Public - Hawker Centres']
+    #swagger.summary = 'List hawker centres'
+    #swagger.description = 'Returns all available hawker centres.'
+  */
 );
 
 module.exports = router;

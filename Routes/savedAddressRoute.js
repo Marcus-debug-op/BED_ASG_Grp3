@@ -24,7 +24,7 @@ const { validateSavedAddress } = require("../Middlewares/savedAddressValidation"
 // CREATE - save a new address. validateSavedAddress checks the body first.
 router.post("/", requireRole("patron"), validateSavedAddress, savedAddressController.createAddress
 /*
-    #swagger.tags = ['Saved Addresses']
+    #swagger.tags = ['Patron - Addresses']
     #swagger.description = "Patron saves a new delivery address"
     #swagger.security = [{ "bearerAuth": [] }]
   */);
@@ -32,7 +32,7 @@ router.post("/", requireRole("patron"), validateSavedAddress, savedAddressContro
 // READ - list all of the logged-in patron's saved addresses.
 router.get("/", requireRole("patron"), savedAddressController.getMyAddresses
 /*
-    #swagger.tags = ['Saved Addresses']
+    #swagger.tags = ['Patron - Addresses']
     #swagger.description = "Patron retrieves all of their saved delivery addresses"
     #swagger.security = [{ "bearerAuth": [] }]
   */);
@@ -40,7 +40,7 @@ router.get("/", requireRole("patron"), savedAddressController.getMyAddresses
 // UPDATE - edit one saved address by its id.
 router.put("/:id", requireRole("patron"), validateSavedAddress, savedAddressController.updateAddress
 /*
-    #swagger.tags = ['Saved Addresses']
+    #swagger.tags = ['Patron - Addresses']
     #swagger.description = "Patron updates one of their saved delivery addresses"
     #swagger.security = [{ "bearerAuth": [] }]
   */);
@@ -48,7 +48,7 @@ router.put("/:id", requireRole("patron"), validateSavedAddress, savedAddressCont
 // DELETE - remove one saved address by its id.
 router.delete("/:id", requireRole("patron"), savedAddressController.deleteAddress
 /*
-    #swagger.tags = ['Saved Addresses']
+    #swagger.tags = ['Patron - Addresses']
     #swagger.description = "Patron deletes one of their saved delivery addresses"
     #swagger.security = [{ "bearerAuth": [] }]
   */);

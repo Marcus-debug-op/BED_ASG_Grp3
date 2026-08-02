@@ -6,12 +6,52 @@ const { validateMenuItem, validateAvailability } = require("../Middlewares/menuI
 const router = express.Router();
 
 // All menu management routes are vendor-only.
-router.get("/cuisines", requireRole("vendor"), menuItemController.getCuisines);
-router.get("/stall/:stallId", requireRole("vendor"), menuItemController.getMenuByStall);
-router.post("/stall/:stallId", requireRole("vendor"), validateMenuItem, menuItemController.createMenuItem);
+router.get("/cuisines", requireRole("vendor"), menuItemController.getCuisines
+  /*
+    #swagger.tags = ['Vendor - Menu']
+    #swagger.summary = 'Get available cuisine categories'
+    #swagger.security = [{ "bearerAuth": [] }]
+  */
+);
 
-router.put("/:menuItemId", requireRole("vendor"), validateMenuItem, menuItemController.updateMenuItem);
-router.patch("/:menuItemId/availability", requireRole("vendor"), validateAvailability, menuItemController.setAvailability);
-router.delete("/:menuItemId", requireRole("vendor"), menuItemController.deleteMenuItem);
+router.get("/stall/:stallId", requireRole("vendor"), menuItemController.getMenuByStall
+  /*
+    #swagger.tags = ['Vendor - Menu']
+    #swagger.summary = 'Get menu items for a vendor stall'
+    #swagger.security = [{ "bearerAuth": [] }]
+  */
+);
+router.post("/stall/:stallId", requireRole("vendor"), validateMenuItem, menuItemController.createMenuItem
+  /*
+    #swagger.tags = ['Vendor - Menu']
+    #swagger.summary = 'Create a menu item'
+    #swagger.security = [{ "bearerAuth": [] }]
+  */
+);
+
+router.put("/:menuItemId", requireRole("vendor"), validateMenuItem, menuItemController.updateMenuItem
+  /*
+    #swagger.tags = ['Vendor - Menu']
+    #swagger.summary = 'Update a menu item'
+    #swagger.security = [{ "bearerAuth": [] }]
+  */
+);
+
+router.patch("/:menuItemId/availability", requireRole("vendor"), validateAvailability, menuItemController.setAvailability
+  /*
+    #swagger.tags = ['Vendor - Menu']
+    #swagger.summary = 'Update menu-item availability'
+    #swagger.security = [{ "bearerAuth": [] }]
+  */
+);
+
+router.delete("/:menuItemId", requireRole("vendor"), menuItemController.deleteMenuItem
+  /*
+    #swagger.tags = ['Vendor - Menu']
+    #swagger.summary = 'Delete a menu item'
+    #swagger.security = [{ "bearerAuth": [] }]
+  */
+);
+
 
 module.exports = router;

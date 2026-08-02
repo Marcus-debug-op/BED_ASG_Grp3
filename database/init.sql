@@ -1,4 +1,4 @@
-CREATE DATABASE HawkerDB;
+CREATE DATABASE HawkerDB__Official;
 GO
 
 USE HawkerDB;
