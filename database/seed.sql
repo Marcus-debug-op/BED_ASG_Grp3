@@ -324,7 +324,7 @@ VALUES
   '91115555'
 );
 GO
-UPDATE Users SET badge_id = 'NEA-OPS-01' WHERE email = 'limisanoperator@example.com';
+UPDATE Users SET badge_id = 'OPS-01' WHERE email = 'limisanoperator@example.com';
 GO
 
 -- =====================================================================
