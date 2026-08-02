@@ -56,14 +56,32 @@ async function getDashboard(req, res) {
     // sequence so one completed query cannot close the connection another one
     // is still using.
     const metrics = await vendorDashboardModel.getDashboardMetrics(vendorId, filter.month, filter.year);
-    const recentOrders = await vendorDashboardModel.getRecentOrders(vendorId);
-    const weeklyRevenue = await vendorDashboardModel.getWeeklyRevenue(vendorId);
+    const recentOrders = await vendorDashboardModel.getRecentOrders(vendorId, 5, filter.month, filter.year);
     const topSellingDishes = await vendorDashboardModel.getTopSellingDishes(vendorId);
 
-    const revenueByDay = new Map(
-      weeklyRevenue.map((row) => [new Date(row.order_day).getDay(), Number(row.day_revenue)])
-    );
-    const weeklyRevenueValues = [1, 2, 3, 4, 5, 6, 0].map((day) => revenueByDay.get(day) || 0);
+    // When a month/year filter is active, the revenue chart plots every day
+    // of that month (labelled "1", "2", "3"...) instead of the current
+    // Monday-Sunday week - both Recent Orders and the chart now follow the
+    // same filter as the summary cards, instead of silently ignoring it.
+    let chartLabels;
+    let revenueValues;
+
+    if (filter.month) {
+      const monthlyRevenue = await vendorDashboardModel.getMonthlyRevenue(vendorId, filter.month, filter.year);
+      const revenueByDate = new Map(monthlyRevenue.map((row) => [row.day_of_month, Number(row.day_revenue)]));
+
+      const daysInMonth = new Date(filter.year, filter.month, 0).getDate();
+      chartLabels = Array.from({ length: daysInMonth }, (_, i) => String(i + 1));
+      revenueValues = chartLabels.map((_, i) => revenueByDate.get(i + 1) || 0);
+    } else {
+      const weeklyRevenue = await vendorDashboardModel.getWeeklyRevenue(vendorId);
+      const revenueByDay = new Map(
+        weeklyRevenue.map((row) => [new Date(row.order_day).getDay(), Number(row.day_revenue)])
+      );
+
+      chartLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      revenueValues = [1, 2, 3, 4, 5, 6, 0].map((day) => revenueByDay.get(day) || 0);
+    }
 
     // No fake fallback data. If the vendor genuinely has no orders/ratings/
     // dishes yet, the response says so honestly (empty arrays, real zeros) -
@@ -75,7 +93,8 @@ async function getDashboard(req, res) {
       pendingOrders: metrics.pending_orders,
       averageRating: Number(metrics.average_rating).toFixed(1),
       recentOrders,
-      weeklyRevenue: weeklyRevenueValues,
+      weeklyRevenue: revenueValues,
+      chartLabels,
       topSellingDishes
     });
   } catch (error) {

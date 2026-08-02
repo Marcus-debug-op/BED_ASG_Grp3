@@ -1,6 +1,18 @@
 const token = localStorage.getItem("token");
 const role = localStorage.getItem("role");
 
+function resolveImageUrl(imageUrl) {
+  if (!imageUrl) {
+    return "/img/avatars/default-profile.png";
+  }
+
+  if (imageUrl.startsWith("http") || imageUrl.startsWith("/")) {
+    return imageUrl;
+  }
+
+  return `/${imageUrl}`;
+}
+
 if (!token) {
   window.location.href = "/auth/signup.html";
 } else {
@@ -34,7 +46,7 @@ async function loadProfile() {
 
     const profileImage = document.getElementById("profileImage");
 
-    profileImage.src = profile.profile_image_url || DEFAULT_PROFILE_IMAGE;
+    profileImage.src = profileImage.src = resolveImageUrl(profile.profile_image_url);
 
     profileImage.onerror = () => {
       profileImage.src = DEFAULT_PROFILE_IMAGE;
@@ -125,8 +137,10 @@ if (updateProfileImageBtn) {
       }
 
       if (profileImage) {
-        profileImage.src = data.profile_image_url;
-        originalProfileImageSrc = data.profile_image_url;
+        const updatedImageUrl = resolveImageUrl(data.profile_image_url);
+
+        profileImage.src = `${updatedImageUrl}?t=${Date.now()}`;
+        originalProfileImageSrc = updatedImageUrl;
       }
 
       selectedProfileImageFile = null;
