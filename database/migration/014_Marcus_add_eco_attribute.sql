@@ -1,4 +1,4 @@
-USE HawkerDB;
+USE HawkerDB__Official;
 
 IF COL_LENGTH('Orders', 'eco_friendly_packaging') IS NULL
 BEGIN

@@ -1,4 +1,4 @@
-USE HawkerDB;
+USE HawkerDB__Official;
 GO
 
 -- BED-47 fix: promo_code was declared inline as `UNIQUE`, which SQL Server

@@ -164,7 +164,7 @@ Example:
 DB_USER=your_sql_username
 DB_PASSWORD=your_sql_password
 DB_SERVER=localhost
-DB_DATABASE=HawkerDB
+DB_DATABASE=HawkerDB__Official
 DB_PORT=1433
 JWT_SECRET=your_jwt_secret
 JWT_EXPIRES_IN=2h
@@ -189,7 +189,7 @@ Do not commit `.env` to GitHub.
 Open SQL Server Management Studio and run:
 
 ```sql
-CREATE DATABASE HawkerDB;
+CREATE DATABASE HawkerDB__Official;
 ```
 
 ### Step 2: Run the init script

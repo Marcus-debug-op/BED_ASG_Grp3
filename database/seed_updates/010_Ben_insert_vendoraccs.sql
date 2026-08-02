@@ -1,4 +1,4 @@
-USE HawkerDB;
+USE HawkerDB__Official;
 
 INSERT INTO Users (full_name, email, password_hash, role, phone_number, created_at, profile_image_url)
 VALUES

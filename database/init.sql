@@ -1,7 +1,7 @@
 CREATE DATABASE HawkerDB__Official;
 GO
 
-USE HawkerDB;
+USE HawkerDB__Official;
 GO
 
 CREATE TABLE HawkerCentres (

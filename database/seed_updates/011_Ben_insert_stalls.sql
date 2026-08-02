@@ -1,4 +1,4 @@
-USE HawkerDB;
+USE HawkerDB__Official;
 
 INSERT INTO Stalls (vendor_id, stall_name, cuisine_type, description, unit_number, is_active, hawker_centre_id, operating_hours, price_range, phone_number, image_url)
 VALUES

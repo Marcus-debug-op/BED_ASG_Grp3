@@ -3,7 +3,7 @@
 -- officer login apart from the other role logins).
 -- NULL for non-officer roles - it's only meaningful for officer accounts.
 
-USE HawkerDB;
+USE HawkerDB__Official;
 GO
 
 IF COL_LENGTH('Users', 'badge_id') IS NULL

@@ -1,4 +1,4 @@
-USE HawkerDB;
+USE HawkerDB__Official;
 
 UPDATE Users
 SET password_hash = '$2b$10$/2sdoKgNG4.xnl/G3WkzqOWZjWQ7rNHLuj4ZD5K74jJeKoxhJUnbq' /* New Password: Marcusisavendor123!*/

@@ -1,4 +1,4 @@
-USE HawkerDB;
+USE HawkerDB__Official;
 GO
  
 -- BED-231: save checkout details with each order.

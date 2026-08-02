@@ -1,4 +1,4 @@
-USE HawkerDB;
+USE HawkerDB__Official;
 
 INSERT INTO MenuItems (stall_id, item_name, description, price, category, image_url, is_available, created_at, likes)
 VALUES

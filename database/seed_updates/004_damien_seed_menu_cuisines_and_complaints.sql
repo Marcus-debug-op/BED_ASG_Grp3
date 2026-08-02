@@ -5,7 +5,7 @@
 -- duplicate email constraints, which just means it's already seeded.
 -- =====================================================================
 
-USE HawkerDB;
+USE HawkerDB__Official;
 GO
 
 -- Cuisines lookup data
@@ -61,7 +61,7 @@ VALUES
 );
 GO
 
-USE HawkerDB;
+USE HawkerDB__Official;
 GO
  
 INSERT INTO Users

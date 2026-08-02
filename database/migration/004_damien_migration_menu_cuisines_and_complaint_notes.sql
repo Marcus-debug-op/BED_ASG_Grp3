@@ -4,7 +4,7 @@
 -- Safe to run on its own - does not touch or recreate any existing table.
 -- =====================================================================
 
-USE HawkerDB;
+USE HawkerDB__Official;
 GO
 
 -- ---------------------------------------------------------------------
@@ -59,7 +59,7 @@ ALTER TABLE Complaints
 ADD CONSTRAINT CK_Complaints_Status CHECK (complaint_status IN ('Open', 'Acknowledged', 'In Progress', 'Resolved', 'Closed'));
 GO
 
-USE HawkerDB;
+USE HawkerDB__Official;
 GO
  
 ALTER TABLE Complaints

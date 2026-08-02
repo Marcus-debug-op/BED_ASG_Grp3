@@ -17,7 +17,7 @@
 -- where a past order was delivered, which is why they are kept apart.
 -- ============================================================================
  
-USE HawkerDB;   -- make sure we are creating the table in the right database
+USE HawkerDB__Official;   -- make sure we are creating the table in the right database
 GO
  
 CREATE TABLE SavedAddresses (

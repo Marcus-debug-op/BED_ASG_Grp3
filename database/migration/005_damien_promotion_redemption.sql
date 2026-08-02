@@ -1,4 +1,4 @@
-USE HawkerDB;
+USE HawkerDB__Official;
 GO
  
 ALTER TABLE Promotions ADD min_spend_amount DECIMAL(10,2) NULL;
