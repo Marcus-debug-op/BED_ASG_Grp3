@@ -1,6 +1,6 @@
 const express = require("express");
 const accountController = require("../Controllers/accountController");
-const { requireAuth, blockGuests } = require("../Middlewares/authMiddleware");
+const { requireRole } = require("../Middlewares/authMiddleware");
 
 const router = express.Router();
 
