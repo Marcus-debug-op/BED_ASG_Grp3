@@ -11,7 +11,7 @@ The project uses a Node.js and Express backend with Microsoft SQL Server as the 
 | Member | Features |
 |---|---|
 | Marcus Ng| Registration, profile view/edit, vendor profile business details, vendor order management |
-| Ryan Ng | Login Authentication (Patron & Vendor), Google Sign In, Guest Login, Session Management and Role Based Access Control |
+| Ryan Ng | Patron & Vendor Login Authentication, Operator & NEA Officer Login Authentication, Login/Register Integration, Google Sign-In, Guest Login, JWT Session Management, Role-Based Access Control, Protected Page Access, Forgot Password Reset, Login OTP Verification, Vendor Sales Dashboard, Vendor Dashboard Integration, Monthly Sales Filter, Vendor Daily Order Filter & Search |
 | Damien Tan | Vendor Promotion Code Management, Complaint Management, Role-Based Complaint Management, Vendor Item Management |
 | Ben Goh| Stall Listing & Browsing, Feedback & Ratings, Menu Item Likes, Operator Rental Agreement management, Vendor Rental Agreement Acknowledgement, Stall Profile Picture, Complaint Image Upload, Feedback Photo Upload, Dietary Preference Filter |
 | Ryan Tan | Order creation and checkout integration, order status, order history (API + page), order details with line items, checkout input validation  |
