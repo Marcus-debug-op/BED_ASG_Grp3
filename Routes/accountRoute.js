@@ -1,10 +1,10 @@
 const express = require("express");
 const accountController = require("../Controllers/accountController");
-const { requireAuth, blockGuests } = require("../Middlewares/authMiddleware");
+const { requireRole } = require("../Middlewares/authMiddleware");
 
 const router = express.Router();
 
-router.delete("/deactivate", requireAuth, blockGuests, accountController.deactivateOwnAccount
+router.delete("/deactivate", requireRole("patron"), accountController.deactivateOwnAccount
  /*
     #swagger.tags = ['Account']
     #swagger.description = 'Soft deactivate the logged-in patron account without deleting historical records'
