@@ -41,7 +41,7 @@ function updateQueueLabel() {
 
   label.textContent =
     role === "officer"
-      ? "Showing Hygiene complaints (your queue)"
+      ? "Showing Hygiene complaints"
       : "Showing Service, Food Quality, Overcharging & Other complaints (your queue)";
 }
 
@@ -177,7 +177,29 @@ function renderDetail(complaint) {
   document.getElementById("detailDate").textContent = formatDate(complaint.created_at);
   document.getElementById("detailDescription").textContent = complaint.description;
   document.getElementById("detailOfficer").textContent = complaint.officer_name || "Unassigned";
-  document.getElementById("statusSelect").value = complaint.complaint_status;
+  // The update dropdown only offers the statuses an officer actually owns
+  // (In Progress -> Resolved/Closed). If the complaint is still Open or
+  // Acknowledged, show that as a disabled placeholder so the current state
+  // is visible and the officer has to consciously pick a forward action -
+  // otherwise the select would silently display "In Progress" for a
+  // complaint that isn't in progress yet.
+  const statusSelect = document.getElementById("statusSelect");
+  const officerStatuses = ["In Progress", "Resolved", "Closed"];
+
+  statusSelect.querySelectorAll("option[data-current-status]").forEach((opt) => opt.remove());
+
+  if (officerStatuses.includes(complaint.complaint_status)) {
+    statusSelect.value = complaint.complaint_status;
+  } else {
+    const placeholder = document.createElement("option");
+    placeholder.textContent = `${complaint.complaint_status} (current)`;
+    placeholder.value = complaint.complaint_status;
+    placeholder.disabled = true;
+    placeholder.dataset.currentStatus = "true";
+    statusSelect.prepend(placeholder);
+    statusSelect.value = complaint.complaint_status;
+  }
+
   document.getElementById("noteInput").value = "";
   document.getElementById("updateError").classList.add("hidden");
 

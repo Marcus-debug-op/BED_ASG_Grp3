@@ -32,7 +32,7 @@
     <main class="main-content">
       <header class="header">
         <h1>Complaints</h1>
-        <p class="subtitle">Complaints filed against vendors (excludes NEA hygiene complaints, which officers handle).</p>
+        <p class="subtitle">Complaints filed.</p>
       </header>
 
       <section class="card">
@@ -71,12 +71,14 @@
 
         <label for="complaintStatus">Status</label>
         <select id="complaintStatus" required>
-          <option value="Open">Open</option>
-          <option value="Acknowledged">Acknowledged</option>
           <option value="In Progress">In Progress</option>
           <option value="Resolved">Resolved</option>
           <option value="Closed">Closed</option>
         </select>
+
+        <label>Resolution Notes</label>
+        <div id="complaintNotesList" class="notes-list"></div>
+        <p id="complaintNotesEmpty" class="notes-empty">No notes yet.</p>
 
         <label for="complaintNote">Resolution Note</label>
         <textarea id="complaintNote" maxlength="500" placeholder="Optional note about how this was handled"></textarea>
